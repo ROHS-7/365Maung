@@ -1,40 +1,15 @@
 import { useRef, useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Easing,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
+import { useLanguage } from '@/contexts/language';
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
 
-const ANNOUNCEMENT = '၆ ပါ) မောင်းများကို အနည်းဆုံး (500) ကျပ်မှ အများဆုံး (20,000) ကျပ် ✦ ';
+const USER = { username: 'မောင်မောင်', balance: '၃၆၇', phone: '0', cashOut: '88880001', cashCode: '114947' };
 
-const USER = {
-  username: 'မောင်မောင်',
-  balance: '၃၆၇',
-  phone: '0',
-  cashOut: '88880001',
-  cashCode: '114947',
-};
-
-const MENU = [
-  { id: 'mix',      label: 'Mix Parlay',       icon: 'trophy',            bg: '#27AE60' },
-  { id: 'hdp',      label: 'HDP&O/U',          icon: 'football',          bg: '#2980B9' },
-  { id: 'score',    label: 'Score',            icon: 'stats-chart',       bg: '#E74C3C' },
-  { id: 'betlist',  label: 'Bet List',         icon: 'document-text',     bg: '#16A085' },
-  { id: 'deposit',  label: 'Auto Deposit',     icon: 'arrow-down-circle', bg: '#E67E22' },
-  { id: 'withdraw', label: 'Withdraw',         icon: 'wallet',            bg: '#F39C12' },
-  { id: 'rule',     label: 'Rule',             icon: 'book-outline',      bg: '#1ABC9C' },
-  { id: 'pw',       label: 'Change\nPassword', icon: 'lock-closed',       bg: '#9B59B6' },
-] as const;
+const MENU_ROUTES: Record<string, string> = { rule: '/rule', pw: '/change-password' };
 
 // ─── Ticker ───────────────────────────────────────────────────────────────────
 
@@ -70,6 +45,7 @@ function Ticker({ text }: { text: string }) {
 // ─── Profile Card ─────────────────────────────────────────────────────────────
 
 function ProfileCard() {
+  const { tr } = useLanguage();
   const spin = useRef(new Animated.Value(0)).current;
   const anim = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -87,11 +63,9 @@ function ProfileCard() {
 
   return (
     <View style={s.card}>
-      {/* Decorative circle */}
       <View style={s.cardCircle1} />
       <View style={s.cardCircle2} />
 
-      {/* Top row: avatar + name + refresh */}
       <View style={s.cardTop}>
         <View style={s.cardAvatar}>
           <Ionicons name="person" size={22} color={Colors.brand.greenMid} />
@@ -104,24 +78,21 @@ function ProfileCard() {
         </TouchableOpacity>
       </View>
 
-      {/* Balance */}
       <View style={s.cardBalanceRow}>
-        <Text style={s.cardBalanceLabel}>Balance</Text>
-        <Text style={s.cardBalanceValue}>{USER.balance} ကျပ်</Text>
+        <Text style={s.cardBalanceLabel}>{tr.profileBalance}</Text>
+        <Text style={s.cardBalanceValue}>{USER.balance} {tr.currencyUnit}</Text>
       </View>
 
-      {/* Divider */}
       <View style={s.cardDivider} />
 
-      {/* Stats row */}
       <View style={s.cardStats}>
-        {[
-          { label: 'Phone',     value: USER.phone },
-          { label: 'Cash Out',  value: USER.cashOut },
-          { label: 'Cash Code', value: USER.cashCode },
-        ].map((item, i) => (
-          <View key={item.label} style={[s.cardStat, i > 0 && s.cardStatBorder]}>
-            <Text style={s.cardStatLabel}>{item.label}</Text>
+        {([
+          { key: 'profilePhone',    value: USER.phone },
+          { key: 'profileCashOut',  value: USER.cashOut },
+          { key: 'profileCashCode', value: USER.cashCode },
+        ] as const).map((item, i) => (
+          <View key={item.key} style={[s.cardStat, i > 0 && s.cardStatBorder]}>
+            <Text style={s.cardStatLabel}>{tr[item.key]}</Text>
             <Text style={s.cardStatValue}>{item.value}</Text>
           </View>
         ))}
@@ -132,28 +103,41 @@ function ProfileCard() {
 
 // ─── Menu Item ────────────────────────────────────────────────────────────────
 
-const MENU_ROUTES: Partial<Record<typeof MENU[number]['id'], string>> = {
-  rule: '/rule',
-  pw:   '/change-password',
-};
+type MenuEntry = { id: string; labelKey: string; icon: string; bg: string };
 
-function MenuItem({ item }: { item: typeof MENU[number] }) {
+function MenuItem({ item }: { item: MenuEntry }) {
+  const { tr } = useLanguage();
   const route = MENU_ROUTES[item.id];
   return (
-    <TouchableOpacity style={s.menuItem} activeOpacity={0.75} onPress={route ? () => router.push(route as any) : undefined}>
-      <View style={[s.menuIconWrap, { backgroundColor: item.bg + '18' }]}>
-        <View style={[s.menuIconCircle, { backgroundColor: item.bg }]}>
-          <Ionicons name={item.icon as any} size={24} color="#fff" />
-        </View>
+    <TouchableOpacity
+      style={s.menuItem}
+      activeOpacity={0.75}
+      onPress={route ? () => router.push(route as any) : undefined}
+    >
+      <View style={[s.menuIconCircle, { backgroundColor: item.bg }]}>
+        <Ionicons name={item.icon as any} size={22} color="#fff" />
       </View>
-      <Text style={s.menuLabel}>{item.label}</Text>
+      <Text style={s.menuLabel}>{(tr as any)[item.labelKey]}</Text>
     </TouchableOpacity>
   );
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
+const MENU: MenuEntry[] = [
+  { id: 'mix',      labelKey: 'menuMixParlay', icon: 'trophy',            bg: '#27AE60' },
+  { id: 'hdp',      labelKey: 'menuHDP',       icon: 'football',          bg: '#2980B9' },
+  { id: 'score',    labelKey: 'menuScore',     icon: 'stats-chart',       bg: '#E74C3C' },
+  { id: 'betlist',  labelKey: 'menuBetList',   icon: 'document-text',     bg: '#16A085' },
+  { id: 'deposit',  labelKey: 'menuDeposit',   icon: 'arrow-down-circle', bg: '#E67E22' },
+  { id: 'withdraw', labelKey: 'menuWithdraw',  icon: 'wallet',            bg: '#F39C12' },
+  { id: 'rule',     labelKey: 'menuRule',      icon: 'book-outline',      bg: '#1ABC9C' },
+  { id: 'pw',       labelKey: 'menuChangePw',  icon: 'lock-closed',       bg: '#9B59B6' },
+];
+
 export default function HomeScreen() {
+  const { tr } = useLanguage();
+
   return (
     <SafeAreaView style={s.root} edges={['top']}>
       <View style={s.header}>
@@ -172,12 +156,9 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
-        <Ticker text={ANNOUNCEMENT} />
+        <Ticker text={tr.announcement} />
         <ProfileCard />
-
-        {/* Section label */}
-        <Text style={s.sectionLabel}>ကဏ္ဍများ</Text>
-
+        <Text style={s.sectionLabel}>{tr.sectionMenu}</Text>
         <View style={s.menuGrid}>
           {MENU.map(item => <MenuItem key={item.id} item={item} />)}
         </View>
@@ -188,41 +169,27 @@ export default function HomeScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const CARD_RADIUS = 20;
-
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.brand.greenDark },
-
-  // Header
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.md, paddingVertical: 10,
   },
   headerLogo: { flexDirection: 'row', alignItems: 'baseline' },
-  logoBet:    { fontSize: FontSize.xxl, fontWeight: FontWeight.extrabold, color: '#fff', letterSpacing: -0.5 },
-  logo365:    { fontSize: FontSize.xxl, fontWeight: FontWeight.extrabold, color: Colors.brand.gold, letterSpacing: -0.5 },
+  logoBet: { fontSize: FontSize.xxl, fontWeight: FontWeight.extrabold, color: '#fff', letterSpacing: -0.5 },
+  logo365: { fontSize: FontSize.xxl, fontWeight: FontWeight.extrabold, color: Colors.brand.gold, letterSpacing: -0.5 },
   headerActions: { flexDirection: 'row', gap: 2 },
   headerBtn: { padding: 6 },
-
   scroll: { flex: 1, backgroundColor: '#F2F5F3' },
   scrollContent: { paddingBottom: 32 },
-
-  // Ticker
   ticker: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.brand.gold,
-    paddingHorizontal: Spacing.md, paddingVertical: 7,
+    backgroundColor: Colors.brand.gold, paddingHorizontal: Spacing.md, paddingVertical: 7,
   },
   tickerText: { fontSize: 12, fontWeight: FontWeight.medium, color: Colors.brand.greenDark },
-
-  // Profile card — green bank-card style
   card: {
-    margin: Spacing.md,
-    borderRadius: CARD_RADIUS,
-    backgroundColor: Colors.brand.greenMid,
-    padding: Spacing.md,
-    overflow: 'hidden',
-    ...Shadow.lg,
+    margin: Spacing.md, borderRadius: 20,
+    backgroundColor: Colors.brand.greenMid, padding: Spacing.md, overflow: 'hidden', ...Shadow.lg,
   },
   cardCircle1: {
     position: 'absolute', width: 180, height: 180, borderRadius: 90,
@@ -235,52 +202,36 @@ const s = StyleSheet.create({
   cardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   cardAvatar: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
-    marginRight: 10,
+    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginRight: 10,
   },
   cardUsername: { flex: 1, fontSize: FontSize.md, fontWeight: FontWeight.bold, color: '#fff' },
   cardRefresh: { padding: 4 },
-
-  cardBalanceLabel: { fontSize: FontSize.sm, color: 'rgba(255,255,255,0.65)', marginBottom: 4 },
   cardBalanceRow: { marginBottom: 14 },
+  cardBalanceLabel: { fontSize: FontSize.sm, color: 'rgba(255,255,255,0.65)', marginBottom: 4 },
   cardBalanceValue: { fontSize: FontSize.xxxl, fontWeight: FontWeight.extrabold, color: '#fff', letterSpacing: -0.5 },
-
   cardDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginBottom: 12 },
-
   cardStats: { flexDirection: 'row' },
   cardStat: { flex: 1, alignItems: 'center' },
   cardStatBorder: { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.2)' },
   cardStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 3 },
   cardStatValue: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: '#fff' },
-
-  // Section label
   sectionLabel: {
-    fontSize: FontSize.md, fontWeight: FontWeight.bold,
-    color: Colors.light.text,
+    fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.light.text,
     marginHorizontal: Spacing.md, marginTop: Spacing.sm, marginBottom: 4,
   },
-
-  // Menu grid — 4 columns
-  menuGrid: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    paddingHorizontal: Spacing.md, gap: Spacing.sm,
-  },
+  menuGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: Spacing.md, gap: Spacing.sm },
   menuItem: {
-    width: '22.5%',
+    width: '48.5%',
+    backgroundColor: '#fff',
+    borderRadius: BorderRadius.xl,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
+    ...Shadow.sm,
   },
-  menuIconWrap: {
-    width: 60, height: 60, borderRadius: 18,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 6,
-  },
-  menuIconCircle: {
-    width: 48, height: 48, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  menuLabel: {
-    fontSize: 11, fontWeight: FontWeight.semibold,
-    color: Colors.light.text, textAlign: 'center', lineHeight: 15,
-  },
+  menuIconWrap: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  menuIconCircle: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  menuLabel: { flex: 1, fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.light.text, lineHeight: 18 },
 });

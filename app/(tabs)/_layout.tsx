@@ -2,8 +2,10 @@ import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontWeight } from '@/constants/theme';
+import { useLanguage } from '@/contexts/language';
 
 function LiveTabButton({ onPress }: { onPress?: () => void }) {
+  const { tr } = useLanguage();
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={s.liveWrap}>
       <View style={s.liveDiamond}>
@@ -11,12 +13,14 @@ function LiveTabButton({ onPress }: { onPress?: () => void }) {
           <Ionicons name="radio" size={22} color="#fff" />
         </View>
       </View>
-      <Text style={s.liveLabel}>Live</Text>
+      <Text style={s.liveLabel}>{tr.tabLive}</Text>
     </TouchableOpacity>
   );
 }
 
 export default function TabLayout() {
+  const { tr } = useLanguage();
+
   return (
     <Tabs
       screenOptions={{
@@ -30,14 +34,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: tr.tabHome,
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="bets"
         options={{
-          title: 'Bet',
+          title: tr.tabBet,
           tabBarIcon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} />,
         }}
       />
@@ -51,14 +55,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="scores"
         options={{
-          title: 'Scores',
+          title: tr.tabScores,
           tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Account',
+          title: tr.tabAccount,
           tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />,
         }}
       />
@@ -68,49 +72,19 @@ export default function TabLayout() {
 
 const s = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#fff',
-    borderTopColor: Colors.light.border,
-    borderTopWidth: 1,
-    height: 62,
-    paddingBottom: 8,
-    paddingTop: 6,
+    backgroundColor: '#fff', borderTopColor: Colors.light.border,
+    borderTopWidth: 1, height: 62, paddingBottom: 8, paddingTop: 6,
   },
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: FontWeight.semibold,
-  },
-
-  // Center "Live" diamond button
-  liveWrap: {
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 8,
-    flex: 1,
-  },
+  tabLabel: { fontSize: 11, fontWeight: FontWeight.semibold },
+  liveWrap: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 8, flex: 1 },
   liveDiamond: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: Colors.brand.greenButton,
-    transform: [{ rotate: '45deg' }],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-    marginTop: -20,
-    shadowColor: Colors.brand.greenButton,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    elevation: 8,
+    width: 52, height: 52, borderRadius: 14,
+    backgroundColor: Colors.brand.greenButton, transform: [{ rotate: '45deg' }],
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 4, marginTop: -20,
+    shadowColor: Colors.brand.greenButton, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45, shadowRadius: 8, elevation: 8,
   },
-  liveDiamondInner: {
-    transform: [{ rotate: '-45deg' }],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  liveLabel: {
-    fontSize: 11,
-    fontWeight: FontWeight.semibold,
-    color: Colors.brand.greenButton,
-  },
+  liveDiamondInner: { transform: [{ rotate: '-45deg' }], alignItems: 'center', justifyContent: 'center' },
+  liveLabel: { fontSize: 11, fontWeight: FontWeight.semibold, color: Colors.brand.greenButton },
 });

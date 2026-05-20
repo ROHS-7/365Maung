@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing } from '@/constants/theme';
+import { useLanguage } from '@/contexts/language';
 
 const RULE_TEXT = `1. အကောင့်တစ်ခုစီသည် တစ်ဦးတည်းသာ အသုံးပြုခွင့်ရှိသည်။ မိမိ၏ Login နှင့် Password ကို အခြားသူများနှင့် မျှဝေခြင်း မပြုရ။
 
@@ -25,6 +26,8 @@ const RULE_TEXT = `1. အကောင့်တစ်ခုစီသည် တစ
 10. ပလက်ဖောင်းသည် မည်သည့်အချိန်မဆို စည်းမျဉ်းများကို ပြင်ဆင်ပိုင်ခွင့် ရှိသည်။`;
 
 export default function RuleScreen() {
+  const { tr } = useLanguage();
+
   return (
     <SafeAreaView style={s.root} edges={['top']}>
       <View style={s.header}>
@@ -32,8 +35,8 @@ export default function RuleScreen() {
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>Rule</Text>
-          <Text style={s.headerSub}>စည်းမျဉ်းများ</Text>
+          <Text style={s.headerTitle}>{tr.ruleTitle}</Text>
+          <Text style={s.headerSub}>{tr.ruleSub}</Text>
         </View>
         <Ionicons name="book-outline" size={22} color="rgba(255,255,255,0.4)" />
       </View>
@@ -47,23 +50,14 @@ export default function RuleScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F2F5F3' },
-
   header: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    backgroundColor: Colors.brand.greenDark,
-    paddingHorizontal: Spacing.md, paddingVertical: 12,
+    backgroundColor: Colors.brand.greenDark, paddingHorizontal: Spacing.md, paddingVertical: 12,
   },
   backBtn: { padding: 4, marginRight: 4 },
   headerTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff' },
   headerSub: { fontSize: FontSize.xs, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
-
   scroll: { flex: 1 },
   scrollContent: { padding: Spacing.lg, paddingBottom: 48 },
-
-  ruleText: {
-    fontSize: FontSize.md,
-    color: Colors.light.text,
-    lineHeight: 26,
-  },
-
+  ruleText: { fontSize: FontSize.md, color: Colors.light.text, lineHeight: 26 },
 });
