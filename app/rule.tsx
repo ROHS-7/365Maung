@@ -1,37 +1,32 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '@/constants/theme';
+import { Colors, FontSize, FontWeight, Spacing } from '@/constants/theme';
+
+const RULE_TEXT = `1. အကောင့်တစ်ခုစီသည် တစ်ဦးတည်းသာ အသုံးပြုခွင့်ရှိသည်။ မိမိ၏ Login နှင့် Password ကို အခြားသူများနှင့် မျှဝေခြင်း မပြုရ။
+
+2. လိမ်လည်မှု သို့မဟုတ် မသင့်လျော်သောလုပ်ဆောင်ချက်များ တွေ့ပါက အကောင့်ကို ပိတ်သိမ်းမည်။
+
+3. အနည်းဆုံး လောင်းကြေး — 500 ကျပ်။ အများဆုံး လောင်းကြေး — 20,000 ကျပ်။
+
+4. Mix Parlay အတွက် အနည်းဆုံး ပွဲ ၂ ပွဲ ပါဝင်ရမည်။
+
+5. ပွဲစဉ်ကျင်းပနေစဉ် လောင်းထားသော ကြေးများကို ပြန်ဖျက်၍ မရပါ။
+
+6. ပွဲပျက်သွားပါက လောင်းကြေးကို အပြည့်အဝ ပြန်အမ်းမည်ဖြစ်သည်။
+
+7. ဘောဒီ (Body) ပွဲများအတွက် ကော်မရှင် 5% ကောက်ခံမည်ဖြစ်သည်။
+
+8. ငွေသွင်းပြီးနောက် Slip ကို Customer Service သို့ ပေးပို့ရမည်။
+
+9. ငွေထုတ်ရာတွင် မှတ်ပုံတင်ထားသော ဘဏ်အကောင့်မှသာ ထုတ်ယူနိုင်သည်။ ငွေထုတ်ချိန် ၁ နာရီမှ ၃ နာရီ အတွင်း ဆောင်ရွက်ပေးမည်ဖြစ်သည်။
+
+10. ပလက်ဖောင်းသည် မည်သည့်အချိန်မဆို စည်းမျဉ်းများကို ပြင်ဆင်ပိုင်ခွင့် ရှိသည်။`;
 
 export default function RuleScreen() {
-  const [text, setText] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    fetchRules();
-  }, []);
-
-  async function fetchRules() {
-    setLoading(true);
-    setError(false);
-    try {
-      // Replace this URL with the real API endpoint
-      const res = await fetch('https://your-api.com/rules');
-      const data = await res.text();
-      setText(data);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
@@ -43,28 +38,9 @@ export default function RuleScreen() {
         <Ionicons name="book-outline" size={22} color="rgba(255,255,255,0.4)" />
       </View>
 
-      {/* Body */}
-      {loading ? (
-        <View style={s.centered}>
-          <ActivityIndicator size="large" color={Colors.brand.greenButton} />
-        </View>
-      ) : error ? (
-        <View style={s.centered}>
-          <Ionicons name="wifi-outline" size={48} color={Colors.light.border} />
-          <Text style={s.errorText}>ချိတ်ဆက်မှု မအောင်မြင်ပါ</Text>
-          <TouchableOpacity onPress={fetchRules} style={s.retryBtn} activeOpacity={0.8}>
-            <Text style={s.retryText}>ထပ်ကြိုးစားပါ</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <ScrollView
-          style={s.scroll}
-          contentContainerStyle={s.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={s.ruleText}>{text}</Text>
-        </ScrollView>
-      )}
+      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+        <Text style={s.ruleText}>{RULE_TEXT}</Text>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -90,14 +66,4 @@ const s = StyleSheet.create({
     lineHeight: 26,
   },
 
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
-  errorText: { fontSize: FontSize.md, color: Colors.light.textSecondary },
-  retryBtn: {
-    backgroundColor: Colors.brand.greenButton,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  retryText: { fontSize: FontSize.md, color: '#fff', fontWeight: FontWeight.semibold },
 });
