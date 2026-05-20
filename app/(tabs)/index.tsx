@@ -10,44 +10,33 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 
-// ─── Mock data ───────────────────────────────────────────────────────────────
+// ─── Data ─────────────────────────────────────────────────────────────────────
 
-const ANNOUNCEMENT =
-  '0,000) ကျပ် အတိကများနှင်ပါသည်!! (ဘောဒီ အကောင် 5% ပါ) မောင်း ✦ ';
+const ANNOUNCEMENT = '၆ ပါ) မောင်းများကို အနည်းဆုံး (500) ကျပ်မှ အများဆုံး (20,000) ကျပ် ✦ ';
 
-const MATCHES = [
-  { id: '1', home: 'MUN', away: 'CHE', hs: 2, as: 1, status: 'FT' },
-  { id: '2', home: 'ARS', away: 'LIV', hs: 0, as: 0, status: '45\'' },
-  { id: '3', home: 'MCI', away: 'TOT', hs: 3, as: 2, status: 'FT' },
-  { id: '4', home: 'BAR', away: 'RMA', hs: 1, as: 1, status: '78\'' },
-  { id: '5', home: 'JUV', away: 'INT', hs: 0, as: 1, status: 'FT' },
-];
+const USER = {
+  username: 'မောင်မောင်',
+  balance: '၃၆၇',
+  phone: '0',
+  cashOut: '88880001',
+  cashCode: '114947',
+};
 
-const LEAGUES = [
-  { id: 'pl',     name: 'Premier\nLeague',     icon: 'football',          color: '#3700B3' },
-  { id: 'cl',     name: 'Champions\nLeague',   icon: 'star',              color: '#1565C0' },
-  { id: 'laliga', name: 'La Liga',             icon: 'shield-outline',    color: '#E65100' },
-  { id: 'bl',     name: 'Bundesliga',          icon: 'ribbon-outline',    color: '#C62828' },
-  { id: 'sa',     name: 'Serie A',             icon: 'trophy-outline',    color: '#283593' },
-  { id: 'l1',     name: 'Ligue 1',             icon: 'flame-outline',     color: '#006064' },
+const MENU = [
+  { id: 'mix',      label: 'Mix Parlay',       icon: 'trophy',            bg: '#27AE60' },
+  { id: 'hdp',      label: 'HDP&O/U',          icon: 'football',          bg: '#2980B9' },
+  { id: 'score',    label: 'Score',            icon: 'stats-chart',       bg: '#E74C3C' },
+  { id: 'betlist',  label: 'Bet List',         icon: 'document-text',     bg: '#16A085' },
+  { id: 'deposit',  label: 'Auto Deposit',     icon: 'arrow-down-circle', bg: '#E67E22' },
+  { id: 'withdraw', label: 'Withdraw',         icon: 'wallet',            bg: '#F39C12' },
+  { id: 'rule',     label: 'Rule',             icon: 'book-outline',      bg: '#1ABC9C' },
+  { id: 'pw',       label: 'Change Password',  icon: 'lock-closed',       bg: '#9B59B6' },
 ] as const;
 
-const FEATURES = [
-  { id: 'mix',      title: 'Mix Parlay',       subtitle: 'ဘောလုံးပွဲများ',      icon: 'trophy',            bg: '#27AE60' },
-  { id: 'hdp',      title: 'HDP & O/U',        subtitle: 'ပွဲကြိုများ',          icon: 'football',          bg: '#2980B9' },
-  { id: 'deposit',  title: 'Auto Deposit',     subtitle: 'ငွေသွင်းရန်',          icon: 'arrow-down-circle', bg: '#E67E22' },
-  { id: 'withdraw', title: 'Withdraw',         subtitle: 'ငွေထုတ်ရန်',           icon: 'wallet',            bg: '#F39C12' },
-  { id: 'score',    title: 'Live Score',       subtitle: 'အဏ္ဏတ်ရလဒ်',           icon: 'stats-chart',       bg: '#E74C3C' },
-  { id: 'betlist',  title: 'Bet List',         subtitle: 'လောင်းကစားစာရင်း',     icon: 'document-text',     bg: '#16A085' },
-  { id: 'rule',     title: 'Rule',             subtitle: 'စည်းမျဉ်းများ',         icon: 'book-outline',      bg: '#1ABC9C' },
-  { id: 'pw',       title: 'Change Password',  subtitle: 'စကားဝှက်ပြောင်း',       icon: 'lock-closed',       bg: '#9B59B6' },
-] as const;
-
-const USER = { username: 'မောင်မောင်', balance: '၃၆၇ ကျပ်', cashCode: '114947' };
-
-// ─── Ticker ──────────────────────────────────────────────────────────────────
+// ─── Ticker ───────────────────────────────────────────────────────────────────
 
 function Ticker({ text }: { text: string }) {
   const x = useRef(new Animated.Value(0)).current;
@@ -58,7 +47,12 @@ function Ticker({ text }: { text: string }) {
     if (!cw || !tw) return;
     x.setValue(cw);
     Animated.loop(
-      Animated.timing(x, { toValue: -tw, duration: (cw + tw) * 26, easing: Easing.linear, useNativeDriver: true }),
+      Animated.timing(x, {
+        toValue: -tw,
+        duration: (cw + tw) * 26,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
     ).start();
   }, [cw, tw]);
 
@@ -78,139 +72,131 @@ function Ticker({ text }: { text: string }) {
   );
 }
 
-// ─── Match Score Card ─────────────────────────────────────────────────────────
+// ─── Profile Card ─────────────────────────────────────────────────────────────
 
-function MatchCard({ m }: { m: typeof MATCHES[number] }) {
-  const live = !m.status.includes('T');
+function ProfileCard() {
+  const spin = useRef(new Animated.Value(0)).current;
+  const anim = useRef<Animated.CompositeAnimation | null>(null);
+
+  function handleRefresh() {
+    anim.current?.stop();
+    spin.setValue(0);
+    anim.current = Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 700, easing: Easing.linear, useNativeDriver: true }),
+    );
+    anim.current.start();
+    setTimeout(() => { anim.current?.stop(); spin.setValue(0); }, 1800);
+  }
+
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+
   return (
-    <View style={s.matchCard}>
-      <View style={[s.matchStatus, live && s.matchStatusLive]}>
-        <Text style={[s.matchStatusText, live && s.matchStatusTextLive]}>{m.status}</Text>
+    <View style={s.profileCard}>
+      {/* Left — avatar + name + refresh */}
+      <View style={s.profileLeft}>
+        <View style={s.avatar}>
+          <Ionicons name="person" size={30} color="#fff" />
+        </View>
+        <Text style={s.username} numberOfLines={1}>{USER.username}</Text>
+        <TouchableOpacity style={s.refreshBtn} onPress={handleRefresh} activeOpacity={0.8}>
+          <Animated.View style={{ transform: [{ rotate }] }}>
+            <Ionicons name="refresh" size={12} color="#fff" />
+          </Animated.View>
+          <Text style={s.refreshLabel}>ငွေဆင်မောင်း</Text>
+        </TouchableOpacity>
       </View>
-      <View style={s.matchTeams}>
-        <View style={s.teamCol}>
-          <View style={[s.teamBadge, { backgroundColor: Colors.brand.greenMid }]}>
-            <Text style={s.teamInitial}>{m.home[0]}</Text>
+
+      {/* Divider */}
+      <View style={s.vDivider} />
+
+      {/* Right — stats */}
+      <View style={s.profileRight}>
+        {[
+          { label: 'Username',  value: USER.username },
+          { label: 'Balance',   value: USER.balance },
+          { label: 'Phone',     value: USER.phone },
+          { label: 'Cash out',  value: USER.cashOut },
+          { label: 'Cash Code', value: USER.cashCode },
+        ].map(r => (
+          <View key={r.label} style={s.statRow}>
+            <Text style={s.statLabel}>{r.label}</Text>
+            <Text style={s.statColon}> : </Text>
+            <Text style={s.statValue} numberOfLines={1}>{r.value}</Text>
           </View>
-          <Text style={s.teamName}>{m.home}</Text>
-        </View>
-        <View style={s.scoreBox}>
-          <Text style={s.scoreText}>{m.hs} : {m.as}</Text>
-        </View>
-        <View style={s.teamCol}>
-          <View style={[s.teamBadge, { backgroundColor: '#C0392B' }]}>
-            <Text style={s.teamInitial}>{m.away[0]}</Text>
-          </View>
-          <Text style={s.teamName}>{m.away}</Text>
-        </View>
+        ))}
       </View>
     </View>
   );
 }
 
-// ─── League Circle ────────────────────────────────────────────────────────────
+// ─── Menu Card ────────────────────────────────────────────────────────────────
 
-function LeagueCircle({ item }: { item: typeof LEAGUES[number] }) {
+function MenuCard({ item }: { item: typeof MENU[number] }) {
   return (
-    <TouchableOpacity style={s.leagueItem} activeOpacity={0.75}>
-      <View style={[s.leagueCircle, { backgroundColor: item.color + '18', borderColor: item.color + '55' }]}>
-        <Ionicons name={item.icon as any} size={24} color={item.color} />
+    <TouchableOpacity style={s.menuCard} activeOpacity={0.78}>
+      <View style={[s.menuCardBg, { backgroundColor: item.bg }]}>
+        <Ionicons name={item.icon as any} size={34} color="rgba(255,255,255,0.92)" />
       </View>
-      <Text style={s.leagueName} numberOfLines={2}>{item.name}</Text>
+      <Text style={s.menuLabel}>{item.label}</Text>
     </TouchableOpacity>
   );
 }
 
-// ─── Feature Card ─────────────────────────────────────────────────────────────
-
-function FeatureCard({ item }: { item: typeof FEATURES[number] }) {
-  return (
-    <TouchableOpacity style={s.featureCard} activeOpacity={0.8}>
-      <View style={[s.featureBg, { backgroundColor: item.bg }]}>
-        <Ionicons name={item.icon as any} size={36} color="rgba(255,255,255,0.9)" />
-        <View style={s.featureOverlay} />
-      </View>
-      <View style={s.featureInfo}>
-        <Text style={s.featureTitle}>{item.title}</Text>
-        <Text style={s.featureSub}>{item.subtitle}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-// ─── Section Header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ icon, title }: { icon: string; title: string }) {
-  return (
-    <View style={s.sectionHeader}>
-      <Ionicons name={icon as any} size={16} color={Colors.brand.greenButton} />
-      <Text style={s.sectionTitle}>{title}</Text>
-    </View>
-  );
-}
-
-// ─── Home Screen ──────────────────────────────────────────────────────────────
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
   return (
     <SafeAreaView style={s.root} edges={['top']}>
+
       {/* Header */}
       <View style={s.header}>
         <View style={s.headerLogo}>
           <Text style={s.logoBet}>bet</Text>
           <Text style={s.logo365}>365</Text>
         </View>
-        <View style={s.headerRight}>
-          <TouchableOpacity style={s.headerIcon}>
+        <View style={s.headerActions}>
+          <TouchableOpacity style={s.headerBtn}>
             <Ionicons name="notifications-outline" size={22} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity style={s.headerIcon}>
+          <TouchableOpacity style={s.headerBtn}>
             <Ionicons name="person-circle-outline" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
-
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Ticker */}
         <Ticker text={ANNOUNCEMENT} />
 
-        {/* Balance strip */}
-        <View style={s.balanceStrip}>
-          <View>
-            <Text style={s.balanceLabel}>Balance</Text>
-            <Text style={s.balanceValue}>{USER.balance}</Text>
-          </View>
-          <View style={s.balanceDivider} />
-          <View>
-            <Text style={s.balanceLabel}>Cash Code</Text>
-            <Text style={s.balanceValue}>{USER.cashCode}</Text>
-          </View>
-          <TouchableOpacity style={s.depositBtn}>
-            <Ionicons name="add-circle" size={14} color="#fff" />
-            <Text style={s.depositText}>Deposit</Text>
-          </TouchableOpacity>
+        {/* Profile */}
+        <ProfileCard />
+
+        {/* Menu grid */}
+        <View style={s.menuGrid}>
+          {MENU.map(item => <MenuCard key={item.id} item={item} />)}
         </View>
 
-        {/* Live Scores */}
-        <SectionHeader icon="radio-outline" title="Live & Recent Scores" />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.hScroll}>
-          {MATCHES.map(m => <MatchCard key={m.id} m={m} />)}
-        </ScrollView>
+        {/* Ucenter */}
+        <TouchableOpacity style={s.ucenterBtn} activeOpacity={0.8}>
+          <Ionicons name="settings-outline" size={20} color={Colors.light.textSecondary} />
+          <Text style={s.ucenterLabel}>Ucenter</Text>
+        </TouchableOpacity>
 
-        {/* Leagues */}
-        <SectionHeader icon="trophy-outline" title="Leagues" />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.hScroll}>
-          {LEAGUES.map(l => <LeagueCircle key={l.id} item={l} />)}
-        </ScrollView>
-
-        {/* Features */}
-        <SectionHeader icon="football-outline" title="bet365 ကဏ္ဍပေါင်းစုံ" />
-        <View style={s.featureGrid}>
-          {FEATURES.map(f => <FeatureCard key={f.id} item={f} />)}
-        </View>
-
+        {/* Logout */}
+        <TouchableOpacity
+          style={s.logoutBtn}
+          activeOpacity={0.8}
+          onPress={() => router.replace('/login')}
+        >
+          <Ionicons name="log-out-outline" size={18} color="#fff" />
+          <Text style={s.logoutLabel}>Logout</Text>
+        </TouchableOpacity>
       </ScrollView>
+
     </SafeAreaView>
   );
 }
@@ -227,16 +213,16 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: 10,
-    backgroundColor: Colors.brand.greenDark,
   },
   headerLogo: { flexDirection: 'row', alignItems: 'baseline' },
-  logoBet: { fontSize: FontSize.xxl, fontWeight: FontWeight.extrabold, color: '#fff', letterSpacing: -0.5 },
-  logo365: { fontSize: FontSize.xxl, fontWeight: FontWeight.extrabold, color: Colors.brand.gold, letterSpacing: -0.5 },
-  headerRight: { flexDirection: 'row', gap: 4 },
-  headerIcon: { padding: 6 },
+  logoBet:    { fontSize: FontSize.xxl, fontWeight: FontWeight.extrabold, color: '#fff', letterSpacing: -0.5 },
+  logo365:    { fontSize: FontSize.xxl, fontWeight: FontWeight.extrabold, color: Colors.brand.gold, letterSpacing: -0.5 },
+  headerActions: { flexDirection: 'row', gap: 2 },
+  headerBtn: { padding: 6 },
 
+  // Scroll
   scroll: { flex: 1, backgroundColor: '#F2F5F3' },
-  scrollContent: { paddingBottom: 32 },
+  scrollContent: { paddingBottom: 36 },
 
   // Ticker
   ticker: {
@@ -248,107 +234,88 @@ const s = StyleSheet.create({
   },
   tickerText: { fontSize: 12, fontWeight: FontWeight.medium, color: Colors.brand.greenDark },
 
-  // Balance strip
-  balanceStrip: {
+  // Profile card
+  profileCard: {
     flexDirection: 'row',
+    backgroundColor: '#fff',
+    margin: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
     alignItems: 'center',
-    backgroundColor: Colors.brand.greenMid,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.md,
+    ...Shadow.md,
   },
-  balanceLabel: { fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: FontWeight.medium },
-  balanceValue: { fontSize: FontSize.md, color: '#fff', fontWeight: FontWeight.bold, marginTop: 1 },
-  balanceDivider: { width: 1, height: 28, backgroundColor: 'rgba(255,255,255,0.25)' },
-  depositBtn: {
-    marginLeft: 'auto',
-    flexDirection: 'row',
-    alignItems: 'center',
+  profileLeft: { alignItems: 'center', width: 88 },
+  avatar: {
+    width: 54, height: 54, borderRadius: 27,
+    backgroundColor: Colors.brand.greenMid,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 6,
+  },
+  username: {
+    fontSize: FontSize.xs, fontWeight: FontWeight.semibold,
+    color: Colors.light.text, marginBottom: 8, textAlign: 'center',
+  },
+  refreshBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: Colors.brand.greenButton,
     borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    gap: 4,
+    paddingHorizontal: 8, paddingVertical: 4,
   },
-  depositText: { fontSize: FontSize.sm, color: '#fff', fontWeight: FontWeight.semibold },
-
-  // Section header
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-    paddingBottom: 6,
-  },
-  sectionTitle: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.light.text },
-
-  // Horizontal scroll
-  hScroll: { paddingHorizontal: Spacing.md, gap: Spacing.sm, paddingBottom: 4 },
-
-  // Match card
-  matchCard: {
-    width: 148,
-    backgroundColor: '#fff',
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.sm,
-    alignItems: 'center',
-    ...Shadow.sm,
-  },
-  matchStatus: {
+  refreshLabel: { fontSize: 10, color: '#fff', fontWeight: FontWeight.semibold },
+  vDivider: {
+    width: 1, alignSelf: 'stretch',
     backgroundColor: Colors.light.border,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginBottom: Spacing.sm,
+    marginHorizontal: Spacing.md,
   },
-  matchStatusLive: { backgroundColor: '#E74C3C' },
-  matchStatusText: { fontSize: 10, fontWeight: FontWeight.bold, color: Colors.light.textSecondary },
-  matchStatusTextLive: { color: '#fff' },
-  matchTeams: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  teamCol: { alignItems: 'center', width: 40 },
-  teamBadge: {
-    width: 32, height: 32, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 4,
-  },
-  teamInitial: { fontSize: FontSize.sm, fontWeight: FontWeight.extrabold, color: '#fff' },
-  teamName: { fontSize: 10, fontWeight: FontWeight.semibold, color: Colors.light.text },
-  scoreBox: { alignItems: 'center' },
-  scoreText: { fontSize: FontSize.lg, fontWeight: FontWeight.extrabold, color: Colors.light.text },
+  profileRight: { flex: 1, gap: 5 },
+  statRow: { flexDirection: 'row', alignItems: 'center' },
+  statLabel: { fontSize: FontSize.sm, color: Colors.light.textSecondary, width: 70 },
+  statColon: { fontSize: FontSize.sm, color: Colors.light.textSecondary },
+  statValue: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.light.text, flex: 1 },
 
-  // League circle
-  leagueItem: { alignItems: 'center', width: 72 },
-  leagueCircle: {
-    width: 56, height: 56, borderRadius: 28,
-    borderWidth: 1.5,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
-  },
-  leagueName: { fontSize: 10, color: Colors.light.textSecondary, textAlign: 'center', lineHeight: 13 },
-
-  // Feature grid
-  featureGrid: {
+  // Menu grid
+  menuGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: Spacing.md,
     gap: Spacing.sm,
   },
-  featureCard: {
-    width: '48%',
+  menuCard: {
+    width: '48.5%',
     backgroundColor: '#fff',
     borderRadius: BorderRadius.xl,
     overflow: 'hidden',
     ...Shadow.sm,
   },
-  featureBg: {
-    height: 96,
+  menuCardBg: {
+    height: 88,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  featureOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.08)',
+  menuLabel: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.semibold,
+    color: Colors.light.text,
+    textAlign: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.sm,
   },
-  featureInfo: { padding: Spacing.sm },
-  featureTitle: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: Colors.light.text },
-  featureSub: { fontSize: 11, color: Colors.light.textSecondary, marginTop: 2 },
+
+  // Ucenter
+  ucenterBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: Spacing.sm, marginTop: Spacing.lg, paddingVertical: Spacing.sm,
+  },
+  ucenterLabel: { fontSize: FontSize.md, color: Colors.light.textSecondary, fontWeight: FontWeight.medium },
+
+  // Logout
+  logoutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#C0392B',
+    marginHorizontal: Spacing.xl, marginTop: Spacing.sm,
+    borderRadius: BorderRadius.xl,
+    paddingVertical: Spacing.md, gap: Spacing.sm,
+    ...Shadow.sm,
+  },
+  logoutLabel: { fontSize: FontSize.md, color: '#fff', fontWeight: FontWeight.bold },
 });
