@@ -95,6 +95,16 @@ const translations = {
     scoresTitle:          'Scores',
     scoresEmpty:          'No scores available',
 
+    // Auto Deposit
+    autoDepositTitle:     'Auto Deposit',
+    autoDepositSub:       'အော်တိုငွေသွင်းစနစ်',
+    bankCard:             'bank card',
+    viewAccount:          'View Account',
+    accountNumber:        'Account Number',
+    accountName:          'Account Name',
+    autoDepositNote:      'Minimum 5,000 Kyat deposit required. If you have any issues please contact Customer Service.',
+    close:                'Close',
+
     // Home
     announcement:         'Minimum bet 500 Kyat, Maximum 20,000 Kyat ✦ ',
     currencyUnit:         'Kyat',
@@ -197,6 +207,16 @@ const translations = {
     // Scores screen
     scoresTitle:          'Scores',
     scoresEmpty:          'ရလဒ်များ မရှိသေးပါ',
+
+    // Auto Deposit
+    autoDepositTitle:     'အော်တိုငွေသွင်းစနစ်',
+    autoDepositSub:       'Auto Deposit',
+    bankCard:             'bank card',
+    viewAccount:          'အကောင့်ကြည့်ရန်',
+    accountNumber:        'အကောင့်နံပါတ်',
+    accountName:          'အကောင့်အမည်',
+    autoDepositNote:      'အနည်းဆုံး 5000 ကျပ် ငွေသွင်းရပါမည်။ အဆက်အသွယ် တရာ ရှိပါက Customer Service သို့ ဆက်သွယ်ပေးပါ',
+    close:                'ပိတ်မည်',
 
     // Home
     announcement:         '၆ ပါ) မောင်းများကို အနည်းဆုံး (500) ကျပ်မှ အများဆုံး (20,000) ကျပ် ✦ ',

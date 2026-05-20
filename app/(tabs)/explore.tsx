@@ -8,7 +8,7 @@ import type { Lang } from '@/constants/i18n';
 
 const USER = { username: 'မောင်မောင်', balance: '၃၆၇', cashCode: '114947' };
 
-const ROW_ROUTES: Record<string, string> = { rule: '/rule', pw: '/change-password' };
+const ROW_ROUTES: Record<string, string> = { rule: '/rule', pw: '/change-password', deposit: '/auto-deposit' };
 
 export default function AccountScreen() {
   const { tr, lang, setLang } = useLanguage();

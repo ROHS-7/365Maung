@@ -9,7 +9,7 @@ import { useLanguage } from '@/contexts/language';
 
 const USER = { username: 'မောင်မောင်', balance: '၃၆၇', phone: '0', cashOut: '88880001', cashCode: '114947' };
 
-const MENU_ROUTES: Record<string, string> = { rule: '/rule', pw: '/change-password' };
+const MENU_ROUTES: Record<string, string> = { rule: '/rule', pw: '/change-password', deposit: '/auto-deposit' };
 
 // ─── Ticker ───────────────────────────────────────────────────────────────────
 
