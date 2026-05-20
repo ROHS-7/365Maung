@@ -158,7 +158,7 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff' },
   headerSub: { fontSize: FontSize.xs, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
 
-  body: { flex: 1, padding: Spacing.md, justifyContent: 'flex-start', paddingTop: Spacing.lg },
+  body: { flex: 1, padding: Spacing.md, justifyContent: 'center' },
 
   card: {
     backgroundColor: '#fff',
