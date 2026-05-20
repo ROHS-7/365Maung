@@ -134,6 +134,7 @@ function ProfileCard() {
 
 const MENU_ROUTES: Partial<Record<typeof MENU[number]['id'], string>> = {
   rule: '/rule',
+  pw:   '/change-password',
 };
 
 function MenuItem({ item }: { item: typeof MENU[number] }) {

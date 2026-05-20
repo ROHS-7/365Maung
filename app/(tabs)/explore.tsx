@@ -20,6 +20,7 @@ const ACCOUNT_ITEMS = [
 
 const ROW_ROUTES: Partial<Record<typeof ACCOUNT_ITEMS[number]['id'], string>> = {
   rule: '/rule',
+  pw:   '/change-password',
 };
 
 function AccountRow({ item }: { item: typeof ACCOUNT_ITEMS[number] }) {
