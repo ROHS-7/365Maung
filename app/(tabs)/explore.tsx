@@ -31,7 +31,11 @@ export default function AccountScreen() {
   return (
     <SafeAreaView style={s.root} edges={['top']}>
       <View style={s.header}>
+        <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
+          <Ionicons name="chevron-back" size={22} color="#fff" />
+        </TouchableOpacity>
         <Text style={s.headerTitle}>{tr.accountTitle}</Text>
+        <View style={s.headerBtn} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
@@ -121,9 +125,14 @@ export default function AccountScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F2F5F3' },
   header: {
-    backgroundColor: Colors.brand.greenDark,
-    paddingHorizontal: Spacing.md, paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.brand.greenButton,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
   },
+  headerBtn:   { padding: 4, minWidth: 36 },
   headerTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff' },
   scrollContent: { paddingBottom: 40 },
   profileBanner: {

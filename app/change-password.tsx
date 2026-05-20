@@ -135,7 +135,7 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F2F5F3' },
   header: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    backgroundColor: Colors.brand.greenDark, paddingHorizontal: Spacing.md, paddingVertical: 12,
+    backgroundColor: Colors.brand.greenButton, paddingHorizontal: Spacing.md, paddingVertical: 12,
   },
   backBtn: { padding: 4, marginRight: 4 },
   headerTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff' },

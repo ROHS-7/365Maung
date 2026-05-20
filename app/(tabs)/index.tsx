@@ -9,7 +9,7 @@ import { useLanguage } from '@/contexts/language';
 
 const USER = { username: 'မောင်မောင်', balance: '၃၆၇', phone: '0', cashOut: '88880001', cashCode: '114947' };
 
-const MENU_ROUTES: Record<string, string> = { rule: '/rule', pw: '/change-password', deposit: '/auto-deposit' };
+const MENU_ROUTES: Record<string, string> = { rule: '/rule', pw: '/change-password', deposit: '/auto-deposit', score: '/(tabs)/scores', mix: '/maung', hdp: '/hdp', betlist: '/bet-list' };
 
 // ─── Ticker ───────────────────────────────────────────────────────────────────
 
@@ -149,7 +149,7 @@ export default function HomeScreen() {
           <TouchableOpacity style={s.headerBtn}>
             <Ionicons name="notifications-outline" size={22} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity style={s.headerBtn}>
+          <TouchableOpacity style={s.headerBtn} onPress={() => router.push('/profile' as any)}>
             <Ionicons name="person-circle-outline" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -170,9 +170,10 @@ export default function HomeScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.brand.greenDark },
+  root: { flex: 1, backgroundColor: Colors.brand.greenButton },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: Colors.brand.greenButton,
     paddingHorizontal: Spacing.md, paddingVertical: 10,
   },
   headerLogo: { flexDirection: 'row', alignItems: 'baseline' },

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { FontSize, FontWeight, BorderRadius, Shadow } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
 
@@ -138,9 +139,11 @@ function HdpOuCard({ bet }: { bet: HdpOuBet }) {
         <Text style={card.time}>{bet.time}</Text>
         <StatusBadge status={bet.status} />
       </View>
+
       <Text style={card.matchTeams} numberOfLines={1}>
         {bet.home} <Text style={card.vs}>vs</Text> {bet.away}
       </Text>
+
       <View style={card.infoRow}>
         <View style={card.infoCell}>
           <Text style={card.infoLabel}>{tr.betListPick}</Text>
@@ -155,9 +158,14 @@ function HdpOuCard({ bet }: { bet: HdpOuBet }) {
           <Text style={card.infoValue}>{bet.stake.toLocaleString()} Ks</Text>
         </View>
       </View>
+
       {!isPending && (
         <View style={[card.resultBar, { backgroundColor: isWin ? '#F0FDF4' : '#FEF2F2' }]}>
-          <Ionicons name={isWin ? 'checkmark-circle' : 'close-circle'} size={14} color={isWin ? '#16A34A' : '#DC2626'} />
+          <Ionicons
+            name={isWin ? 'checkmark-circle' : 'close-circle'}
+            size={14}
+            color={isWin ? '#16A34A' : '#DC2626'}
+          />
           <Text style={[card.resultText, { color: isWin ? '#16A34A' : '#DC2626' }]}>
             {isWin ? `${tr.betListPayout}  +${bet.payout.toLocaleString()} Ks` : tr.betListStkLost}
           </Text>
@@ -183,16 +191,19 @@ function ParlayCard({ bet }: { bet: ParlayBet }) {
         <Text style={card.time}>{bet.picks.length} {tr.betListPicks} · ×{bet.totalOdds}</Text>
         <StatusBadge status={bet.status} />
       </View>
+
       <View style={card.parlayPicks}>
         {bet.picks.map((p, i) => (
           <View key={i} style={card.parlayPickRow}>
             <View style={card.parlayDot} />
             <Text style={card.parlayPickText} numberOfLines={1}>
-              {p.home} vs {p.away}<Text style={card.parlayPickBold}>  →  {p.pick}</Text>
+              {p.home} vs {p.away}
+              <Text style={card.parlayPickBold}>  →  {p.pick}</Text>
             </Text>
           </View>
         ))}
       </View>
+
       <View style={card.infoRow}>
         <View style={card.infoCell}>
           <Text style={card.infoLabel}>{tr.betListTotalOdds}</Text>
@@ -207,9 +218,14 @@ function ParlayCard({ bet }: { bet: ParlayBet }) {
           <Text style={card.infoValue}>{(bet.stake * bet.totalOdds).toLocaleString()} Ks</Text>
         </View>
       </View>
+
       {!isPending && (
         <View style={[card.resultBar, { backgroundColor: isWin ? '#F0FDF4' : '#FEF2F2' }]}>
-          <Ionicons name={isWin ? 'checkmark-circle' : 'close-circle'} size={14} color={isWin ? '#16A34A' : '#DC2626'} />
+          <Ionicons
+            name={isWin ? 'checkmark-circle' : 'close-circle'}
+            size={14}
+            color={isWin ? '#16A34A' : '#DC2626'}
+          />
           <Text style={[card.resultText, { color: isWin ? '#16A34A' : '#DC2626' }]}>
             {isWin ? `${tr.betListPayout}  +${bet.payout.toLocaleString()} Ks` : tr.betListStkLost}
           </Text>
@@ -222,19 +238,55 @@ function ParlayCard({ bet }: { bet: ParlayBet }) {
 const GREEN = '#27A060';
 
 const card = StyleSheet.create({
-  root: { backgroundColor: '#fff', borderRadius: BorderRadius.lg, overflow: 'hidden', ...Shadow.sm },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F0F4F2' },
-  typePill: { backgroundColor: GREEN, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  root: {
+    backgroundColor: '#fff',
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+    ...Shadow.sm,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F4F2',
+  },
+  typePill: {
+    backgroundColor: GREEN,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
   typePillText: { fontSize: 10, fontWeight: FontWeight.bold, color: '#fff', letterSpacing: 0.6 },
   time: { flex: 1, fontSize: FontSize.xs, color: '#6B7280', fontWeight: FontWeight.medium },
-  matchTeams: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: '#111827', paddingHorizontal: 12, paddingVertical: 10 },
+  matchTeams: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: '#111827',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   vs: { color: '#9CA3AF', fontWeight: FontWeight.regular },
-  infoRow: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#F0F4F2' },
+  infoRow: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#F0F4F2',
+  },
   infoCell: { flex: 1, paddingVertical: 10, paddingHorizontal: 10, alignItems: 'center' },
   infoCellBorder: { borderLeftWidth: 1, borderLeftColor: '#F0F4F2' },
   infoLabel: { fontSize: 10, color: '#9CA3AF', marginBottom: 3, fontWeight: FontWeight.medium },
   infoValue: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold, color: '#111827', textAlign: 'center' },
-  resultBar: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderTopWidth: 1, borderTopColor: '#F0F4F2' },
+  resultBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F4F2',
+  },
   resultText: { fontSize: FontSize.xs, fontWeight: FontWeight.bold },
   parlayPicks: { paddingHorizontal: 12, paddingVertical: 8, gap: 5 },
   parlayPickRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
@@ -260,14 +312,17 @@ function EmptyState() {
 
 const empty = StyleSheet.create({
   root: { alignItems: 'center', paddingTop: 64, paddingHorizontal: 32 },
-  iconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#E8F5EE', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  iconWrap: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: '#E8F5EE', alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+  },
   title: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: '#374151', marginBottom: 6 },
   sub: { fontSize: FontSize.sm, color: '#9CA3AF', textAlign: 'center' },
 });
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-export default function BetsScreen() {
+export default function BetListScreen() {
   const { tr } = useLanguage();
   const [tab, setTab]         = useState<BetTab>('unfinished');
   const [betType, setBetType] = useState<BetType>('hdpou');
@@ -283,9 +338,13 @@ export default function BetsScreen() {
   return (
     <SafeAreaView style={s.root} edges={['top']}>
 
-      {/* Header — tab version has no back button */}
+      {/* Header */}
       <View style={s.header}>
+        <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
+          <Ionicons name="chevron-back" size={22} color="#fff" />
+        </TouchableOpacity>
         <Text style={s.headerTitle}>{tr.betListTitle}</Text>
+        <View style={s.headerBtn} />
       </View>
 
       {/* Tabs */}
@@ -342,7 +401,11 @@ export default function BetsScreen() {
       </View>
 
       {/* Bet list */}
-      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {bets.length === 0 ? (
           <EmptyState />
         ) : (
@@ -360,36 +423,94 @@ export default function BetsScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
+const LIGHT_GREEN_BG = '#EBF5EE';
+
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#EBF5EE' },
+  root: { flex: 1, backgroundColor: LIGHT_GREEN_BG },
 
   header: {
-    backgroundColor: GREEN,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: GREEN,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
+  headerBtn:   { padding: 4, minWidth: 36 },
   headerTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff' },
 
-  tabBar: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: 13, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 13,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
   tabActive:     { borderBottomColor: GREEN },
   tabText:       { fontSize: FontSize.sm, fontWeight: FontWeight.medium, color: '#9CA3AF' },
   tabTextActive: { color: GREEN, fontWeight: FontWeight.bold },
 
-  dateNav: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  dateBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12 },
+  dateNav: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  dateBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 12,
+  },
   dateSide: { fontSize: FontSize.sm, color: '#6B7280' },
-  dateCenterWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#E5E7EB', paddingVertical: 12 },
+  dateCenterWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingVertical: 12,
+  },
   dateCenterText: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: '#111827' },
 
-  typeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', gap: 14 },
+  typeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    gap: 14,
+  },
   typeLabel: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: '#374151' },
   typePills: { flexDirection: 'row', gap: 10 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 12, borderRadius: BorderRadius.full, borderWidth: 1.5, borderColor: '#D1D5DB', backgroundColor: '#F9FAFB' },
-  pillActive:     { borderColor: GREEN, backgroundColor: '#E8F5EE' },
-  pillDot:        { width: 10, height: 10, borderRadius: 5, borderWidth: 2, borderColor: '#D1D5DB', backgroundColor: '#fff' },
-  pillDotActive:  { borderColor: GREEN, backgroundColor: GREEN },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#F9FAFB',
+  },
+  pillActive:   { borderColor: GREEN, backgroundColor: '#E8F5EE' },
+  pillDot: {
+    width: 10, height: 10, borderRadius: 5,
+    borderWidth: 2, borderColor: '#D1D5DB', backgroundColor: '#fff',
+  },
+  pillDotActive: { borderColor: GREEN, backgroundColor: GREEN },
   pillText:       { fontSize: FontSize.sm, color: '#6B7280', fontWeight: FontWeight.medium },
   pillTextActive: { color: GREEN, fontWeight: FontWeight.semibold },
 
