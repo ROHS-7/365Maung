@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -33,7 +32,7 @@ const MENU = [
   { id: 'deposit',  label: 'Auto Deposit',     icon: 'arrow-down-circle', bg: '#E67E22' },
   { id: 'withdraw', label: 'Withdraw',         icon: 'wallet',            bg: '#F39C12' },
   { id: 'rule',     label: 'Rule',             icon: 'book-outline',      bg: '#1ABC9C' },
-  { id: 'pw',       label: 'Change Password',  icon: 'lock-closed',       bg: '#9B59B6' },
+  { id: 'pw',       label: 'Change\nPassword', icon: 'lock-closed',       bg: '#9B59B6' },
 ] as const;
 
 // ─── Ticker ───────────────────────────────────────────────────────────────────
@@ -47,12 +46,7 @@ function Ticker({ text }: { text: string }) {
     if (!cw || !tw) return;
     x.setValue(cw);
     Animated.loop(
-      Animated.timing(x, {
-        toValue: -tw,
-        duration: (cw + tw) * 26,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
+      Animated.timing(x, { toValue: -tw, duration: (cw + tw) * 26, easing: Easing.linear, useNativeDriver: true }),
     ).start();
   }, [cw, tw]);
 
@@ -91,37 +85,43 @@ function ProfileCard() {
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
   return (
-    <View style={s.profileCard}>
-      {/* Left — avatar + name + refresh */}
-      <View style={s.profileLeft}>
-        <View style={s.avatar}>
-          <Ionicons name="person" size={30} color="#fff" />
+    <View style={s.card}>
+      {/* Decorative circle */}
+      <View style={s.cardCircle1} />
+      <View style={s.cardCircle2} />
+
+      {/* Top row: avatar + name + refresh */}
+      <View style={s.cardTop}>
+        <View style={s.cardAvatar}>
+          <Ionicons name="person" size={22} color={Colors.brand.greenMid} />
         </View>
-        <Text style={s.username} numberOfLines={1}>{USER.username}</Text>
-        <TouchableOpacity style={s.refreshBtn} onPress={handleRefresh} activeOpacity={0.8}>
+        <Text style={s.cardUsername}>{USER.username}</Text>
+        <TouchableOpacity onPress={handleRefresh} style={s.cardRefresh} activeOpacity={0.7}>
           <Animated.View style={{ transform: [{ rotate }] }}>
-            <Ionicons name="refresh" size={12} color="#fff" />
+            <Ionicons name="refresh-outline" size={18} color="rgba(255,255,255,0.8)" />
           </Animated.View>
-          <Text style={s.refreshLabel}>ငွေဆင်မောင်း</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Divider */}
-      <View style={s.vDivider} />
+      {/* Balance */}
+      <View style={s.cardBalanceRow}>
+        <Text style={s.cardBalanceLabel}>Balance</Text>
+        <Text style={s.cardBalanceValue}>{USER.balance} ကျပ်</Text>
+      </View>
 
-      {/* Right — stats */}
-      <View style={s.profileRight}>
+      {/* Divider */}
+      <View style={s.cardDivider} />
+
+      {/* Stats row */}
+      <View style={s.cardStats}>
         {[
-          { label: 'Username',  value: USER.username },
-          { label: 'Balance',   value: USER.balance },
           { label: 'Phone',     value: USER.phone },
-          { label: 'Cash out',  value: USER.cashOut },
+          { label: 'Cash Out',  value: USER.cashOut },
           { label: 'Cash Code', value: USER.cashCode },
-        ].map(r => (
-          <View key={r.label} style={s.statRow}>
-            <Text style={s.statLabel}>{r.label}</Text>
-            <Text style={s.statColon}> : </Text>
-            <Text style={s.statValue} numberOfLines={1}>{r.value}</Text>
+        ].map((item, i) => (
+          <View key={item.label} style={[s.cardStat, i > 0 && s.cardStatBorder]}>
+            <Text style={s.cardStatLabel}>{item.label}</Text>
+            <Text style={s.cardStatValue}>{item.value}</Text>
           </View>
         ))}
       </View>
@@ -129,13 +129,15 @@ function ProfileCard() {
   );
 }
 
-// ─── Menu Card ────────────────────────────────────────────────────────────────
+// ─── Menu Item ────────────────────────────────────────────────────────────────
 
-function MenuCard({ item }: { item: typeof MENU[number] }) {
+function MenuItem({ item }: { item: typeof MENU[number] }) {
   return (
-    <TouchableOpacity style={s.menuCard} activeOpacity={0.78}>
-      <View style={[s.menuCardBg, { backgroundColor: item.bg }]}>
-        <Ionicons name={item.icon as any} size={34} color="rgba(255,255,255,0.92)" />
+    <TouchableOpacity style={s.menuItem} activeOpacity={0.75}>
+      <View style={[s.menuIconWrap, { backgroundColor: item.bg + '18' }]}>
+        <View style={[s.menuIconCircle, { backgroundColor: item.bg }]}>
+          <Ionicons name={item.icon as any} size={24} color="#fff" />
+        </View>
       </View>
       <Text style={s.menuLabel}>{item.label}</Text>
     </TouchableOpacity>
@@ -147,8 +149,6 @@ function MenuCard({ item }: { item: typeof MENU[number] }) {
 export default function HomeScreen() {
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-
-      {/* Header */}
       <View style={s.header}>
         <View style={s.headerLogo}>
           <Text style={s.logoBet}>bet</Text>
@@ -164,55 +164,32 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView
-        style={s.scroll}
-        contentContainerStyle={s.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Ticker */}
+      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
         <Ticker text={ANNOUNCEMENT} />
-
-        {/* Profile */}
         <ProfileCard />
 
-        {/* Menu grid */}
+        {/* Section label */}
+        <Text style={s.sectionLabel}>ကဏ္ဍများ</Text>
+
         <View style={s.menuGrid}>
-          {MENU.map(item => <MenuCard key={item.id} item={item} />)}
+          {MENU.map(item => <MenuItem key={item.id} item={item} />)}
         </View>
-
-        {/* Ucenter */}
-        <TouchableOpacity style={s.ucenterBtn} activeOpacity={0.8}>
-          <Ionicons name="settings-outline" size={20} color={Colors.light.textSecondary} />
-          <Text style={s.ucenterLabel}>Ucenter</Text>
-        </TouchableOpacity>
-
-        {/* Logout */}
-        <TouchableOpacity
-          style={s.logoutBtn}
-          activeOpacity={0.8}
-          onPress={() => router.replace('/login')}
-        >
-          <Ionicons name="log-out-outline" size={18} color="#fff" />
-          <Text style={s.logoutLabel}>Logout</Text>
-        </TouchableOpacity>
       </ScrollView>
-
     </SafeAreaView>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
+const CARD_RADIUS = 20;
+
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.brand.greenDark },
 
   // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md, paddingVertical: 10,
   },
   headerLogo: { flexDirection: 'row', alignItems: 'baseline' },
   logoBet:    { fontSize: FontSize.xxl, fontWeight: FontWeight.extrabold, color: '#fff', letterSpacing: -0.5 },
@@ -220,102 +197,83 @@ const s = StyleSheet.create({
   headerActions: { flexDirection: 'row', gap: 2 },
   headerBtn: { padding: 6 },
 
-  // Scroll
   scroll: { flex: 1, backgroundColor: '#F2F5F3' },
-  scrollContent: { paddingBottom: 36 },
+  scrollContent: { paddingBottom: 32 },
 
   // Ticker
   ticker: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center',
     backgroundColor: Colors.brand.gold,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 7,
+    paddingHorizontal: Spacing.md, paddingVertical: 7,
   },
   tickerText: { fontSize: 12, fontWeight: FontWeight.medium, color: Colors.brand.greenDark },
 
-  // Profile card
-  profileCard: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
+  // Profile card — green bank-card style
+  card: {
     margin: Spacing.md,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.md,
-    alignItems: 'center',
-    ...Shadow.md,
-  },
-  profileLeft: { alignItems: 'center', width: 88 },
-  avatar: {
-    width: 54, height: 54, borderRadius: 27,
+    borderRadius: CARD_RADIUS,
     backgroundColor: Colors.brand.greenMid,
+    padding: Spacing.md,
+    overflow: 'hidden',
+    ...Shadow.lg,
+  },
+  cardCircle1: {
+    position: 'absolute', width: 180, height: 180, borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.06)', top: -60, right: -40,
+  },
+  cardCircle2: {
+    position: 'absolute', width: 120, height: 120, borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.05)', bottom: -30, left: 20,
+  },
+  cardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  cardAvatar: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
+    marginRight: 10,
+  },
+  cardUsername: { flex: 1, fontSize: FontSize.md, fontWeight: FontWeight.bold, color: '#fff' },
+  cardRefresh: { padding: 4 },
+
+  cardBalanceLabel: { fontSize: FontSize.sm, color: 'rgba(255,255,255,0.65)', marginBottom: 4 },
+  cardBalanceRow: { marginBottom: 14 },
+  cardBalanceValue: { fontSize: FontSize.xxxl, fontWeight: FontWeight.extrabold, color: '#fff', letterSpacing: -0.5 },
+
+  cardDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginBottom: 12 },
+
+  cardStats: { flexDirection: 'row' },
+  cardStat: { flex: 1, alignItems: 'center' },
+  cardStatBorder: { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.2)' },
+  cardStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 3 },
+  cardStatValue: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: '#fff' },
+
+  // Section label
+  sectionLabel: {
+    fontSize: FontSize.md, fontWeight: FontWeight.bold,
+    color: Colors.light.text,
+    marginHorizontal: Spacing.md, marginTop: Spacing.sm, marginBottom: 4,
+  },
+
+  // Menu grid — 4 columns
+  menuGrid: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    paddingHorizontal: Spacing.md, gap: Spacing.sm,
+  },
+  menuItem: {
+    width: '22.5%',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  menuIconWrap: {
+    width: 60, height: 60, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 6,
   },
-  username: {
-    fontSize: FontSize.xs, fontWeight: FontWeight.semibold,
-    color: Colors.light.text, marginBottom: 8, textAlign: 'center',
-  },
-  refreshBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: Colors.brand.greenButton,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: 8, paddingVertical: 4,
-  },
-  refreshLabel: { fontSize: 10, color: '#fff', fontWeight: FontWeight.semibold },
-  vDivider: {
-    width: 1, alignSelf: 'stretch',
-    backgroundColor: Colors.light.border,
-    marginHorizontal: Spacing.md,
-  },
-  profileRight: { flex: 1, gap: 5 },
-  statRow: { flexDirection: 'row', alignItems: 'center' },
-  statLabel: { fontSize: FontSize.sm, color: Colors.light.textSecondary, width: 70 },
-  statColon: { fontSize: FontSize.sm, color: Colors.light.textSecondary },
-  statValue: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.light.text, flex: 1 },
-
-  // Menu grid
-  menuGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.sm,
-  },
-  menuCard: {
-    width: '48.5%',
-    backgroundColor: '#fff',
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    ...Shadow.sm,
-  },
-  menuCardBg: {
-    height: 88,
-    alignItems: 'center',
-    justifyContent: 'center',
+  menuIconCircle: {
+    width: 48, height: 48, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
   },
   menuLabel: {
-    fontSize: FontSize.md,
-    fontWeight: FontWeight.semibold,
-    color: Colors.light.text,
-    textAlign: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.sm,
+    fontSize: 11, fontWeight: FontWeight.semibold,
+    color: Colors.light.text, textAlign: 'center', lineHeight: 15,
   },
-
-  // Ucenter
-  ucenterBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: Spacing.sm, marginTop: Spacing.lg, paddingVertical: Spacing.sm,
-  },
-  ucenterLabel: { fontSize: FontSize.md, color: Colors.light.textSecondary, fontWeight: FontWeight.medium },
-
-  // Logout
-  logoutBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#C0392B',
-    marginHorizontal: Spacing.xl, marginTop: Spacing.sm,
-    borderRadius: BorderRadius.xl,
-    paddingVertical: Spacing.md, gap: Spacing.sm,
-    ...Shadow.sm,
-  },
-  logoutLabel: { fontSize: FontSize.md, color: '#fff', fontWeight: FontWeight.bold },
 });
