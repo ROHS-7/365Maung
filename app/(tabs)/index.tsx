@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -131,9 +132,14 @@ function ProfileCard() {
 
 // ─── Menu Item ────────────────────────────────────────────────────────────────
 
+const MENU_ROUTES: Partial<Record<typeof MENU[number]['id'], string>> = {
+  rule: '/rule',
+};
+
 function MenuItem({ item }: { item: typeof MENU[number] }) {
+  const route = MENU_ROUTES[item.id];
   return (
-    <TouchableOpacity style={s.menuItem} activeOpacity={0.75}>
+    <TouchableOpacity style={s.menuItem} activeOpacity={0.75} onPress={route ? () => router.push(route as any) : undefined}>
       <View style={[s.menuIconWrap, { backgroundColor: item.bg + '18' }]}>
         <View style={[s.menuIconCircle, { backgroundColor: item.bg }]}>
           <Ionicons name={item.icon as any} size={24} color="#fff" />

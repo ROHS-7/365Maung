@@ -18,9 +18,14 @@ const ACCOUNT_ITEMS = [
   { id: 'ucenter',  label: 'Ucenter',         sublabel: 'ဆက်တင်များ',       icon: 'settings-outline',  color: '#7F8C8D' },
 ] as const;
 
+const ROW_ROUTES: Partial<Record<typeof ACCOUNT_ITEMS[number]['id'], string>> = {
+  rule: '/rule',
+};
+
 function AccountRow({ item }: { item: typeof ACCOUNT_ITEMS[number] }) {
+  const route = ROW_ROUTES[item.id];
   return (
-    <TouchableOpacity style={s.row} activeOpacity={0.7}>
+    <TouchableOpacity style={s.row} activeOpacity={0.7} onPress={route ? () => router.push(route as any) : undefined}>
       <View style={[s.rowIcon, { backgroundColor: item.color + '18' }]}>
         <Ionicons name={item.icon as any} size={20} color={item.color} />
       </View>
