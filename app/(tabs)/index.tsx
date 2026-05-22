@@ -9,7 +9,7 @@ import { useLanguage } from '@/contexts/language';
 
 const USER = { username: 'မောင်မောင်', balance: '၃၆၇', phone: '0', cashOut: '88880001', cashCode: '114947' };
 
-const MENU_ROUTES: Record<string, string> = { rule: '/rule', pw: '/change-password', deposit: '/auto-deposit', score: '/(tabs)/scores', mix: '/maung', hdp: '/hdp', betlist: '/bet-list' };
+const MENU_ROUTES: Record<string, string> = { rule: '/(tabs)/rule', pw: '/(tabs)/change-password', deposit: '/(tabs)/auto-deposit', score: '/(tabs)/scores', mix: '/(tabs)/maung', hdp: '/(tabs)/hdp', betlist: '/(tabs)/bet-list' };
 
 // ─── Ticker ───────────────────────────────────────────────────────────────────
 

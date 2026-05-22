@@ -1,6 +1,7 @@
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, FontWeight } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
 
@@ -20,6 +21,7 @@ function LiveTabButton({ onPress }: { onPress?: () => void }) {
 
 export default function TabLayout() {
   const { tr } = useLanguage();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -27,7 +29,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: Colors.brand.greenButton,
         tabBarInactiveTintColor: '#A0ADB5',
-        tabBarStyle: s.tabBar,
+        tabBarStyle: [s.tabBar, { height: 62 + insets.bottom, paddingBottom: 8 + insets.bottom }],
         tabBarLabelStyle: s.tabLabel,
       }}
     >
@@ -66,6 +68,12 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />,
         }}
       />
+      <Tabs.Screen name="maung"           options={{ href: null }} />
+      <Tabs.Screen name="hdp"             options={{ href: null }} />
+      <Tabs.Screen name="bet-list"        options={{ href: null }} />
+      <Tabs.Screen name="rule"            options={{ href: null }} />
+      <Tabs.Screen name="change-password" options={{ href: null }} />
+      <Tabs.Screen name="auto-deposit"    options={{ href: null }} />
     </Tabs>
   );
 }
@@ -73,7 +81,7 @@ export default function TabLayout() {
 const s = StyleSheet.create({
   tabBar: {
     backgroundColor: '#fff', borderTopColor: Colors.light.border,
-    borderTopWidth: 1, height: 62, paddingBottom: 8, paddingTop: 6,
+    borderTopWidth: 1, paddingTop: 6,
   },
   tabLabel: { fontSize: 11, fontWeight: FontWeight.semibold },
   liveWrap: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 8, flex: 1 },

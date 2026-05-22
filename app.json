@@ -12,6 +12,9 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.dobbieq.maung365",
+      "enableProguardInReleaseBuilds": true,
+      "enableShrinkResources": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -43,6 +46,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d35dc874-2242-4d5d-9474-60aacdd14430"
+      }
+    },
+    "owner": "dobbieq"
   }
 }
