@@ -74,6 +74,7 @@ export default function TabLayout() {
       <Tabs.Screen name="rule"            options={{ href: null }} />
       <Tabs.Screen name="change-password" options={{ href: null }} />
       <Tabs.Screen name="auto-deposit"    options={{ href: null }} />
+      <Tabs.Screen name="news"            options={{ href: null }} />
     </Tabs>
   );
 }

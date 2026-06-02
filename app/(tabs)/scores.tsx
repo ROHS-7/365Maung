@@ -87,59 +87,49 @@ function isToday(d: Date) {
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 }
 
-// ─── TeamSide ─────────────────────────────────────────────────────────────────
-
-function TeamSide({ name, score, align }: { name: string; score: number; align: 'left' | 'right' }) {
-  const color = avatarColor(name);
-  const isRight = align === 'right';
-
-  return (
-    <View style={[s.teamSide, isRight && s.teamSideRight]}>
-      {!isRight && (
-        <View style={[s.avatar, { backgroundColor: color }]}>
-          <Text style={s.avatarText}>{initials(name)}</Text>
-        </View>
-      )}
-      <Text
-        style={[s.teamName, isRight ? s.teamNameRight : s.teamNameLeft]}
-        numberOfLines={2}
-      >
-        {name}
-      </Text>
-      {isRight && (
-        <View style={[s.avatar, { backgroundColor: color }]}>
-          <Text style={s.avatarText}>{initials(name)}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
 // ─── MatchCard ────────────────────────────────────────────────────────────────
 
 function MatchCard({ m, last }: { m: Match; last: boolean }) {
-  const isDraw = m.homeScore === m.awayScore;
   const homeWin = m.homeScore > m.awayScore;
+  const awayWin = m.awayScore > m.homeScore;
+  const isDraw = m.homeScore === m.awayScore;
 
   return (
     <View style={[s.matchCard, !last && s.matchCardBorder]}>
-      <TeamSide name={m.home} score={m.homeScore} align="left" />
-
-      {/* Score block */}
-      <View style={s.scoreBlock}>
-        <View style={s.statusBadge}>
-          <Text style={s.statusText}>{m.status}</Text>
+      <View style={s.matchTop}>
+        <View style={s.statusPill}>
+          <Text style={s.statusPillText}>{m.status}</Text>
         </View>
-        <View style={s.scoreRow}>
-          <Text style={[s.scoreNum, (homeWin || isDraw) && s.scoreNumBright]}>{m.homeScore}</Text>
-          <Text style={s.scoreSep}>-</Text>
-          <Text style={[s.scoreNum, (!homeWin || isDraw) && s.scoreNumBright]}>{m.awayScore}</Text>
-        </View>
-        <Text style={s.htText}>HT {m.htHome} - {m.htAway}</Text>
-        <Text style={s.timeText}>{m.time}</Text>
+        <Text style={s.matchTime}>{m.time}</Text>
       </View>
 
-      <TeamSide name={m.away} score={m.awayScore} align="right" />
+      <View style={s.matchBody}>
+        <View style={s.teamLine}>
+          <View style={[s.teamBadge, { backgroundColor: avatarColor(m.home) }]}>
+            <Text style={s.teamBadgeText}>{initials(m.home)}</Text>
+          </View>
+          <Text style={[s.teamLineName, (homeWin || isDraw) && s.teamLineNameWin]} numberOfLines={1}>
+            {m.home}
+          </Text>
+        </View>
+
+        <View style={s.scorePill}>
+          <Text style={[s.scorePillNum, homeWin && s.scorePillNumWin]}>{m.homeScore}</Text>
+          <Text style={s.scorePillSep}>:</Text>
+          <Text style={[s.scorePillNum, awayWin && s.scorePillNumWin]}>{m.awayScore}</Text>
+        </View>
+
+        <View style={[s.teamLine, s.teamLineRight]}>
+          <Text style={[s.teamLineName, s.teamLineNameRight, (awayWin || isDraw) && s.teamLineNameWin]} numberOfLines={1}>
+            {m.away}
+          </Text>
+          <View style={[s.teamBadge, { backgroundColor: avatarColor(m.away) }]}>
+            <Text style={s.teamBadgeText}>{initials(m.away)}</Text>
+          </View>
+        </View>
+      </View>
+
+      <Text style={s.htLine}>HT {m.htHome} - {m.htAway}</Text>
     </View>
   );
 }
@@ -148,14 +138,19 @@ function MatchCard({ m, last }: { m: Match; last: boolean }) {
 
 function LeagueCard({ league }: { league: League }) {
   return (
-    <View style={s.leagueCard}>
+    <View style={s.leagueSection}>
       <View style={s.leagueHeader}>
-        <Ionicons name="football" size={14} color="rgba(255,255,255,0.8)" style={{ marginRight: 7 }} />
+        <View style={s.leagueIconWrap}>
+          <Ionicons name="football" size={15} color={Colors.brand.greenMid} />
+        </View>
         <Text style={s.leagueName}>{league.name}</Text>
+        <Text style={s.leagueCount}>{league.matches.length}</Text>
       </View>
-      {league.matches.map((m, i) => (
-        <MatchCard key={i} m={m} last={i === league.matches.length - 1} />
-      ))}
+      <View style={s.leagueCard}>
+        {league.matches.map((m, i) => (
+          <MatchCard key={i} m={m} last={i === league.matches.length - 1} />
+        ))}
+      </View>
     </View>
   );
 }
@@ -247,124 +242,141 @@ const s = StyleSheet.create({
   dateCenterText: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: Colors.light.text },
 
   scroll: { flex: 1 },
-  scrollContent: { padding: 12, gap: 12, paddingBottom: 32 },
+  scrollContent: { padding: 12, gap: 4, paddingBottom: 32 },
 
-  // League card
+  leagueSection: { marginBottom: 14 },
+  leagueHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingHorizontal: 2,
+    gap: 8,
+  },
+  leagueIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.brand.offWhite,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  leagueName: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+    color: Colors.light.text,
+  },
+  leagueCount: {
+    fontSize: 11,
+    fontWeight: FontWeight.semibold,
+    color: Colors.light.textSecondary,
+    backgroundColor: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    overflow: 'hidden',
+  },
+
   leagueCard: {
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
     backgroundColor: '#fff',
-    ...Shadow.md,
-  },
-  leagueHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.brand.greenButton,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  leagueName: {
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.semibold,
-    color: '#fff',
-    letterSpacing: 0.2,
+    ...Shadow.sm,
   },
 
-  // Match card
   matchCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     backgroundColor: '#fff',
   },
   matchCardBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F4',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.light.border,
   },
-
-  // Team side
-  teamSide: {
-    flex: 1,
+  matchTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  statusPill: {
+    backgroundColor: Colors.brand.offWhite,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: FontWeight.bold,
+    color: Colors.brand.greenMid,
+    letterSpacing: 0.4,
+  },
+  matchTime: { fontSize: 11, color: Colors.light.placeholder },
+  matchBody: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  teamSideRight: {
-    flexDirection: 'row-reverse',
+  teamLine: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 0,
   },
-
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+  teamLineRight: { flexDirection: 'row', justifyContent: 'flex-end' },
+  teamBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  avatarText: {
-    fontSize: 11,
+  teamBadgeText: {
+    fontSize: 9,
     fontWeight: FontWeight.bold,
     color: '#fff',
-    letterSpacing: 0.5,
   },
-
-  teamName: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: FontWeight.semibold,
+  teamLineName: {
+    flexShrink: 1,
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.medium,
+    color: Colors.light.textSecondary,
+  },
+  teamLineNameRight: { textAlign: 'right' },
+  teamLineNameWin: {
+    fontWeight: FontWeight.bold,
     color: Colors.light.text,
-    lineHeight: 16,
   },
-  teamNameLeft: { textAlign: 'left' },
-  teamNameRight: { textAlign: 'right' },
-
-  // Score block
-  scoreBlock: {
-    width: 90,
-    alignItems: 'center',
-    gap: 2,
-  },
-  statusBadge: {
-    backgroundColor: '#F1F3F5',
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginBottom: 2,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: FontWeight.semibold,
-    color: '#6B7280',
-    letterSpacing: 0.5,
-  },
-  scoreRow: {
+  scorePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    backgroundColor: Colors.brand.offWhite,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 2,
+    minWidth: 58,
+    justifyContent: 'center',
   },
-  scoreNum: {
-    fontSize: 22,
+  scorePillNum: {
+    fontSize: FontSize.lg,
     fontWeight: FontWeight.extrabold,
-    color: '#C0C4CC',
-    lineHeight: 26,
+    color: Colors.light.placeholder,
+    minWidth: 14,
+    textAlign: 'center',
   },
-  scoreNumBright: {
-    color: Colors.light.text,
-  },
-  scoreSep: {
-    fontSize: 14,
+  scorePillNumWin: { color: Colors.light.text },
+  scorePillSep: {
+    fontSize: FontSize.sm,
     fontWeight: FontWeight.bold,
-    color: '#C0C4CC',
+    color: Colors.light.placeholder,
   },
-  htText: {
+  htLine: {
     fontSize: 10,
-    color: '#9CA3AF',
-    marginTop: 1,
-  },
-  timeText: {
-    fontSize: 10,
-    color: '#B0B8C4',
-    marginTop: 1,
+    color: Colors.light.placeholder,
+    textAlign: 'center',
+    marginTop: 6,
   },
 });

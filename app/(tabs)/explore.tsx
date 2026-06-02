@@ -30,35 +30,38 @@ export default function AccountScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </TouchableOpacity>
+      <View style={s.topGreen}>
         <Text style={s.headerTitle}>{tr.accountTitle}</Text>
-        <View style={s.headerBtn} />
-      </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
-        {/* Profile banner */}
         <View style={s.profileBanner}>
           <View style={s.bannerCircle1} />
           <View style={s.bannerCircle2} />
-          <View style={s.avatar}>
-            <Ionicons name="person" size={32} color={Colors.brand.greenMid} />
+
+          <View style={s.profileRow}>
+            <View style={s.avatar}>
+              <Ionicons name="person" size={24} color={Colors.brand.greenMid} />
+            </View>
+            <View style={s.profileInfo}>
+              <Text style={s.bannerName}>{USER.username}</Text>
+            </View>
           </View>
-          <Text style={s.bannerName}>{USER.username}</Text>
+
           <View style={s.bannerRow}>
             <View style={s.bannerChip}>
+              <Ionicons name="wallet-outline" size={14} color="rgba(255,255,255,0.7)" />
               <Text style={s.bannerChipLabel}>{tr.accountBalance}</Text>
               <Text style={s.bannerChipValue}>{USER.balance} {tr.currencyUnit}</Text>
             </View>
-            <View style={[s.bannerChip, { marginLeft: 10 }]}>
+            <View style={s.bannerChip}>
+              <Ionicons name="key-outline" size={14} color="rgba(255,255,255,0.7)" />
               <Text style={s.bannerChipLabel}>{tr.accountCashCode}</Text>
               <Text style={s.bannerChipValue}>{USER.cashCode}</Text>
             </View>
           </View>
         </View>
+      </View>
 
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
         {/* Account rows */}
         <View style={s.section}>
           {ACCOUNT_ITEMS.map((item, i) => {
@@ -124,43 +127,77 @@ export default function AccountScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F2F5F3' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  topGreen: {
     backgroundColor: Colors.brand.greenButton,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
+    paddingBottom: Spacing.sm,
   },
-  headerBtn:   { padding: 4, minWidth: 36 },
-  headerTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff' },
-  scrollContent: { paddingBottom: 40 },
+  headerTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    color: '#fff',
+    textAlign: 'center',
+    paddingVertical: 10,
+  },
   profileBanner: {
-    backgroundColor: Colors.brand.greenMid,
-    paddingHorizontal: Spacing.lg, paddingTop: Spacing.xl, paddingBottom: Spacing.lg,
-    alignItems: 'center', overflow: 'hidden',
+    backgroundColor: Colors.brand.greenDark,
+    marginHorizontal: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    overflow: 'hidden',
+    ...Shadow.md,
   },
   bannerCircle1: {
-    position: 'absolute', width: 200, height: 200, borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.06)', top: -80, right: -40,
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: -40,
+    right: -20,
   },
   bannerCircle2: {
-    position: 'absolute', width: 140, height: 140, borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.05)', bottom: -50, left: 10,
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    bottom: -20,
+    left: -10,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
   avatar: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
-    marginBottom: Spacing.sm, ...Shadow.md,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  bannerName: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: '#fff', marginBottom: Spacing.md },
-  bannerRow: { flexDirection: 'row' },
+  profileInfo: { flex: 1 },
+  bannerName: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.bold,
+    color: '#fff',
+  },
+  bannerRow: { flexDirection: 'row', gap: Spacing.sm },
   bannerChip: {
-    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md, paddingVertical: 8, alignItems: 'center',
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 8,
+    alignItems: 'center',
+    gap: 2,
   },
-  bannerChipLabel: { fontSize: 10, color: 'rgba(255,255,255,0.7)', marginBottom: 2 },
-  bannerChipValue: { fontSize: FontSize.md, fontWeight: FontWeight.bold, color: '#fff' },
+  bannerChipLabel: { fontSize: 9, color: 'rgba(255,255,255,0.6)' },
+  bannerChipValue: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: '#fff' },
+  scrollContent: { paddingBottom: 40, paddingTop: Spacing.sm },
   section: {
     backgroundColor: '#fff', margin: Spacing.md, marginBottom: 0,
     borderRadius: BorderRadius.xl, ...Shadow.sm,
