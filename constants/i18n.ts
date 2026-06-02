@@ -130,6 +130,9 @@ const translations = {
     hdpSelected:     'Selected',
     hdpUnits:        'Units',
     hdpMinErr:       'Select at least 1 pick',
+    hdpMinPicksHint: 'Select at least 1 pick to place a bet',
+    hdpPlaceBet:     'Place bet',
+    hdpReviewBet:    'Review & bet',
 
     // Mix Parlay
     maungTitle: "Mix Parlay",
@@ -290,6 +293,9 @@ const translations = {
     hdpSelected:     'ရွေးထားသော',
     hdpUnits:        'ယူနစ်',
     hdpMinErr:       'အနည်းဆုံး ၁ ပွဲ ရွေးပါ',
+    hdpMinPicksHint: 'အနည်းဆုံး ၁ ပွဲ ရွေးပြီး လောင်းပါ',
+    hdpPlaceBet:     'လောင်းမည်',
+    hdpReviewBet:    'စစ်ဆေးပြီး လောင်းမည်',
 
     // Mix Parlay
     maungTitle: "မောင်း",

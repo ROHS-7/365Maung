@@ -17,7 +17,7 @@ import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
 import type { Translations } from '@/constants/i18n';
-import { MaungBetDrawer } from '@/components/maung-bet-drawer';
+import { BetSlipDrawer } from '@/components/maung-bet-drawer';
 
 type BetRow = 'hdp' | 'ou' | 'oe';
 type Side = 'left' | 'right';
@@ -388,6 +388,22 @@ export default function MaungScreen() {
     });
   }, [selections, tr]);
 
+  const slipCopy = useMemo(
+    () => ({
+      slipTitle: tr.maungBetSlip,
+      minPicksHint: tr.maungMinPicksHint,
+      picksUnit: tr.maungPicks,
+      selectedLabel: tr.maungSelected,
+      placeBet: tr.maungPlaceBet,
+      reviewBet: tr.maungReviewBet,
+      betAmount: tr.maungBetAmount,
+      clearSlip: tr.maungClearSlip,
+      tapToExpand: tr.maungTapToExpand,
+      currencyUnit: tr.currencyUnit,
+    }),
+    [tr],
+  );
+
   function handleSelect(key: SelectKey, side: Side) {
     setSelections(prev => {
       if (prev[key] === side) {
@@ -465,7 +481,7 @@ export default function MaungScreen() {
           ))}
         </ScrollView>
 
-        <MaungBetDrawer
+        <BetSlipDrawer
           count={count}
           canBet={canBet}
           stake={stake}
@@ -476,6 +492,10 @@ export default function MaungScreen() {
           onPlaceBet={handleOK}
           safeBottom={safeBottom}
           tabBarOffset={tabBarOffset}
+          copy={slipCopy}
+          minPicks={2}
+          autoExpandAt={2}
+          stakePlaceholder="500"
           onExpandedChange={setDrawerExpanded}
         />
       </SafeAreaView>

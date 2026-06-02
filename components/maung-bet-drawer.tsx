@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
-import { useLanguage } from '@/contexts/language';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -29,7 +28,20 @@ const PICK_ROW_H = 36;
 
 export type SlipItem = { key: string; label: string };
 
-type MaungBetDrawerProps = {
+export type BetSlipCopy = {
+  slipTitle: string;
+  minPicksHint: string;
+  picksUnit: string;
+  selectedLabel: string;
+  placeBet: string;
+  reviewBet: string;
+  betAmount: string;
+  clearSlip: string;
+  tapToExpand: string;
+  currencyUnit: string;
+};
+
+export type BetSlipDrawerProps = {
   count: number;
   canBet: boolean;
   stake: string;
@@ -38,14 +50,16 @@ type MaungBetDrawerProps = {
   onRemove: (key: string) => void;
   onReset: () => void;
   onPlaceBet: () => void;
-  /** Home-indicator safe area only */
   safeBottom: number;
-  /** Lift drawer above tab bar */
   tabBarOffset: number;
+  copy: BetSlipCopy;
+  minPicks: number;
+  autoExpandAt: number;
+  stakePlaceholder?: string;
   onExpandedChange?: (expanded: boolean) => void;
 };
 
-export function MaungBetDrawer({
+export function BetSlipDrawer({
   count,
   canBet,
   stake,
@@ -56,9 +70,12 @@ export function MaungBetDrawer({
   onPlaceBet,
   safeBottom,
   tabBarOffset,
+  copy,
+  minPicks,
+  autoExpandAt,
+  stakePlaceholder = '500',
   onExpandedChange,
-}: MaungBetDrawerProps) {
-  const { tr } = useLanguage();
+}: BetSlipDrawerProps) {
   const [expanded, setExpanded] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
 
@@ -105,14 +122,14 @@ export function MaungBetDrawer({
   }
 
   useEffect(() => {
-    if (count >= 2 && !expanded) {
+    if (count >= autoExpandAt && !expanded) {
       open();
     }
     if (count === 0 && expanded) {
       close();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count]);
+  }, [count, autoExpandAt]);
 
   const stakeDisplay = Number(stake.replace(/,/g, '') || 0).toLocaleString();
 
@@ -125,15 +142,13 @@ export function MaungBetDrawer({
         <Pressable style={s.backdropPress} onPress={close} accessibilityRole="button" />
       </Animated.View>
 
-      <Animated.View
-        style={[s.drawer, { height: drawerHeight, bottom: tabBarOffset }]}
-      >
+      <Animated.View style={[s.drawer, { height: drawerHeight, bottom: tabBarOffset }]}>
         <TouchableOpacity
           style={s.handleRow}
           onPress={toggle}
           activeOpacity={0.9}
           accessibilityRole="button"
-          accessibilityLabel={expanded ? tr.maungBetSlip : tr.maungTapToExpand}
+          accessibilityLabel={expanded ? copy.slipTitle : copy.tapToExpand}
         >
           <View style={s.handle} />
           <View style={s.summaryRow}>
@@ -147,11 +162,11 @@ export function MaungBetDrawer({
                 )}
               </View>
               <View style={s.summaryText}>
-                <Text style={s.summaryTitle}>{tr.maungBetSlip}</Text>
+                <Text style={s.summaryTitle}>{copy.slipTitle}</Text>
                 <Text style={s.summarySub} numberOfLines={1}>
                   {count === 0
-                    ? tr.maungMinPicksHint
-                    : `${count} ${tr.maungPicks} · ${stakeDisplay} ${tr.currencyUnit}`}
+                    ? copy.minPicksHint
+                    : `${count} ${copy.picksUnit} · ${stakeDisplay} ${copy.currencyUnit}`}
                 </Text>
               </View>
             </View>
@@ -167,10 +182,10 @@ export function MaungBetDrawer({
               style={[s.btnPlaceCompact, !canBet && s.btnPlaceDisabled]}
               onPress={canBet ? onPlaceBet : open}
               activeOpacity={0.85}
-              disabled={!canBet && count < 2}
+              disabled={!canBet && count < minPicks}
             >
               <Text style={s.btnPlaceCompactText}>
-                {canBet ? tr.maungPlaceBet : tr.maungReviewBet}
+                {canBet ? copy.placeBet : copy.reviewBet}
               </Text>
             </TouchableOpacity>
           </View>
@@ -181,7 +196,7 @@ export function MaungBetDrawer({
           pointerEvents={expanded ? 'auto' : 'none'}
         >
           <Text style={s.sectionLabel}>
-            {count} {tr.maungPicks} · {tr.maungSelected}
+            {count} {copy.picksUnit} · {copy.selectedLabel}
           </Text>
 
           <ScrollView
@@ -191,7 +206,7 @@ export function MaungBetDrawer({
             keyboardShouldPersistTaps="handled"
           >
             {slipItems.length === 0 ? (
-              <Text style={s.emptySlip}>{tr.maungMinPicksHint}</Text>
+              <Text style={s.emptySlip}>{copy.minPicksHint}</Text>
             ) : (
               slipItems.map(({ key, label }) => (
                 <View key={key} style={s.pickRow}>
@@ -210,7 +225,7 @@ export function MaungBetDrawer({
             )}
           </ScrollView>
 
-          <Text style={s.stakeLabel}>{tr.maungBetAmount}</Text>
+          <Text style={s.stakeLabel}>{copy.betAmount}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.quickRow}>
             {QUICK_STAKES.map(amount => (
               <TouchableOpacity
@@ -232,11 +247,11 @@ export function MaungBetDrawer({
               value={stake}
               onChangeText={onStakeChange}
               keyboardType="number-pad"
-              placeholder="500"
+              placeholder={stakePlaceholder}
               placeholderTextColor={Colors.light.placeholder}
               selectTextOnFocus
             />
-            <Text style={s.stakeUnit}>{tr.currencyUnit}</Text>
+            <Text style={s.stakeUnit}>{copy.currencyUnit}</Text>
           </View>
 
           <View style={s.actions}>
@@ -247,10 +262,10 @@ export function MaungBetDrawer({
               disabled={!canBet}
             >
               <Ionicons name="checkmark-circle" size={20} color="#fff" />
-              <Text style={s.btnPlaceText}>{tr.maungPlaceBet}</Text>
+              <Text style={s.btnPlaceText}>{copy.placeBet}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.btnClear} onPress={onReset} activeOpacity={0.85}>
-              <Text style={s.btnClearText}>{tr.maungClearSlip}</Text>
+              <Text style={s.btnClearText}>{copy.clearSlip}</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -258,6 +273,9 @@ export function MaungBetDrawer({
     </>
   );
 }
+
+/** @deprecated Use BetSlipDrawer with explicit copy/minPicks */
+export const MaungBetDrawer = BetSlipDrawer;
 
 const s = StyleSheet.create({
   backdrop: {
