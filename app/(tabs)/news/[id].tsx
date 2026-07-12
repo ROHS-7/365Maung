@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Animated,
   Share,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -18,59 +19,100 @@ import {
   getNewsDetailBottomBarHeight,
 } from '@/components/news-detail-bottom-bar';
 import { useHideParentTabBar } from '@/hooks/use-hide-parent-tab-bar';
+import { useRequireAuth } from '@/hooks/use-require-auth';
 import { FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { NewsTheme } from '@/constants/news-theme';
 import { useLanguage } from '@/contexts/language';
-import { useNewsEngagement } from '@/contexts/news-engagement';
+import { useAuth } from '@/contexts/auth';
 import { SourceBadge } from '@/components/news/source-badge';
 import { EngagementRow } from '@/components/news/engagement-row';
-import { getNewsArticle, getRelatedArticles } from '@/constants/news';
 import {
-  articleAuthor,
-  articleBody,
-  articleTitle,
-  categoryLabel,
+  fetchFootballNewsDetail,
+  getCachedNewsArticles,
+  toggleFootballNewsLove,
+} from '@/services/football-news';
+import type { FootballNewsArticle } from '@/types/api';
+import {
+  estimateReadMinutes,
+  newsBodyParagraphs,
+  newsImageUri,
   timeAgo,
 } from '@/utils/news-format';
 
 const HERO_HEIGHT = 280;
 
-function newsDetailHref(id: string) {
+function newsDetailHref(id: number) {
   return `/(tabs)/news/${id}` as const;
 }
 
 export default function NewsDetailScreen() {
+  useRequireAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { lang, tr } = useLanguage();
+  const { token } = useAuth();
   const insets = useSafeAreaInsets();
   useHideParentTabBar();
-  const { getEngagement, recordView, toggleLike } = useNewsEngagement();
   const scrollY = useRef(new Animated.Value(0)).current;
+  const [article, setArticle] = useState<FootballNewsArticle | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [liking, setLiking] = useState(false);
 
-  const article = id ? getNewsArticle(id) : undefined;
-  const eng = article ? getEngagement(article.id) : null;
+  const newsId = id ? parseInt(id, 10) : NaN;
   const bottomBarHeight = getNewsDetailBottomBarHeight(insets.bottom);
   const scrollBottomPad = bottomBarHeight + Spacing.lg;
 
+  const related = useMemo(() => {
+    if (!article) return [];
+    return getCachedNewsArticles()
+      .filter((item) => item.id !== article.id)
+      .slice(0, 4);
+  }, [article]);
+
   useEffect(() => {
-    if (article) recordView(article.id);
-  }, [article?.id, recordView]);
+    if (!token || !Number.isFinite(newsId)) {
+      setLoading(false);
+      return;
+    }
 
-  if (!article || !eng) {
-    return (
-      <View style={[s.missing, { paddingTop: insets.top, paddingBottom: scrollBottomPad }]}>
-        <StatusBar style="dark" />
-        <TouchableOpacity onPress={() => router.back()} style={s.missingBack}>
-          <Ionicons name="arrow-back" size={24} color={NewsTheme.text} />
-        </TouchableOpacity>
-        <Text style={s.missingText}>{tr.newsNotFound}</Text>
-      </View>
-    );
-  }
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchFootballNewsDetail(token, newsId);
+        if (!cancelled) setArticle(data);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : tr.newsNotFound);
+          setArticle(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
 
-  const related = getRelatedArticles(article.id, 4);
-  const title = articleTitle(article, lang);
-  const paragraphs = articleBody(article, lang);
+    return () => {
+      cancelled = true;
+    };
+  }, [token, newsId, tr.newsNotFound]);
+
+  const handleLike = useCallback(async () => {
+    if (!token || !article || liking) return;
+    setLiking(true);
+    try {
+      const result = await toggleFootballNewsLove(token, article.id);
+      setArticle((prev) =>
+        prev
+          ? { ...prev, love_count: result.love_count, is_loved: result.is_loved }
+          : prev,
+      );
+    } catch {
+      /* keep current state */
+    } finally {
+      setLiking(false);
+    }
+  }, [token, article, liking]);
 
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, HERO_HEIGHT - 60],
@@ -79,12 +121,39 @@ export default function NewsDetailScreen() {
   });
 
   async function handleShare() {
+    if (!article) return;
     try {
-      await Share.share({ message: title, title });
+      await Share.share({ message: article.title, title: article.title });
     } catch {
       /* cancelled */
     }
   }
+
+  if (loading) {
+    return (
+      <View style={[s.missing, { paddingTop: insets.top }]}>
+        <StatusBar style="dark" />
+        <ActivityIndicator color={NewsTheme.accent} size="large" />
+        <Text style={s.missingText}>{tr.newsLoading}</Text>
+      </View>
+    );
+  }
+
+  if (!article) {
+    return (
+      <View style={[s.missing, { paddingTop: insets.top, paddingBottom: scrollBottomPad }]}>
+        <StatusBar style="dark" />
+        <TouchableOpacity onPress={() => router.back()} style={s.missingBack}>
+          <Ionicons name="arrow-back" size={24} color={NewsTheme.text} />
+        </TouchableOpacity>
+        <Text style={s.missingText}>{error ?? tr.newsNotFound}</Text>
+      </View>
+    );
+  }
+
+  const paragraphs = newsBodyParagraphs(article.content);
+  const readMinutes = estimateReadMinutes(article.content);
+  const imageUri = newsImageUri(article);
 
   return (
     <View style={s.root}>
@@ -98,7 +167,7 @@ export default function NewsDetailScreen() {
           <Ionicons name="arrow-back" size={22} color={NewsTheme.text} />
         </TouchableOpacity>
         <Text style={s.collapsedTitle} numberOfLines={1}>
-          {title}
+          {article.title}
         </Text>
         <TouchableOpacity onPress={handleShare} style={s.collapsedBtn} activeOpacity={0.8}>
           <Ionicons name="share-outline" size={20} color={NewsTheme.text} />
@@ -124,23 +193,29 @@ export default function NewsDetailScreen() {
         contentContainerStyle={{ paddingBottom: scrollBottomPad }}
       >
         <View style={s.hero}>
-          <Image source={{ uri: article.imageUrl }} style={s.heroImage} contentFit="cover" />
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={s.heroImage} contentFit="cover" />
+          ) : (
+            <View style={[s.heroImage, s.heroPlaceholder]}>
+              <Ionicons name="football-outline" size={48} color={NewsTheme.textMuted} />
+            </View>
+          )}
         </View>
 
         <View style={s.body}>
-          <View style={s.categoryTag}>
-            <Text style={s.categoryTagText}>{categoryLabel(article.category, lang)}</Text>
-          </View>
-
-          <Text style={s.title}>{title}</Text>
+          <Text style={s.title}>{article.title}</Text>
 
           <SourceBadge
-            name={articleAuthor(article, lang)}
-            timeLabel={`${timeAgo(article.publishedAt, lang)} · ${article.readMinutes} ${tr.newsMinRead}`}
+            name={tr.newsSource}
+            timeLabel={`${timeAgo(article.created_at, lang)} · ${readMinutes} ${tr.newsMinRead}`}
           />
 
           <View style={s.statsStrip}>
-            <EngagementRow views={eng.views} likes={eng.likes} liked={eng.liked} />
+            <EngagementRow
+              views={article.view_count}
+              likes={article.love_count}
+              liked={article.is_loved}
+            />
           </View>
 
           {paragraphs.map((p, i) => (
@@ -149,50 +224,55 @@ export default function NewsDetailScreen() {
             </Text>
           ))}
 
-          <View style={s.relatedBlock}>
-            <Text style={s.relatedHeading}>{tr.newsRelated}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.relatedScroll}
-            >
-              {related.map(item => {
-                const relEng = getEngagement(item.id);
-                return (
+          {related.length > 0 && (
+            <View style={s.relatedBlock}>
+              <Text style={s.relatedHeading}>{tr.newsRelated}</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.relatedScroll}
+              >
+                {related.map((item) => (
                   <TouchableOpacity
                     key={item.id}
                     style={s.relatedCard}
                     activeOpacity={0.9}
                     onPress={() => router.push(newsDetailHref(item.id))}
                   >
-                    <Image
-                      source={{ uri: item.imageUrl }}
-                      style={s.relatedImage}
-                      contentFit="cover"
-                    />
+                    {newsImageUri(item) ? (
+                      <Image
+                        source={{ uri: newsImageUri(item)! }}
+                        style={s.relatedImage}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View style={[s.relatedImage, s.heroPlaceholder]}>
+                        <Ionicons name="football-outline" size={24} color={NewsTheme.textMuted} />
+                      </View>
+                    )}
                     <View style={s.relatedBody}>
                       <Text style={s.relatedTitle} numberOfLines={3}>
-                        {articleTitle(item, lang)}
+                        {item.title}
                       </Text>
                       <EngagementRow
-                        views={relEng.views}
-                        likes={relEng.likes}
-                        liked={relEng.liked}
+                        views={item.view_count}
+                        likes={item.love_count}
+                        liked={item.is_loved}
                       />
                     </View>
                   </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
       </Animated.ScrollView>
 
       <NewsDetailBottomBar
-        views={eng.views}
-        likes={eng.likes}
-        liked={eng.liked}
-        onLike={() => toggleLike(article.id)}
+        views={article.view_count}
+        likes={article.love_count}
+        liked={article.is_loved}
+        onLike={handleLike}
         onShare={handleShare}
       />
     </View>
@@ -206,6 +286,7 @@ const s = StyleSheet.create({
     backgroundColor: NewsTheme.bg,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 12,
   },
   missingBack: { position: 'absolute', left: Spacing.md, top: 56 },
   missingText: { fontSize: FontSize.md, color: NewsTheme.textSecondary },
@@ -257,6 +338,7 @@ const s = StyleSheet.create({
     backgroundColor: NewsTheme.border,
   },
   heroImage: { width: '100%', height: '100%' },
+  heroPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   body: {
     backgroundColor: NewsTheme.surface,
     borderTopLeftRadius: BorderRadius.xxl,
@@ -267,19 +349,6 @@ const s = StyleSheet.create({
     paddingBottom: Spacing.md,
     gap: Spacing.md,
     ...Shadow.sm,
-  },
-  categoryTag: {
-    alignSelf: 'flex-start',
-    backgroundColor: NewsTheme.accentDim,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  categoryTagText: {
-    fontSize: 10,
-    fontWeight: FontWeight.extrabold,
-    color: NewsTheme.accentDark,
-    textTransform: 'uppercase',
   },
   title: {
     fontSize: 26,

@@ -1,190 +1,134 @@
-import { useState } from 'react';
+import { BoundAccountBanner, PaymentAccountGate } from '@/components/bound-account-banner';
+import { PaymentAccountCard } from '@/components/payment-account-card';
+import { PaymentAccountDetailModal } from '@/components/payment-account-detail-modal';
 import {
-  View, Text, TouchableOpacity, StyleSheet,
-  Modal, ScrollView, Image,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  BorderRadius,
+  Colors,
+  FontSize,
+  FontWeight,
+  Spacing,
+  Shadow,
+} from '@/constants/theme';
+import { useAuth } from '@/contexts/auth';
+import { useLanguage } from '@/contexts/language';
+import { useRequireAuth } from '@/hooks/use-require-auth';
+import { submitDepositRequest } from '@/services/coin-requests';
+import { fetchDepositPaymentAccounts } from '@/services/deposit-accounts';
+import { fetchPaymentAccounts } from '@/services/payment-accounts';
+import type { AgentSummary, PaymentAccount } from '@/types/api';
+import { agentDisplayName, filterByProvider, getBoundAccount } from '@/utils/payment-accounts';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
-import { useLanguage } from '@/contexts/language';
-
-// ─── Payment methods ──────────────────────────────────────────────────────────
-
-type PaymentMethod = {
-  id: string;
-  name: string;
-  accountNumber: string;
-  accountName: string;
-  cardBg: string;         // main card background
-  cardBg2: string;        // darker shade for circles
-  lightText: boolean;     // true = white text, false = dark text (Wave yellow)
-  logo: 'kbz' | 'wave';
-};
-
-const PAYMENT_METHODS: PaymentMethod[] = [
-  {
-    id: 'kbz',
-    name: 'KBZ Pay',
-    accountNumber: '09978654321',
-    accountName: 'Mg Mg',
-    cardBg: '#1246AC',
-    cardBg2: '#0A2F7A',
-    lightText: true,
-    logo: 'kbz',
-  },
-  {
-    id: 'wave',
-    name: 'Wave Money',
-    accountNumber: '09765432100',
-    accountName: 'Mg Mg',
-    cardBg: '#F7D000',
-    cardBg2: '#E6B800',
-    lightText: false,
-    logo: 'wave',
-  },
-];
-
-function maskNumber(n: string) {
-  return `${n.slice(0, 4)}  ••••  ••${n.slice(-2)}`;
-}
-
-// ─── Logo ─────────────────────────────────────────────────────────────────────
-
-function PaymentLogo({ type, size = 48 }: { type: 'kbz' | 'wave'; size?: number }) {
-  const source = type === 'kbz'
-    ? require('@/assets/images/kbz-pay.png')
-    : require('@/assets/images/wave-money.png');
-  return (
-    <Image
-      source={source}
-      style={{ width: size, height: size, borderRadius: size * 0.22 }}
-      resizeMode="cover"
-    />
-  );
-}
-
-// ─── Bank Card ────────────────────────────────────────────────────────────────
-
-function BankCard({ method, onPress }: { method: PaymentMethod; onPress: () => void }) {
-  const { tr } = useLanguage();
-  const fg      = method.lightText ? '#fff'                 : '#1A1A1A';
-  const fgMuted = method.lightText ? 'rgba(255,255,255,0.6)': 'rgba(0,0,0,0.45)';
-  const btnBorder = method.lightText ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.25)';
-  const chipBorder = method.lightText ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)';
-
-  return (
-    <View style={[card.root, { backgroundColor: method.cardBg }]}>
-      {/* Decorative circles */}
-      <View style={[card.circle1, { backgroundColor: method.cardBg2 }]} />
-      <View style={[card.circle2, { backgroundColor: method.cardBg2 }]} />
-
-      {/* Row 1 — logo + chip */}
-      <View style={card.row1}>
-        <PaymentLogo type={method.logo} size={48} />
-        <View style={[card.chip, { borderColor: chipBorder }]}>
-          <View style={card.chipGrid}>
-            {[0,1,2,3,5,6,7,8].map(i => (
-              <View key={i} style={[card.chipCell, { backgroundColor: chipBorder }]} />
-            ))}
-          </View>
-        </View>
-      </View>
-
-      {/* Row 2 — masked account number */}
-      <Text style={[card.number, { color: fg }]} numberOfLines={1}>
-        {maskNumber(method.accountNumber)}
-      </Text>
-
-      {/* Row 3 — name + button */}
-      <View style={card.row3}>
-        <View>
-          <Text style={[card.holderLabel, { color: fgMuted }]}>{tr.accountName}</Text>
-          <Text style={[card.holderName, { color: fg }]}>{method.accountName}</Text>
-        </View>
-        <TouchableOpacity
-          style={[card.viewBtn, { borderColor: btnBorder }]}
-          onPress={onPress}
-          activeOpacity={0.8}
-        >
-          <Text style={[card.viewText, { color: fg }]}>{tr.viewAccount}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-// ─── Account Modal ────────────────────────────────────────────────────────────
-
-function AccountModal({
-  method, visible, onClose,
-}: {
-  method: PaymentMethod | null; visible: boolean; onClose: () => void;
-}) {
-  const { tr } = useLanguage();
-  if (!method) return null;
-
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={m.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={m.sheet}>
-          <View style={m.handle} />
-
-          {/* Header */}
-          <View style={m.modalTop}>
-            <PaymentLogo type={method.logo} size={52} />
-            <View style={{ marginLeft: Spacing.md }}>
-              <Text style={m.modalName}>{method.name}</Text>
-              <Text style={m.modalSub}>{tr.bankCard}</Text>
-            </View>
-          </View>
-
-          <View style={m.divider} />
-
-          {/* Account number */}
-          <View style={m.row}>
-            <View style={[m.iconWrap, { backgroundColor: method.cardBg + '22' }]}>
-              <Ionicons name="call-outline" size={20} color={method.cardBg} />
-            </View>
-            <View>
-              <Text style={m.rowLabel}>{tr.accountNumber}</Text>
-              <Text style={m.rowValue}>{method.accountNumber}</Text>
-            </View>
-          </View>
-
-          <View style={m.divider} />
-
-          {/* Account name */}
-          <View style={m.row}>
-            <View style={[m.iconWrap, { backgroundColor: method.cardBg + '22' }]}>
-              <Ionicons name="person-outline" size={20} color={method.cardBg} />
-            </View>
-            <View>
-              <Text style={m.rowLabel}>{tr.accountName}</Text>
-              <Text style={m.rowValue}>{method.accountName}</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={[m.closeBtn, { backgroundColor: method.cardBg }]}
-            onPress={onClose}
-            activeOpacity={0.85}
-          >
-            <Text style={[m.closeBtnText, { color: method.lightText ? '#fff' : '#1A1A1A' }]}>
-              {tr.close}
-            </Text>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </Modal>
-  );
-}
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AutoDepositScreen() {
+  useRequireAuth();
   const { tr } = useLanguage();
-  const [selected, setSelected] = useState<PaymentMethod | null>(null);
+  const { token } = useAuth();
+  const [bound, setBound] = useState<PaymentAccount | null>(null);
+  const [agent, setAgent] = useState<AgentSummary | null>(null);
+  const [agentAccounts, setAgentAccounts] = useState<PaymentAccount[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [detailAccount, setDetailAccount] = useState<PaymentAccount | null>(null);
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!token) return;
+    setLoadError(null);
+    try {
+      const [userAccounts, depositData] = await Promise.all([
+        fetchPaymentAccounts(token),
+        fetchDepositPaymentAccounts(token),
+      ]);
+      const boundAccount = getBoundAccount(userAccounts);
+      setBound(boundAccount);
+      setAgent(depositData.agent);
+
+      if (!depositData.agent) {
+        setAgentAccounts([]);
+        setLoadError(tr.depositNoAgent);
+        return;
+      }
+
+      const matching = boundAccount
+        ? filterByProvider(depositData.payment_accounts, boundAccount.provider)
+        : depositData.payment_accounts.filter((a) => a.is_enabled);
+
+      setAgentAccounts(matching);
+      setSelectedId(matching[0]?.id ?? null);
+
+      if (matching.length === 0 && boundAccount) {
+        setLoadError(tr.depositNoMatchingProvider);
+      }
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : tr.depositLoadFailed);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, tr.depositNoAgent, tr.depositNoMatchingProvider, tr.depositLoadFailed]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const selected = agentAccounts.find((a) => a.id === selectedId) ?? null;
+
+  async function handleSubmit() {
+    if (!token || !selected) return;
+    const parsed = parseInt(amount.replace(/,/g, ''), 10);
+    if (!parsed || parsed < 1) {
+      Alert.alert('', tr.depositAmountRequired);
+      return;
+    }
+
+    Alert.alert(tr.depositConfirmTitle, tr.depositConfirmMsg, [
+      { text: tr.logoutCancel, style: 'cancel' },
+      {
+        text: tr.depositSubmit,
+        onPress: async () => {
+          setSubmitting(true);
+          try {
+            await submitDepositRequest(token, {
+              amount: parsed,
+              payment_account_id: selected.id,
+              note: note.trim() || undefined,
+            });
+            Alert.alert(tr.depositSuccessTitle, tr.depositSuccessMsg, [
+              {
+                text: tr.coinRequestViewRequests,
+                onPress: () => router.push('/(tabs)/coin-requests' as never),
+              },
+              { text: 'OK' },
+            ]);
+            setAmount('');
+            setNote('');
+          } catch (e) {
+            Alert.alert('', e instanceof Error ? e.message : tr.depositFailed);
+          } finally {
+            setSubmitting(false);
+          }
+        },
+      },
+    ]);
+  }
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
@@ -199,116 +143,182 @@ export default function AutoDepositScreen() {
         <Ionicons name="arrow-down-circle-outline" size={22} color="rgba(255,255,255,0.4)" />
       </View>
 
-      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
-        {PAYMENT_METHODS.map(method => (
-          <BankCard key={method.id} method={method} onPress={() => setSelected(method)} />
-        ))}
-
-        <View style={s.noteBox}>
-          <Ionicons name="information-circle-outline" size={18} color={Colors.light.textSecondary} style={{ marginTop: 1 }} />
-          <Text style={s.noteText}>{tr.autoDepositNote}</Text>
+      {loading ? (
+        <View style={s.centered}>
+          <ActivityIndicator color={Colors.brand.greenButton} size="large" />
         </View>
-      </ScrollView>
+      ) : !bound ? (
+        <PaymentAccountGate
+          title={tr.paymentAccountGateTitle}
+          message={tr.paymentAccountGateDeposit}
+          actionLabel={tr.paymentAccountGateAction}
+        />
+      ) : (
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+            <BoundAccountBanner
+              account={bound}
+              title={tr.depositSendFrom}
+              manageLabel={tr.paymentAccountManage}
+            />
 
-      <AccountModal method={selected} visible={selected !== null} onClose={() => setSelected(null)} />
+            {agent ? (
+              <View style={s.agentRow}>
+                <Ionicons name="person-circle-outline" size={18} color={Colors.light.textSecondary} />
+                <Text style={s.agentText}>
+                  {tr.depositAgent}: {agentDisplayName(agent)}
+                </Text>
+              </View>
+            ) : null}
+
+            {loadError ? (
+              <View style={s.errorBox}>
+                <Text style={s.errorText}>{loadError}</Text>
+              </View>
+            ) : null}
+
+            <Text style={s.sectionTitle}>{tr.depositSendTo}</Text>
+            {agentAccounts.map((account) => (
+              <Pressable
+                key={account.id}
+                onPress={() => setSelectedId(account.id)}
+                style={{ marginBottom: Spacing.md }}
+              >
+                <PaymentAccountCard
+                  account={account}
+                  selected={account.id === selectedId}
+                  onPress={() => setDetailAccount(account)}
+                  viewLabel={tr.viewAccount}
+                  accountNameLabel={tr.accountName}
+                />
+              </Pressable>
+            ))}
+
+            {agentAccounts.length > 0 ? (
+              <>
+                <Text style={s.sectionTitle}>{tr.depositAfterTransfer}</Text>
+                <Text style={s.label}>{tr.depositAmount}</Text>
+                <TextInput
+                  style={s.input}
+                  value={amount}
+                  onChangeText={setAmount}
+                  keyboardType="number-pad"
+                  placeholder="0"
+                  placeholderTextColor={Colors.light.placeholder}
+                />
+                <Text style={s.label}>{tr.depositNote}</Text>
+                <TextInput
+                  style={[s.input, s.noteInput]}
+                  value={note}
+                  onChangeText={setNote}
+                  placeholder={tr.depositNotePh}
+                  placeholderTextColor={Colors.light.placeholder}
+                  multiline
+                />
+                <View style={s.noteBox}>
+                  <Ionicons name="information-circle-outline" size={18} color={Colors.light.textSecondary} />
+                  <Text style={s.noteText}>{tr.depositPendingNote}</Text>
+                </View>
+                <TouchableOpacity
+                  style={[s.submitBtn, submitting && s.submitDisabled]}
+                  onPress={handleSubmit}
+                  disabled={submitting || !selected}
+                  activeOpacity={0.85}
+                >
+                  {submitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={s.submitText}>{tr.depositSubmit}</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            ) : null}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      )}
+
+      <PaymentAccountDetailModal
+        account={detailAccount}
+        visible={detailAccount !== null}
+        onClose={() => setDetailAccount(null)}
+        bankCardLabel={tr.bankCard}
+        accountNumberLabel={tr.accountNumber}
+        accountNameLabel={tr.accountName}
+        closeLabel={tr.close}
+      />
     </SafeAreaView>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F2F5F3' },
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    backgroundColor: Colors.brand.greenButton, paddingHorizontal: Spacing.md, paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.brand.greenButton,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
   },
   backBtn: { padding: 4, marginRight: 4 },
   headerTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff' },
   headerSub: { fontSize: FontSize.xs, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
-  scroll: { flex: 1 },
-  scrollContent: { padding: Spacing.md, gap: Spacing.lg, paddingBottom: 40 },
-  noteBox: {
-    flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start',
-    backgroundColor: '#fff', borderRadius: BorderRadius.xl,
-    padding: Spacing.md, ...Shadow.sm,
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { padding: Spacing.md, paddingBottom: 48 },
+  agentRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.sm },
+  agentText: { fontSize: FontSize.sm, color: Colors.light.textSecondary },
+  errorBox: {
+    backgroundColor: Colors.light.error + '15',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
   },
-  noteText: { flex: 1, fontSize: FontSize.sm, color: Colors.light.textSecondary, lineHeight: 22 },
-});
-
-// Credit card styles
-const card = StyleSheet.create({
-  root: {
-    borderRadius: 20,
-    aspectRatio: 1.586,       // standard credit card ratio
-    padding: Spacing.lg,
-    overflow: 'hidden',
-    justifyContent: 'space-between',
-    ...Shadow.lg,
+  errorText: { fontSize: FontSize.sm, color: Colors.light.error, lineHeight: 20 },
+  sectionTitle: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.bold,
+    color: Colors.light.text,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.sm,
   },
-  // Decorative background circles
-  circle1: {
-    position: 'absolute', width: 260, height: 260, borderRadius: 130,
-    opacity: 0.55, top: -90, right: -70,
-  },
-  circle2: {
-    position: 'absolute', width: 180, height: 180, borderRadius: 90,
-    opacity: 0.4, bottom: -60, left: -30,
-  },
-
-  // Top row
-  row1: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-
-  // EMV chip simulation
-  chip: {
-    width: 38, height: 28, borderRadius: 5,
-    borderWidth: 1, overflow: 'hidden', justifyContent: 'center', padding: 3,
-  },
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2 },
-  chipCell: { width: 7, height: 7, borderRadius: 1, opacity: 0.5 },
-
-  // Masked number
-  number: {
-    fontSize: FontSize.lg,
+  label: {
+    fontSize: FontSize.xs,
     fontWeight: FontWeight.semibold,
-    letterSpacing: 2,
-    alignSelf: 'flex-start',
+    color: Colors.light.textSecondary,
+    marginBottom: 6,
+    marginTop: Spacing.sm,
   },
-
-  // Bottom row
-  row3: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  holderLabel: { fontSize: 10, marginBottom: 2, letterSpacing: 0.5 },
-  holderName: { fontSize: FontSize.md, fontWeight: FontWeight.bold },
-
-  viewBtn: {
-    borderWidth: 1.5, borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.md, paddingVertical: 7,
+  input: {
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: Colors.light.border,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
+    fontSize: FontSize.md,
+    color: Colors.light.text,
   },
-  viewText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
-});
-
-// Modal styles
-const m = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    padding: Spacing.lg, paddingBottom: 36, ...Shadow.lg,
+  noteInput: { minHeight: 72, textAlignVertical: 'top' },
+  noteBox: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    backgroundColor: '#fff',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
+    ...Shadow.sm,
   },
-  handle: {
-    width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.light.border,
-    alignSelf: 'center', marginBottom: Spacing.lg,
+  noteText: { flex: 1, fontSize: FontSize.sm, color: Colors.light.textSecondary, lineHeight: 20 },
+  submitBtn: {
+    backgroundColor: Colors.brand.greenButton,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: Spacing.lg,
   },
-  modalTop: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.lg },
-  modalName: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.light.text },
-  modalSub: { fontSize: FontSize.sm, color: Colors.light.textSecondary, marginTop: 2 },
-  divider: { height: 1, backgroundColor: Colors.light.border, marginVertical: Spacing.md },
-  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  iconWrap: { width: 44, height: 44, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center' },
-  rowLabel: { fontSize: FontSize.xs, color: Colors.light.textSecondary, marginBottom: 3 },
-  rowValue: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.light.text },
-  closeBtn: {
-    marginTop: Spacing.xl, borderRadius: BorderRadius.xl,
-    height: 52, alignItems: 'center', justifyContent: 'center',
-  },
-  closeBtnText: { fontSize: FontSize.md, fontWeight: FontWeight.bold },
+  submitDisabled: { opacity: 0.7 },
+  submitText: { color: '#fff', fontWeight: FontWeight.bold, fontSize: FontSize.md },
 });

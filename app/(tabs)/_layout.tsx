@@ -70,11 +70,15 @@ export default function TabLayout() {
       />
       <Tabs.Screen name="maung"           options={{ href: null }} />
       <Tabs.Screen name="hdp"             options={{ href: null }} />
-      <Tabs.Screen name="bet-list"        options={{ href: null }} />
       <Tabs.Screen name="rule"            options={{ href: null }} />
       <Tabs.Screen name="change-password" options={{ href: null }} />
       <Tabs.Screen name="auto-deposit"    options={{ href: null }} />
       <Tabs.Screen name="news"            options={{ href: null }} />
+      <Tabs.Screen name="activities"      options={{ href: null }} />
+      <Tabs.Screen name="coin-transactions" options={{ href: null }} />
+      <Tabs.Screen name="payment-accounts" options={{ href: null }} />
+      <Tabs.Screen name="withdraw"          options={{ href: null }} />
+      <Tabs.Screen name="coin-requests"     options={{ href: null }} />
     </Tabs>
   );
 }

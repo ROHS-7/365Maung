@@ -1,12 +1,12 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   FlatList,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
+  ActivityIndicator,
   type ListRenderItem,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -17,34 +17,21 @@ import { router } from 'expo-router';
 import { FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { NewsTheme } from '@/constants/news-theme';
 import { useLanguage } from '@/contexts/language';
-import { useNewsEngagement } from '@/contexts/news-engagement';
+import { useAuth } from '@/contexts/auth';
+import { useRequireAuth } from '@/hooks/use-require-auth';
 import { SourceBadge } from '@/components/news/source-badge';
 import { EngagementRow } from '@/components/news/engagement-row';
-import {
-  NEWS_ARTICLES,
-  NEWS_CATEGORY_LABELS,
-  type NewsArticle,
-  type NewsCategory,
-} from '@/constants/news';
-import {
-  articleAuthor,
-  articleTitle,
-  categoryLabel,
-  timeAgo,
-} from '@/utils/news-format';
+import { fetchFootballNews } from '@/services/football-news';
+import type { FootballNewsArticle } from '@/types/api';
+import { newsImageUri, timeAgo, newsBodyParagraphs, estimateReadMinutes } from '@/utils/news-format';
 
-type FilterKey = 'all' | NewsCategory;
-
-const ALL_CATEGORIES = Object.keys(NEWS_CATEGORY_LABELS) as NewsCategory[];
-
-function newsDetailHref(id: string) {
+function newsDetailHref(id: number) {
   return `/(tabs)/news/${id}` as const;
 }
 
-function FeaturedHero({ article }: { article: NewsArticle }) {
+function FeaturedHero({ article }: { article: FootballNewsArticle }) {
   const { lang, tr } = useLanguage();
-  const { getEngagement } = useNewsEngagement();
-  const eng = getEngagement(article.id);
+  const imageUri = newsImageUri(article);
 
   return (
     <TouchableOpacity
@@ -52,29 +39,37 @@ function FeaturedHero({ article }: { article: NewsArticle }) {
       onPress={() => router.push(newsDetailHref(article.id))}
       style={s.featuredWrap}
     >
-      <Image source={{ uri: article.imageUrl }} style={s.featuredImage} contentFit="cover" />
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={s.featuredImage} contentFit="cover" />
+      ) : (
+        <View style={[s.featuredImage, s.imagePlaceholder]}>
+          <Ionicons name="football-outline" size={40} color={NewsTheme.textMuted} />
+        </View>
+      )}
       <View style={s.featuredBody}>
         <View style={s.breakingPill}>
           <Text style={s.breakingText}>{tr.newsFeatured}</Text>
         </View>
         <SourceBadge
-          name={articleAuthor(article, lang)}
-          category={categoryLabel(article.category, lang)}
-          timeLabel={timeAgo(article.publishedAt, lang)}
+          name={tr.newsSource}
+          timeLabel={timeAgo(article.created_at, lang)}
         />
         <Text style={s.featuredTitle} numberOfLines={3}>
-          {articleTitle(article, lang)}
+          {article.title}
         </Text>
-        <EngagementRow views={eng.views} likes={eng.likes} liked={eng.liked} />
+        <EngagementRow
+          views={article.view_count}
+          likes={article.love_count}
+          liked={article.is_loved}
+        />
       </View>
     </TouchableOpacity>
   );
 }
 
-function FeedCard({ article }: { article: NewsArticle }) {
-  const { lang } = useLanguage();
-  const { getEngagement } = useNewsEngagement();
-  const eng = getEngagement(article.id);
+function FeedCard({ article }: { article: FootballNewsArticle }) {
+  const { lang, tr } = useLanguage();
+  const imageUri = newsImageUri(article);
 
   return (
     <TouchableOpacity
@@ -82,17 +77,26 @@ function FeedCard({ article }: { article: NewsArticle }) {
       onPress={() => router.push(newsDetailHref(article.id))}
     >
       <View style={s.card}>
-        <Image source={{ uri: article.imageUrl }} style={s.cardImage} contentFit="cover" />
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={s.cardImage} contentFit="cover" />
+        ) : (
+          <View style={[s.cardImage, s.imagePlaceholder]}>
+            <Ionicons name="football-outline" size={32} color={NewsTheme.textMuted} />
+          </View>
+        )}
         <View style={s.cardBody}>
           <SourceBadge
-            name={articleAuthor(article, lang)}
-            category={categoryLabel(article.category, lang)}
-            timeLabel={timeAgo(article.publishedAt, lang)}
+            name={tr.newsSource}
+            timeLabel={timeAgo(article.created_at, lang)}
           />
           <Text style={s.cardTitle} numberOfLines={3}>
-            {articleTitle(article, lang)}
+            {article.title}
           </Text>
-          <EngagementRow views={eng.views} likes={eng.likes} liked={eng.liked} />
+          <EngagementRow
+            views={article.view_count}
+            likes={article.love_count}
+            liked={article.is_loved}
+          />
         </View>
       </View>
       <View style={s.divider} />
@@ -101,38 +105,65 @@ function FeedCard({ article }: { article: NewsArticle }) {
 }
 
 export default function NewsScreen() {
-  const { tr, lang } = useLanguage();
+  useRequireAuth();
+  const { tr } = useLanguage();
+  const { token } = useAuth();
   const tabBarHeight = useBottomTabBarHeight();
-  const [filter, setFilter] = useState<FilterKey>('all');
+  const [articles, setArticles] = useState<FootballNewsArticle[]>([]);
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const featured = useMemo(
-    () => NEWS_ARTICLES.find(a => a.featured) ?? NEWS_ARTICLES[0],
-    [],
+  const featured = articles[0];
+  const listData = useMemo(
+    () => (featured ? articles.slice(1) : articles),
+    [articles, featured],
   );
 
-  const listData = useMemo(() => {
-    const rest = NEWS_ARTICLES.filter(a => a.id !== featured.id);
-    return filter === 'all' ? rest : rest.filter(a => a.category === filter);
-  }, [filter, featured.id]);
+  const loadPage = useCallback(
+    async (nextPage: number, mode: 'replace' | 'append' | 'refresh') => {
+      if (!token) return;
+      if (mode === 'append') setLoadingMore(true);
+      else if (mode === 'refresh') setRefreshing(true);
+      else setLoading(true);
+      setError(null);
 
-  const chips: { key: FilterKey; label: string }[] = useMemo(
-    () => [
-      { key: 'all', label: tr.newsForYou },
-      ...ALL_CATEGORIES.map(c => ({
-        key: c as FilterKey,
-        label: lang === 'my' ? NEWS_CATEGORY_LABELS[c].my : NEWS_CATEGORY_LABELS[c].en,
-      })),
-    ],
-    [tr.newsForYou, lang],
+      try {
+        const data = await fetchFootballNews(token, nextPage);
+        setPage(data.meta.current_page);
+        setLastPage(data.meta.last_page);
+        setArticles((prev) =>
+          mode === 'append' ? [...prev, ...data.news] : data.news,
+        );
+      } catch (e) {
+        setError(e instanceof Error ? e.message : tr.newsLoadFailed);
+        if (mode !== 'append') setArticles([]);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+        setRefreshing(false);
+      }
+    },
+    [token, tr.newsLoadFailed],
   );
+
+  useEffect(() => {
+    loadPage(1, 'replace');
+  }, [loadPage]);
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 900);
-  }, []);
+    loadPage(1, 'refresh');
+  }, [loadPage]);
 
-  const renderItem: ListRenderItem<NewsArticle> = useCallback(
+  const onEndReached = useCallback(() => {
+    if (loading || loadingMore || refreshing || page >= lastPage) return;
+    loadPage(page + 1, 'append');
+  }, [loading, loadingMore, refreshing, page, lastPage, loadPage]);
+
+  const renderItem: ListRenderItem<FootballNewsArticle> = useCallback(
     ({ item }) => <FeedCard article={item} />,
     [],
   );
@@ -145,56 +176,58 @@ export default function NewsScreen() {
             <Ionicons name="arrow-back" size={24} color={NewsTheme.onHeader} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{tr.newsTitle}</Text>
-          <TouchableOpacity style={s.headerIcon} activeOpacity={0.7}>
-            <Ionicons name="search" size={22} color={NewsTheme.onHeader} />
-          </TouchableOpacity>
+          <View style={s.headerIcon} />
         </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.chips}
-          style={s.chipsScroll}
-        >
-          {chips.map(item => {
-            const active = filter === item.key;
-            return (
-              <TouchableOpacity
-                key={item.key}
-                onPress={() => setFilter(item.key)}
-                style={[s.chip, active && s.chipActive]}
-                activeOpacity={0.85}
-              >
-                <Text style={[s.chipText, active && s.chipTextActive]}>{item.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
       </SafeAreaView>
 
-      <FlatList
-        data={listData}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
-        showsVerticalScrollIndicator={false}
-        style={s.list}
-        contentContainerStyle={{ paddingBottom: tabBarHeight + Spacing.lg }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={NewsTheme.accent}
-            colors={[NewsTheme.accent]}
-          />
-        }
-        ListHeaderComponent={<FeaturedHero article={featured} />}
-        ListEmptyComponent={
-          <View style={s.empty}>
-            <Ionicons name="football-outline" size={48} color={NewsTheme.textMuted} />
-            <Text style={s.emptyText}>{tr.newsEmpty}</Text>
-          </View>
-        }
-      />
+      {loading && articles.length === 0 ? (
+        <View style={s.center}>
+          <ActivityIndicator color={NewsTheme.accent} size="large" />
+          <Text style={s.centerText}>{tr.newsLoading}</Text>
+        </View>
+      ) : error && articles.length === 0 ? (
+        <View style={s.center}>
+          <Text style={s.errorText}>{error}</Text>
+          <TouchableOpacity onPress={() => loadPage(1, 'replace')} style={s.retryBtn}>
+            <Text style={s.retryText}>{tr.newsRetry}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={listData}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+          style={s.list}
+          contentContainerStyle={{ paddingBottom: tabBarHeight + Spacing.lg }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={NewsTheme.accent}
+              colors={[NewsTheme.accent]}
+            />
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.4}
+          ListHeaderComponent={featured ? <FeaturedHero article={featured} /> : null}
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={s.footerLoader}>
+                <ActivityIndicator color={NewsTheme.accent} />
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            !featured ? (
+              <View style={s.empty}>
+                <Ionicons name="football-outline" size={48} color={NewsTheme.textMuted} />
+                <Text style={s.emptyText}>{tr.newsEmpty}</Text>
+              </View>
+            ) : null
+          }
+        />
+      )}
     </View>
   );
 }
@@ -219,28 +252,18 @@ const s = StyleSheet.create({
     fontSize: FontSize.xl,
     fontWeight: FontWeight.bold,
     color: NewsTheme.onHeader,
+    textAlign: 'center',
   },
-  chipsScroll: { flexGrow: 0, paddingBottom: Spacing.sm },
-  chips: { paddingHorizontal: Spacing.md, gap: 8 },
-  chip: {
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: Spacing.lg },
+  centerText: { fontSize: FontSize.sm, color: NewsTheme.textSecondary },
+  errorText: { fontSize: FontSize.sm, color: NewsTheme.danger, textAlign: 'center' },
+  retryBtn: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-    marginRight: 8,
+    borderRadius: BorderRadius.md,
+    backgroundColor: NewsTheme.accentDim,
   },
-  chipActive: {
-    backgroundColor: NewsTheme.surface,
-    borderColor: NewsTheme.surface,
-  },
-  chipText: {
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.semibold,
-    color: 'rgba(255,255,255,0.85)',
-  },
-  chipTextActive: { color: NewsTheme.accentDark },
+  retryText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: NewsTheme.accentDark },
   list: { flex: 1, backgroundColor: NewsTheme.bg },
   featuredWrap: {
     marginBottom: Spacing.sm,
@@ -252,6 +275,7 @@ const s = StyleSheet.create({
     height: 220,
     backgroundColor: NewsTheme.border,
   },
+  imagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
   featuredBody: {
     padding: Spacing.md,
     gap: 10,
@@ -302,4 +326,5 @@ const s = StyleSheet.create({
   },
   empty: { alignItems: 'center', paddingVertical: 56, gap: 12 },
   emptyText: { fontSize: FontSize.md, color: NewsTheme.textSecondary },
+  footerLoader: { paddingVertical: Spacing.lg },
 });

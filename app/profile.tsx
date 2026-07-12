@@ -4,18 +4,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
+import { useAuth } from '@/contexts/auth';
+import { useRequireAuth } from '@/hooks/use-require-auth';
+import { formatBalance } from '@/utils/format-balance';
 
-const USER = {
-  username: 'မောင်မောင်',
-  phone:    '09 123 456 789',
-  balance:  '၃၆၇',
-  cashOut:  '88880001',
-  cashCode: '114947',
-  joined:   '2024-01-15',
-};
+export default function ProfileScreen() { 
+  useRequireAuth();
+  const { tr, lang } = useLanguage();
+  const { user } = useAuth();
 
-export default function ProfileScreen() {
-  const { tr } = useLanguage();
+  if (!user) return null;
+
+  const infoRows = [
+    { icon: 'call-outline', label: tr.profilePhone, value: user.phone ?? '—' },
+    { icon: 'cash-outline', label: tr.profileCashOut, value: user.cash_out_id ?? user.cash_out ?? '—' },
+    { icon: 'keypad-outline', label: tr.profileCashCode, value: user.cash_code ?? '—' },
+  ] as const;
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
@@ -38,10 +42,10 @@ export default function ProfileScreen() {
           <View style={s.avatarWrap}>
             <Ionicons name="person" size={44} color={Colors.brand.greenButton} />
           </View>
-          <Text style={s.bannerName}>{USER.username}</Text>
+          <Text style={s.bannerName}>{user.username}</Text>
           <View style={s.balancePill}>
             <Ionicons name="wallet-outline" size={14} color={Colors.brand.gold} />
-            <Text style={s.balancePillText}>{USER.balance} {tr.currencyUnit}</Text>
+            <Text style={s.balancePillText}>{formatBalance(user.balance, lang)} {tr.currencyUnit}</Text>
           </View>
         </View>
 
@@ -49,12 +53,7 @@ export default function ProfileScreen() {
         <View style={s.card}>
           <Text style={s.cardTitle}>Account Info</Text>
 
-          {[
-            { icon: 'call-outline',        label: tr.profilePhone,    value: USER.phone    },
-            { icon: 'cash-outline',         label: tr.profileCashOut,  value: USER.cashOut  },
-            { icon: 'keypad-outline',       label: tr.profileCashCode, value: USER.cashCode },
-            { icon: 'calendar-outline',     label: 'Joined',           value: USER.joined   },
-          ].map((row, i, arr) => (
+          {infoRows.map((row, i, arr) => (
             <View key={row.label}>
               <View style={s.infoRow}>
                 <View style={s.infoIconWrap}>

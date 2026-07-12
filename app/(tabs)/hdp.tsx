@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,215 +18,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
-import type { Translations } from '@/constants/i18n';
 import { BetSlipDrawer } from '@/components/maung-bet-drawer';
+import { useRequireAuth } from '@/hooks/use-require-auth';
+import { useFootballMatches } from '@/hooks/use-football-matches';
+import { useAuth } from '@/contexts/auth';
+import { submitBetSlip } from '@/services/football';
+import {
+  buildMatchMap,
+  buildSubmitPayload,
+  formatOddsDisplay,
+  pickLabel,
+  type BetRow,
+  type SelectKey,
+  type BetSide as Side,
+  type UiMatchData as MatchData,
+  type UiLeagueData as LeagueData,
+} from '@/utils/football-ui';
 
-type BetRow = 'hdp' | 'ou' | 'oe';
-type Side = 'left' | 'right';
-type SelectKey = `${string}:${BetRow}`;
-
-type MatchData = {
-  id: string;
-  date: string;
-  home: string;
-  away: string;
-  hdpGiving: 'home' | 'away';
-  hdpLine: string;
-  hdpOdds: number;
-  ouLine: string;
-  ouOdds: number;
-  oeRef: string;
-};
-
-type LeagueData = { name: string; matches: MatchData[] };
-
-const LEAGUES: LeagueData[] = [
-  {
-    name: 'ARGENTINA CUP',
-    matches: [
-      {
-        id: 'h1',
-        date: '05-21 02:30',
-        home: 'Talleres Cordoba (n)',
-        away: 'Atletico Tucuman',
-        hdpGiving: 'home',
-        hdpLine: '0',
-        hdpOdds: -18,
-        ouLine: '2',
-        ouOdds: 4,
-        oeRef: '1',
-      },
-      {
-        id: 'h2',
-        date: '05-21 04:00',
-        home: 'Boca Juniors',
-        away: 'River Plate',
-        hdpGiving: 'home',
-        hdpLine: '0',
-        hdpOdds: -34,
-        ouLine: '2.5',
-        ouOdds: -12,
-        oeRef: '1',
-      },
-    ],
-  },
-  {
-    name: 'COPA LIBERTADORES',
-    matches: [
-      {
-        id: 'h3',
-        date: '05-21 04:30',
-        home: 'Nacional Montevideo',
-        away: 'Universitario Deportes',
-        hdpGiving: 'home',
-        hdpLine: '1',
-        hdpOdds: 28,
-        ouLine: '2',
-        ouOdds: -58,
-        oeRef: '1',
-      },
-      {
-        id: 'h4',
-        date: '05-21 07:00',
-        home: 'LDU Quito',
-        away: 'Lanus',
-        hdpGiving: 'home',
-        hdpLine: '0',
-        hdpOdds: -96,
-        ouLine: '2',
-        ouOdds: -21,
-        oeRef: '1',
-      },
-      {
-        id: 'h5',
-        date: '05-21 06:30',
-        home: 'Atletico Bucaramanga',
-        away: 'Boca Juniors de Cali',
-        hdpGiving: 'home',
-        hdpLine: '1.5',
-        hdpOdds: 44,
-        ouLine: '3',
-        ouOdds: 20,
-        oeRef: '1',
-      },
-    ],
-  },
-  {
-    name: 'FINLAND VEIKKAUSLIIGA',
-    matches: [
-      {
-        id: 'h6',
-        date: '05-21 21:00',
-        home: 'HJK Helsinki',
-        away: 'IFK Mariehamn',
-        hdpGiving: 'home',
-        hdpLine: '1',
-        hdpOdds: -20,
-        ouLine: '3',
-        ouOdds: 8,
-        oeRef: '1',
-      },
-      {
-        id: 'h7',
-        date: '05-21 21:00',
-        home: 'FC Inter Turku',
-        away: 'AC Oulu',
-        hdpGiving: 'away',
-        hdpLine: '0.5',
-        hdpOdds: -48,
-        ouLine: '2.5',
-        ouOdds: 16,
-        oeRef: '1',
-      },
-    ],
-  },
-  {
-    name: 'ENGLAND PREMIER LEAGUE',
-    matches: [
-      {
-        id: 'h8',
-        date: '05-21 21:00',
-        home: 'Arsenal',
-        away: 'Chelsea',
-        hdpGiving: 'home',
-        hdpLine: '0',
-        hdpOdds: -52,
-        ouLine: '2.5',
-        ouOdds: -6,
-        oeRef: '1',
-      },
-      {
-        id: 'h9',
-        date: '05-21 23:30',
-        home: 'Liverpool',
-        away: 'Man City',
-        hdpGiving: 'home',
-        hdpLine: '0',
-        hdpOdds: -28,
-        ouLine: '3',
-        ouOdds: 12,
-        oeRef: '1',
-      },
-    ],
-  },
-  {
-    name: 'SPAIN LA LIGA',
-    matches: [
-      {
-        id: 'h10',
-        date: '05-21 03:00',
-        home: 'Real Madrid',
-        away: 'Barcelona',
-        hdpGiving: 'home',
-        hdpLine: '0',
-        hdpOdds: -40,
-        ouLine: '2.5',
-        ouOdds: 6,
-        oeRef: '1',
-      },
-      {
-        id: 'h11',
-        date: '05-21 01:15',
-        home: 'Atletico Madrid',
-        away: 'Sevilla',
-        hdpGiving: 'home',
-        hdpLine: '0.5',
-        hdpOdds: -22,
-        ouLine: '2',
-        ouOdds: -18,
-        oeRef: '1',
-      },
-    ],
-  },
-];
-
-const ALL_LEAGUE_NAMES = LEAGUES.map(l => l.name);
-const MATCH_MAP = new Map(LEAGUES.flatMap(l => l.matches.map(m => [m.id, m] as const)));
-
-function formatOdds(n: number) {
-  return n > 0 ? `+${n}` : `${n}`;
+function formatOdds(n: number, line?: string) {
+  return formatOddsDisplay(n, line);
 }
 
 function shortTeam(name: string) {
   const i = name.indexOf(' ');
   return i > 0 && name.length > 14 ? `${name.slice(0, i)}…` : name;
-}
-
-function pickLabel(match: MatchData, row: BetRow, side: Side, tr: Translations): string {
-  const giving = match.hdpGiving === 'home' ? match.home : match.away;
-  const receiving = match.hdpGiving === 'home' ? match.away : match.home;
-  if (row === 'hdp') {
-    const team = side === 'left' ? giving : receiving;
-    return `${team} ${match.hdpLine}`;
-  }
-  if (row === 'ou') {
-    const team = side === 'left' ? match.home : match.away;
-    const pick = side === 'left' ? tr.maungOver : tr.maungUnder;
-    return `${team} · ${pick} ${match.ouLine}`;
-  }
-  const team = side === 'left' ? match.home : match.away;
-  const pick = side === 'left' ? tr.maungOdd : tr.maungEven;
-  return `${team} · ${pick}`;
 }
 
 function LeaguesModal({
@@ -450,31 +265,43 @@ function LeagueBlock({
 }
 
 export default function HdpScreen() {
+  useRequireAuth();
   const { tr } = useLanguage();
+  const { token, refreshUser } = useAuth();
+  const { leagues, loading, error, reload } = useFootballMatches('single');
+  const matchMap = useMemo(() => buildMatchMap(leagues), [leagues]);
+  const allLeagueNames = useMemo(() => leagues.map((l) => l.name), [leagues]);
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const [selections, setSelections] = useState<Record<SelectKey, Side>>({});
   const [stake, setStake] = useState('5000');
   const [modalVisible, setModalVisible] = useState(false);
-  const [activeLeagues, setActiveLeagues] = useState<Set<string>>(new Set(ALL_LEAGUE_NAMES));
+  const [activeLeagues, setActiveLeagues] = useState<Set<string>>(new Set());
   const [drawerExpanded, setDrawerExpanded] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (allLeagueNames.length > 0) {
+      setActiveLeagues(new Set(allLeagueNames));
+    }
+  }, [allLeagueNames.join('|')]);
 
   const count = Object.keys(selections).length;
   const canBet = count >= 1;
 
   const filteredLeagues = useMemo(
-    () => LEAGUES.filter(l => activeLeagues.has(l.name)),
-    [activeLeagues],
+    () => leagues.filter((l) => activeLeagues.has(l.name)),
+    [leagues, activeLeagues],
   );
 
   const slipItems = useMemo(() => {
     return Object.entries(selections).map(([key, side]) => {
       const [matchId, row] = key.split(':') as [string, BetRow];
-      const match = MATCH_MAP.get(matchId);
+      const match = matchMap.get(matchId);
       if (!match) return { key: key as SelectKey, label: key };
       return { key: key as SelectKey, label: pickLabel(match, row, side, tr) };
     });
-  }, [selections, tr]);
+  }, [selections, tr, matchMap]);
 
   const slipCopy = useMemo(
     () => ({
@@ -495,11 +322,10 @@ export default function HdpScreen() {
   function handleSelect(key: SelectKey, side: Side) {
     setSelections(prev => {
       if (prev[key] === side) {
-        const next = { ...prev };
-        delete next[key];
-        return next;
+        return {};
       }
-      return { ...prev, [key]: side };
+      // One match per slip: one pick only (HDP, O/U, or O/E) — selecting another match replaces the slip
+      return { [key]: side };
     });
   }
 
@@ -525,12 +351,31 @@ export default function HdpScreen() {
     setStake('5000');
   }
 
-  function handleOK() {
-    if (!canBet) {
-      Alert.alert('', tr.hdpMinErr);
+  async function handleOK() {
+    if (!canBet || !token) {
+      if (!canBet) Alert.alert('', tr.hdpMinErr);
       return;
     }
-    Alert.alert(tr.hdpPlaceBet, `${count} ${tr.hdpUnits} · ${stake} ${tr.currencyUnit}`);
+    const total = parseInt(stake.replace(/,/g, ''), 10);
+    if (!total || total < 1) {
+      Alert.alert('', tr.footballAmountRequired);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const payload = buildSubmitPayload('single', selections, matchMap, total);
+      await submitBetSlip(token, payload);
+      await refreshUser();
+      setSelections({});
+      Alert.alert(tr.footballBetSuccessTitle, tr.footballBetSuccessMsg, [
+        { text: tr.footballViewBets, onPress: () => router.push('/(tabs)/bets' as never) },
+        { text: 'OK' },
+      ]);
+    } catch (e) {
+      Alert.alert('', e instanceof Error ? e.message : tr.footballBetFailed);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const safeBottom = Math.max(insets.bottom, 8);
@@ -568,19 +413,36 @@ export default function HdpScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {filteredLeagues.map(league => (
-            <LeagueBlock
-              key={league.name}
-              league={league}
-              selections={selections}
-              onSelect={handleSelect}
-            />
-          ))}
+          {loading ? (
+            <View style={s.loadWrap}>
+              <Text style={s.loadText}>{tr.footballLoadingMatches}</Text>
+            </View>
+          ) : error ? (
+            <View style={s.loadWrap}>
+              <Text style={s.errorText}>{error}</Text>
+              <TouchableOpacity onPress={reload} style={s.retryBtn}>
+                <Text style={s.retryText}>{tr.footballRetry}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : filteredLeagues.length === 0 ? (
+            <View style={s.loadWrap}>
+              <Text style={s.loadText}>{tr.footballNoMatches}</Text>
+            </View>
+          ) : (
+            filteredLeagues.map(league => (
+              <LeagueBlock
+                key={league.name}
+                league={league}
+                selections={selections}
+                onSelect={handleSelect}
+              />
+            ))
+          )}
         </ScrollView>
 
         <BetSlipDrawer
           count={count}
-          canBet={canBet}
+          canBet={canBet && !submitting}
           stake={stake}
           onStakeChange={setStake}
           slipItems={slipItems}
@@ -599,7 +461,7 @@ export default function HdpScreen() {
 
       <LeaguesModal
         visible={modalVisible}
-        allLeagues={ALL_LEAGUE_NAMES}
+        allLeagues={allLeagueNames}
         active={activeLeagues}
         onToggle={toggleLeague}
         onClose={() => setModalVisible(false)}
@@ -640,6 +502,16 @@ const s = StyleSheet.create({
 
   scroll: { flex: 1 },
   scrollContent: { padding: Spacing.md, gap: Spacing.md },
+  loadWrap: { alignItems: 'center', paddingVertical: Spacing.xl * 2, gap: Spacing.sm },
+  loadText: { fontSize: FontSize.sm, color: Colors.light.textSecondary },
+  errorText: { fontSize: FontSize.sm, color: Colors.light.error, textAlign: 'center' },
+  retryBtn: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.brand.greenButton + '22',
+  },
+  retryText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.brand.greenButton },
 
   leagueBlock: { marginBottom: Spacing.xs },
   leagueHeader: {

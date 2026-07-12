@@ -4,8 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
+import { useAppConfig } from '@/contexts/app-config';
 
-const RULE_TEXT = `1. အကောင့်တစ်ခုစီသည် တစ်ဦးတည်းသာ အသုံးပြုခွင့်ရှိသည်။ မိမိ၏ Login နှင့် Password ကို အခြားသူများနှင့် မျှဝေခြင်း မပြုရ။
+const FALLBACK_RULES = `1. အကောင့်တစ်ခုစီသည် တစ်ဦးတည်းသာ အသုံးပြုခွင့်ရှိသည်။ မိမိ၏ Login နှင့် Password ကို အခြားသူများနှင့် မျှဝေခြင်း မပြုရ။
 
 2. လိမ်လည်မှု သို့မဟုတ် မသင့်လျော်သောလုပ်ဆောင်ချက်များ တွေ့ပါက အကောင့်ကို ပိတ်သိမ်းမည်။
 
@@ -27,6 +28,8 @@ const RULE_TEXT = `1. အကောင့်တစ်ခုစီသည် တစ
 
 export default function RuleScreen() {
   const { tr } = useLanguage();
+  const { application } = useAppConfig();
+  const ruleText = application?.football_rules?.trim() || FALLBACK_RULES;
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
@@ -42,7 +45,7 @@ export default function RuleScreen() {
       </View>
 
       <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={s.ruleText}>{RULE_TEXT}</Text>
+        <Text style={s.ruleText}>{ruleText}</Text>
       </ScrollView>
     </SafeAreaView>
   );

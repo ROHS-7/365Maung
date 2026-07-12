@@ -5,17 +5,30 @@ import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
 import type { Lang } from '@/constants/i18n';
+import { useAuth } from '@/contexts/auth';
+import { useAuthGate } from '@/hooks/use-auth-gate';
+import { LoginPromptCard } from '@/components/login-prompt-card';
+import { formatBalance } from '@/utils/format-balance';
 
-const USER = { username: 'မောင်မောင်', balance: '၃၆၇', cashCode: '114947' };
-
-const ROW_ROUTES: Record<string, string> = { rule: '/rule', pw: '/change-password', deposit: '/auto-deposit' };
+const ROW_ROUTES: Record<string, string> = {
+  rule: '/rule',
+  pw: '/change-password',
+  deposit: '/auto-deposit',
+  withdraw: '/withdraw',
+  payment: '/payment-accounts',
+  requests: '/coin-requests',
+};
 
 export default function AccountScreen() {
   const { tr, lang, setLang } = useLanguage();
+  const { isAuthenticated, user, logout } = useAuth();
+  const { navigate } = useAuthGate();
 
   const ACCOUNT_ITEMS = [
     { id: 'deposit',  label: tr.accountDeposit,   sublabel: tr.accountDepositSub,   icon: 'arrow-down-circle', color: '#E67E22' },
     { id: 'withdraw', label: tr.accountWithdraw,   sublabel: tr.accountWithdrawSub,  icon: 'wallet',            color: '#F39C12' },
+    { id: 'payment',  label: tr.accountPaymentAccounts, sublabel: tr.accountPaymentAccountsSub, icon: 'card-outline', color: '#2980B9' },
+    { id: 'requests', label: tr.accountCoinRequests, sublabel: tr.accountCoinRequestsSub, icon: 'swap-horizontal', color: '#16A085' },
     { id: 'pw',       label: tr.accountChangePw,   sublabel: tr.accountChangePwSub,  icon: 'lock-closed',       color: '#9B59B6' },
     { id: 'rule',     label: tr.accountRule,        sublabel: tr.accountRuleSub,      icon: 'book-outline',      color: '#1ABC9C' },
     { id: 'ucenter',  label: tr.accountUcenter,    sublabel: tr.accountUcenterSub,   icon: 'settings-outline',  color: '#7F8C8D' },
@@ -24,7 +37,14 @@ export default function AccountScreen() {
   function handleLogout() {
     Alert.alert(tr.logoutConfirmTitle, tr.logoutConfirmMsg, [
       { text: tr.logoutCancel, style: 'cancel' },
-      { text: tr.logoutConfirm, style: 'destructive', onPress: () => router.replace('/login') },
+      {
+        text: tr.logoutConfirm,
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+          router.replace('/(tabs)');
+        },
+      },
     ]);
   }
 
@@ -33,32 +53,40 @@ export default function AccountScreen() {
       <View style={s.topGreen}>
         <Text style={s.headerTitle}>{tr.accountTitle}</Text>
 
-        <View style={s.profileBanner}>
-          <View style={s.bannerCircle1} />
-          <View style={s.bannerCircle2} />
+        {isAuthenticated && user ? (
+          <View style={s.profileBanner}>
+            <View style={s.bannerCircle1} />
+            <View style={s.bannerCircle2} />
 
-          <View style={s.profileRow}>
-            <View style={s.avatar}>
-              <Ionicons name="person" size={24} color={Colors.brand.greenMid} />
+            <View style={s.profileRow}>
+              <View style={s.avatar}>
+                <Ionicons name="person" size={24} color={Colors.brand.greenMid} />
+              </View>
+              <View style={s.profileInfo}>
+                <Text style={s.bannerName}>{user.username}</Text>
+              </View>
             </View>
-            <View style={s.profileInfo}>
-              <Text style={s.bannerName}>{USER.username}</Text>
+
+            <View style={s.bannerRow}>
+              <View style={s.bannerChip}>
+                <Ionicons name="wallet-outline" size={14} color="rgba(255,255,255,0.7)" />
+                <Text style={s.bannerChipLabel}>{tr.accountBalance}</Text>
+                <Text style={s.bannerChipValue}>
+                  {formatBalance(user.balance, lang)} {tr.currencyUnit}
+                </Text>
+              </View>
+              <View style={s.bannerChip}>
+                <Ionicons name="key-outline" size={14} color="rgba(255,255,255,0.7)" />
+                <Text style={s.bannerChipLabel}>{tr.accountCashCode}</Text>
+                <Text style={s.bannerChipValue}>{user.cash_code ?? '—'}</Text>
+              </View>
             </View>
           </View>
-
-          <View style={s.bannerRow}>
-            <View style={s.bannerChip}>
-              <Ionicons name="wallet-outline" size={14} color="rgba(255,255,255,0.7)" />
-              <Text style={s.bannerChipLabel}>{tr.accountBalance}</Text>
-              <Text style={s.bannerChipValue}>{USER.balance} {tr.currencyUnit}</Text>
-            </View>
-            <View style={s.bannerChip}>
-              <Ionicons name="key-outline" size={14} color="rgba(255,255,255,0.7)" />
-              <Text style={s.bannerChipLabel}>{tr.accountCashCode}</Text>
-              <Text style={s.bannerChipValue}>{USER.cashCode}</Text>
-            </View>
+        ) : (
+          <View style={s.guestBanner}>
+            <LoginPromptCard compact />
           </View>
-        </View>
+        )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
@@ -66,12 +94,14 @@ export default function AccountScreen() {
         <View style={s.section}>
           {ACCOUNT_ITEMS.map((item, i) => {
             const route = ROW_ROUTES[item.id];
+            const isPublic = item.id === 'rule';
+            if (!isAuthenticated && !isPublic) return null;
             return (
               <View key={item.id}>
                 <TouchableOpacity
                   style={s.row}
                   activeOpacity={0.7}
-                  onPress={route ? () => router.push(route as any) : undefined}
+                  onPress={() => navigate(item.id, route)}
                 >
                   <View style={[s.rowIcon, { backgroundColor: item.color + '18' }]}>
                     <Ionicons name={item.icon as any} size={20} color={item.color} />
@@ -116,10 +146,12 @@ export default function AccountScreen() {
         </View>
 
         {/* Logout */}
-        <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-          <Ionicons name="log-out-outline" size={20} color="#fff" />
-          <Text style={s.logoutText}>{tr.accountLogout}</Text>
-        </TouchableOpacity>
+        {isAuthenticated && (
+          <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+            <Ionicons name="log-out-outline" size={20} color="#fff" />
+            <Text style={s.logoutText}>{tr.accountLogout}</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -197,6 +229,7 @@ const s = StyleSheet.create({
   },
   bannerChipLabel: { fontSize: 9, color: 'rgba(255,255,255,0.6)' },
   bannerChipValue: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: '#fff' },
+  guestBanner: { marginHorizontal: Spacing.md },
   scrollContent: { paddingBottom: 40, paddingTop: Spacing.sm },
   section: {
     backgroundColor: '#fff', margin: Spacing.md, marginBottom: 0,

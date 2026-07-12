@@ -5,24 +5,28 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { LanguageProvider } from '@/contexts/language';
-import { NewsEngagementProvider } from '@/contexts/news-engagement';
+import { AuthProvider } from '@/contexts/auth';
+import { AppConfigProvider } from '@/contexts/app-config';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <LanguageProvider>
-      <NewsEngagementProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack initialRouteName="login">
-            <Stack.Screen name="login"           options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)"          options={{ headerShown: false }} />
-            <Stack.Screen name="profile"         options={{ headerShown: false }} />
-            <Stack.Screen name="modal"           options={{ presentation: 'modal', title: 'Modal' }} />
-          </Stack>
-          <StatusBar style="light" />
-        </ThemeProvider>
-      </NewsEngagementProvider>
+      <AuthProvider>
+        <AppConfigProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <Stack initialRouteName="(tabs)">
+                <Stack.Screen name="(tabs)"          options={{ headerShown: false }} />
+                <Stack.Screen name="login"           options={{ headerShown: false }} />
+                <Stack.Screen name="register"        options={{ headerShown: false }} />
+                <Stack.Screen name="profile"         options={{ headerShown: false }} />
+                <Stack.Screen name="modal"           options={{ presentation: 'modal', title: 'Modal' }} />
+              </Stack>
+              <StatusBar style="light" />
+            </ThemeProvider>
+        </AppConfigProvider>
+      </AuthProvider>
     </LanguageProvider>
   );
 }

@@ -1,22 +1,37 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  Switch, StyleSheet, KeyboardAvoidingView, Platform, StatusBar,
+  Switch, StyleSheet, KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
+import { useAuth } from '@/contexts/auth';
 
 export default function LoginScreen() {
   const { tr } = useLanguage();
+  const { login } = useAuth();
   const [account, setAccount]         = useState('');
   const [password, setPassword]       = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe]   = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleLogin() {
-    router.replace('/(tabs)');
+  async function handleLogin() {
+    if (!account.trim() || !password.trim()) {
+      Alert.alert('', tr.loginAccountPh);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await login(account.trim(), password);
+      router.replace('/(tabs)');
+    } catch (e) {
+      Alert.alert('', e instanceof Error ? e.message : 'Login failed');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -90,8 +105,26 @@ export default function LoginScreen() {
             />
           </View>
 
-          <TouchableOpacity style={s.loginButton} onPress={handleLogin} activeOpacity={0.85}>
-            <Text style={s.loginButtonText}>{tr.loginButton}</Text>
+          <TouchableOpacity
+            style={[s.loginButton, submitting && s.loginButtonDisabled]}
+            onPress={handleLogin}
+            activeOpacity={0.85}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={s.loginButtonText}>{tr.loginButton}</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={s.switchRow}
+            onPress={() => router.push('/register')}
+            activeOpacity={0.7}
+          >
+            <Text style={s.switchText}>{tr.loginNoAccount} </Text>
+            <Text style={s.switchLink}>{tr.loginGoRegister}</Text>
           </TouchableOpacity>
 
           <Text style={s.helpText}>{tr.loginHelp}</Text>
@@ -143,6 +176,13 @@ const s = StyleSheet.create({
     backgroundColor: Colors.brand.greenButton, borderRadius: BorderRadius.xl,
     height: 56, alignItems: 'center', justifyContent: 'center', ...Shadow.md,
   },
+  loginButtonDisabled: { opacity: 0.7 },
   loginButtonText: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.brand.white, letterSpacing: 0.5 },
-  helpText: { fontSize: FontSize.sm, color: Colors.light.textSecondary, textAlign: 'center', marginTop: Spacing.md },
+  switchRow: {
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+    marginTop: Spacing.md, paddingVertical: 4,
+  },
+  switchText: { fontSize: FontSize.sm, color: Colors.light.textSecondary },
+  switchLink: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: Colors.brand.greenButton },
+  helpText: { fontSize: FontSize.sm, color: Colors.light.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
 });

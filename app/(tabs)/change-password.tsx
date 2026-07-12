@@ -1,24 +1,30 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, Alert,
+  StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
+import { useAuth } from '@/contexts/auth';
+import { useRequireAuth } from '@/hooks/use-require-auth';
+import { changePasswordRequest } from '@/services/auth';
 
 export default function ChangePasswordScreen() {
+  useRequireAuth();
   const { tr } = useLanguage();
+  const { token } = useAuth();
   const [current, setCurrent]         = useState('');
   const [next, setNext]               = useState('');
   const [confirm, setConfirm]         = useState('');
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNext, setShowNext]       = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!current || !next || !confirm) {
       Alert.alert(tr.changePwErrEmpty, tr.changePwErrEmptyMsg);
       return;
@@ -31,9 +37,26 @@ export default function ChangePasswordScreen() {
       Alert.alert(tr.changePwErrShort, tr.changePwErrShortMsg);
       return;
     }
-    Alert.alert(tr.changePwSuccess, tr.changePwSuccessMsg, [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    if (!token) {
+      router.replace('/login');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await changePasswordRequest(token, {
+        current_password: current,
+        password: next,
+        password_confirmation: confirm,
+      });
+      Alert.alert(tr.changePwSuccess, tr.changePwSuccessMsg, [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (e) {
+      Alert.alert('', e instanceof Error ? e.message : tr.changePwFailed);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -87,8 +110,17 @@ export default function ChangePasswordScreen() {
             />
           </View>
 
-          <TouchableOpacity style={s.btn} onPress={handleSubmit} activeOpacity={0.85}>
-            <Text style={s.btnText}>{tr.changePwOK}</Text>
+          <TouchableOpacity
+            style={[s.btn, submitting && s.btnDisabled]}
+            onPress={handleSubmit}
+            activeOpacity={0.85}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={s.btnText}>{tr.changePwOK}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -160,5 +192,6 @@ const s = StyleSheet.create({
     height: 56, alignItems: 'center', justifyContent: 'center',
     marginTop: Spacing.lg, ...Shadow.md,
   },
+  btnDisabled: { opacity: 0.7 },
   btnText: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff', letterSpacing: 1 },
 });

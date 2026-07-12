@@ -1,6 +1,5 @@
 import type { Lang } from '@/constants/i18n';
-import type { NewsArticle } from '@/constants/news';
-import { NEWS_CATEGORY_LABELS } from '@/constants/news';
+import type { FootballNewsArticle } from '@/types/api';
 
 export function formatCount(n: number): string {
   if (n >= 1_000_000) {
@@ -29,26 +28,19 @@ export function timeAgo(iso: string, lang: Lang): string {
   });
 }
 
-export function articleTitle(article: NewsArticle, lang: Lang): string {
-  return lang === 'my' ? article.titleMy : article.titleEn;
+export function newsBodyParagraphs(content: string): string[] {
+  return content
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
 }
 
-export function articleSummary(article: NewsArticle, lang: Lang): string {
-  return lang === 'my' ? article.summaryMy : article.summaryEn;
+export function estimateReadMinutes(content: string): number {
+  const words = content.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
 }
 
-export function articleBody(article: NewsArticle, lang: Lang): string[] {
-  return lang === 'my' ? article.bodyMy : article.bodyEn;
-}
-
-export function articleAuthor(article: NewsArticle, lang: Lang): string {
-  return lang === 'my' ? article.authorMy : article.authorEn;
-}
-
-export function categoryLabel(
-  category: NewsArticle['category'],
-  lang: Lang,
-): string {
-  const labels = NEWS_CATEGORY_LABELS[category];
-  return lang === 'my' ? labels.my : labels.en;
+export function newsImageUri(article: FootballNewsArticle): string | null {
+  const url = article.image_url?.trim();
+  return url || null;
 }

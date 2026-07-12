@@ -18,183 +18,29 @@ import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/c
 import { useLanguage } from '@/contexts/language';
 import type { Translations } from '@/constants/i18n';
 import { BetSlipDrawer } from '@/components/maung-bet-drawer';
-
-type BetRow = 'hdp' | 'ou' | 'oe';
-type Side = 'left' | 'right';
-type SelectKey = `${string}:${BetRow}`;
-
-type MatchData = {
-  id: string;
-  date: string;
-  home: string;
-  away: string;
-  hdpGiving: 'home' | 'away';
-  hdpLine: string;
-  hdpOdds: number;
-  ouLine: string;
-  ouOdds: number;
-  oeRef: string;
-};
-
-type LeagueData = { name: string; matches: MatchData[] };
-
-const LEAGUES: LeagueData[] = [
-  {
-    name: 'ARGENTINA CUP',
-    matches: [
-      {
-        id: 'm1',
-        date: '05-21 02:30',
-        home: 'Talleres Cordoba (n)',
-        away: 'Atletico Tucuman',
-        hdpGiving: 'home',
-        hdpLine: '0',
-        hdpOdds: -86,
-        ouLine: '2',
-        ouOdds: -14,
-        oeRef: '2',
-      },
-      {
-        id: 'm2',
-        date: '05-21 04:00',
-        home: 'Boca Juniors',
-        away: 'River Plate',
-        hdpGiving: 'home',
-        hdpLine: '0/0.5',
-        hdpOdds: -56,
-        ouLine: '2.5',
-        ouOdds: 98,
-        oeRef: '2',
-      },
-    ],
-  },
-  {
-    name: 'COPA LIBERTADORES',
-    matches: [
-      {
-        id: 'm3',
-        date: '05-21 04:30',
-        home: 'Nacional Montevideo',
-        away: 'Universitario Deportes',
-        hdpGiving: 'home',
-        hdpLine: '1',
-        hdpOdds: 35,
-        ouLine: '2',
-        ouOdds: -58,
-        oeRef: '2',
-      },
-      {
-        id: 'm4',
-        date: '05-21 07:00',
-        home: 'LDU Quito',
-        away: 'Lanus',
-        hdpGiving: 'home',
-        hdpLine: '0',
-        hdpOdds: -98,
-        ouLine: '2',
-        ouOdds: -38,
-        oeRef: '2',
-      },
-      {
-        id: 'm5',
-        date: '05-21 06:30',
-        home: 'Atletico Bucaramanga',
-        away: 'Boca Juniors de Cali',
-        hdpGiving: 'home',
-        hdpLine: '2',
-        hdpOdds: 76,
-        ouLine: '3',
-        ouOdds: 100,
-        oeRef: '2',
-      },
-    ],
-  },
-  {
-    name: 'FINLAND VEIKKAUSLIIGA',
-    matches: [
-      {
-        id: 'm6',
-        date: '05-21 21:00',
-        home: 'HJK Helsinki',
-        away: 'IFK Mariehamn',
-        hdpGiving: 'home',
-        hdpLine: '1.5',
-        hdpOdds: -42,
-        ouLine: '3',
-        ouOdds: 76,
-        oeRef: '2',
-      },
-      {
-        id: 'm7',
-        date: '05-21 21:00',
-        home: 'FC Inter Turku',
-        away: 'AC Oulu',
-        hdpGiving: 'away',
-        hdpLine: '0.5',
-        hdpOdds: -60,
-        ouLine: '2.5',
-        ouOdds: 88,
-        oeRef: '2',
-      },
-    ],
-  },
-  {
-    name: 'ENGLAND PREMIER LEAGUE',
-    matches: [
-      {
-        id: 'm8',
-        date: '05-21 21:00',
-        home: 'Arsenal',
-        away: 'Chelsea',
-        hdpGiving: 'home',
-        hdpLine: '0',
-        hdpOdds: -72,
-        ouLine: '2.5',
-        ouOdds: -10,
-        oeRef: '2',
-      },
-      {
-        id: 'm9',
-        date: '05-21 23:30',
-        home: 'Liverpool',
-        away: 'Man City',
-        hdpGiving: 'home',
-        hdpLine: '0/0.5',
-        hdpOdds: -44,
-        ouLine: '3',
-        ouOdds: 92,
-        oeRef: '2',
-      },
-    ],
-  },
-];
-
-const MATCH_MAP = new Map(LEAGUES.flatMap(l => l.matches.map(m => [m.id, m] as const)));
-
-function formatOdds(n: number) {
-  return n > 0 ? `+${n}` : `${n}`;
-}
+import { useRequireAuth } from '@/hooks/use-require-auth';
+import { useFootballMatches } from '@/hooks/use-football-matches';
+import { useAuth } from '@/contexts/auth';
+import { submitBetSlip } from '@/services/football';
+import {
+  buildMatchMap,
+  buildSubmitPayload,
+  formatOddsDisplay,
+  pickLabel,
+  type BetRow,
+  type SelectKey,
+  type BetSide as Side,
+  type UiMatchData as MatchData,
+  type UiLeagueData as LeagueData,
+} from '@/utils/football-ui';
 
 function shortTeam(name: string) {
   const i = name.indexOf(' ');
   return i > 0 && name.length > 14 ? `${name.slice(0, i)}…` : name;
 }
 
-function pickLabel(match: MatchData, row: BetRow, side: Side, tr: Translations): string {
-  const giving = match.hdpGiving === 'home' ? match.home : match.away;
-  const receiving = match.hdpGiving === 'home' ? match.away : match.home;
-  if (row === 'hdp') {
-    const team = side === 'left' ? giving : receiving;
-    return `${team} ${match.hdpLine}`;
-  }
-  if (row === 'ou') {
-    const team = side === 'left' ? match.home : match.away;
-    const pick = side === 'left' ? tr.maungOver : tr.maungUnder;
-    return `${team} · ${pick} ${match.ouLine}`;
-  }
-  const team = side === 'left' ? match.home : match.away;
-  const pick = side === 'left' ? tr.maungOdd : tr.maungEven;
-  return `${team} · ${pick}`;
+function formatOdds(n: number, line?: string) {
+  return formatOddsDisplay(n, line);
 }
 
 function BetCell({
@@ -271,7 +117,7 @@ function MatchCard({
               {givingName}
             </Text>
             <Text style={[s.oddsText, hdpSel === 'left' && s.oddsSelected]}>
-              {match.hdpLine} ({formatOdds(match.hdpOdds)})
+              {match.hdpLine} ({formatOdds(match.hdpOdds, match.hdpLine)})
             </Text>
           </BetCell>
           <BetCell
@@ -297,7 +143,7 @@ function MatchCard({
           </BetCell>
           <BetCell center>
             <Text style={s.centerOdds}>
-              {match.ouLine} ({formatOdds(match.ouOdds)})
+              {match.ouLine} ({formatOdds(match.ouOdds, match.ouLine)})
             </Text>
           </BetCell>
           <BetCell
@@ -369,12 +215,17 @@ function LeagueBlock({
 }
 
 export default function MaungScreen() {
+  useRequireAuth();
   const { tr } = useLanguage();
+  const { token, refreshUser } = useAuth();
+  const { leagues, loading, error, reload } = useFootballMatches('mix');
+  const matchMap = useMemo(() => buildMatchMap(leagues), [leagues]);
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const [selections, setSelections] = useState<Record<SelectKey, Side>>({});
   const [stake, setStake] = useState('500');
   const [drawerExpanded, setDrawerExpanded] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const count = Object.keys(selections).length;
   const canBet = count >= 2;
@@ -382,11 +233,11 @@ export default function MaungScreen() {
   const slipItems = useMemo(() => {
     return Object.entries(selections).map(([key, side]) => {
       const [matchId, row] = key.split(':') as [string, BetRow];
-      const match = MATCH_MAP.get(matchId);
+      const match = matchMap.get(matchId);
       if (!match) return { key: key as SelectKey, label: key };
       return { key: key as SelectKey, label: pickLabel(match, row, side, tr) };
     });
-  }, [selections, tr]);
+  }, [selections, tr, matchMap]);
 
   const slipCopy = useMemo(
     () => ({
@@ -411,7 +262,16 @@ export default function MaungScreen() {
         delete next[key];
         return next;
       }
-      return { ...prev, [key]: side };
+      const [matchId] = key.split(':');
+      const next = { ...prev };
+      // One pick per match: HDP, O/U, or O/E — not multiple on the same match
+      for (const k of Object.keys(next)) {
+        if (k.startsWith(`${matchId}:`)) {
+          delete next[k as SelectKey];
+        }
+      }
+      next[key] = side;
+      return next;
     });
   }
 
@@ -428,12 +288,31 @@ export default function MaungScreen() {
     setStake('500');
   }
 
-  function handleOK() {
-    if (!canBet) {
-      Alert.alert('', tr.maungMinErr);
+  async function handleOK() {
+    if (!canBet || !token) {
+      if (!canBet) Alert.alert('', tr.maungMinErr);
       return;
     }
-    Alert.alert(tr.maungPlaceBet, `${count} ${tr.maungPicks} · ${stake} ${tr.currencyUnit}`);
+    const total = parseInt(stake.replace(/,/g, ''), 10);
+    if (!total || total < 1) {
+      Alert.alert('', tr.footballAmountRequired);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const payload = buildSubmitPayload('mix', selections, matchMap, total);
+      await submitBetSlip(token, payload);
+      await refreshUser();
+      setSelections({});
+      Alert.alert(tr.footballBetSuccessTitle, tr.footballBetSuccessMsg, [
+        { text: tr.footballViewBets, onPress: () => router.push('/(tabs)/bets' as never) },
+        { text: 'OK' },
+      ]);
+    } catch (e) {
+      Alert.alert('', e instanceof Error ? e.message : tr.footballBetFailed);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const safeBottom = Math.max(insets.bottom, 8);
@@ -471,19 +350,36 @@ export default function MaungScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {LEAGUES.map(league => (
-            <LeagueBlock
-              key={league.name}
-              league={league}
-              selections={selections}
-              onSelect={handleSelect}
-            />
-          ))}
+          {loading ? (
+            <View style={s.loadWrap}>
+              <Text style={s.loadText}>{tr.footballLoadingMatches}</Text>
+            </View>
+          ) : error ? (
+            <View style={s.loadWrap}>
+              <Text style={s.errorText}>{error}</Text>
+              <TouchableOpacity onPress={reload} style={s.retryBtn}>
+                <Text style={s.retryText}>{tr.footballRetry}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : leagues.length === 0 ? (
+            <View style={s.loadWrap}>
+              <Text style={s.loadText}>{tr.footballNoMatches}</Text>
+            </View>
+          ) : (
+            leagues.map((league) => (
+              <LeagueBlock
+                key={league.name}
+                league={league}
+                selections={selections}
+                onSelect={handleSelect}
+              />
+            ))
+          )}
         </ScrollView>
 
         <BetSlipDrawer
           count={count}
-          canBet={canBet}
+          canBet={canBet && !submitting}
           stake={stake}
           onStakeChange={setStake}
           slipItems={slipItems}
@@ -544,6 +440,16 @@ const s = StyleSheet.create({
 
   scroll: { flex: 1 },
   scrollContent: { padding: Spacing.md, gap: Spacing.md },
+  loadWrap: { alignItems: 'center', paddingVertical: Spacing.xl * 2, gap: Spacing.sm },
+  loadText: { fontSize: FontSize.sm, color: Colors.light.textSecondary },
+  errorText: { fontSize: FontSize.sm, color: Colors.light.error, textAlign: 'center' },
+  retryBtn: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.brand.greenButton + '22',
+  },
+  retryText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.brand.greenButton },
 
   leagueBlock: { marginBottom: Spacing.xs },
   leagueHeader: {
