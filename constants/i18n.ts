@@ -42,7 +42,10 @@ const translations = {
 
     // Menu items
     menuMixParlay: "Mix Parlay",
-    menuHDP: "HDP&O/U",
+    menuHDP: "Body",
+    menuSoneMa: "Odd / Even",
+    menu1x2: "1X2",
+    menuCorrectScore: "Correct Score",
     menuScore: "Score",
     menuBetList: "Bet List",
     menuDeposit: "Auto Deposit",
@@ -339,6 +342,15 @@ const translations = {
     footballViewBets: "View bets",
     footballLoadingBets: "Loading bets…",
     footballBetListFailed: "Could not load bets",
+    football1x2: "1X2",
+    football1x2Title: "1X2",
+    footballDraw: "Draw",
+    footballCorrectScore: "CS",
+    footballCorrectScoreTitle: "Correct Score",
+    footballMajorMatch: "Major",
+    footballSoneMaTitle: "Odd / Even",
+    footballSinglePickHint: "Select 1 pick to place a bet",
+    footballSinglePickErr: "Select at least 1 pick",
 
     // Language picker
     langEnglish: "English",
@@ -387,6 +399,9 @@ const translations = {
     // Menu items
     menuMixParlay: "မောင်း",
     menuHDP: "ဘော်ဒီ",
+    menuSoneMa: "စုံ / မ",
+    menu1x2: "1X2",
+    menuCorrectScore: "ဂိုးမှန်",
     menuScore: "ပွဲရလဒ်",
     menuBetList: "လောင်းထားသောပွဲစဉ်",
     menuDeposit: "အော်တိုငွေသွင်းစနစ်",
@@ -684,6 +699,15 @@ const translations = {
     footballViewBets: "လောင်းစာရင်း ကြည့်ရန်",
     footballLoadingBets: "လောင်းစာရင်း ရယူနေသည်…",
     footballBetListFailed: "လောင်းစာရင်း မရယူနိုင်ပါ",
+    football1x2: "1X2",
+    football1x2Title: "1X2",
+    footballDraw: "သရေ",
+    footballCorrectScore: "ဂိုးမှန်",
+    footballCorrectScoreTitle: "ဂိုးမှန်",
+    footballMajorMatch: "အဓိကပွဲ",
+    footballSoneMaTitle: "စုံ / မ",
+    footballSinglePickHint: "အနည်းဆုံး ၁ ခု ရွေးပြီး လောင်းပါ",
+    footballSinglePickErr: "အနည်းဆုံး ၁ ခု ရွေးပါ",
 
     // Language picker
     langEnglish: "English",

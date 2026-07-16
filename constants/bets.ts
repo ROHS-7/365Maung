@@ -9,7 +9,7 @@ export type HdpOuBet = {
   time: string;
   home: string;
   away: string;
-  betType: 'HDP' | 'O/U' | 'O/E';
+  betType: 'HDP' | 'O/U' | 'O/E' | '1X2' | 'CS';
   pick: string;
   line: string;
   odds: number;

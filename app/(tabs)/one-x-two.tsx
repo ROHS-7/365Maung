@@ -1,17 +1,17 @@
 import { FootballBetScreen } from '@/components/football-bet-screen';
 import { useLanguage } from '@/contexts/language';
 
-export default function HdpScreen() {
+export default function OneXTwoScreen() {
   const { tr } = useLanguage();
   return (
     <FootballBetScreen
-      title={tr.hdpTitle}
+      title={tr.football1x2Title}
       mode="single"
-      markets={['asian_handicap']}
+      markets={['match_winner_1x2']}
       minPicks={1}
-      stakePlaceholder="5000"
-      hint={tr.hdpMinPicksHint}
-      minErr={tr.hdpMinErr}
+      stakePlaceholder="1000"
+      hint={tr.footballSinglePickHint}
+      minErr={tr.footballSinglePickErr}
     />
   );
 }

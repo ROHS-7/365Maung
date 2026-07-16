@@ -68,8 +68,26 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />,
         }}
       />
-      <Tabs.Screen name="maung"           options={{ href: null }} />
-      <Tabs.Screen name="hdp"             options={{ href: null }} />
+      <Tabs.Screen
+        name="maung"
+        options={{ href: null, tabBarStyle: { display: 'none' } }}
+      />
+      <Tabs.Screen
+        name="hdp"
+        options={{ href: null, tabBarStyle: { display: 'none' } }}
+      />
+      <Tabs.Screen
+        name="sone-ma"
+        options={{ href: null, tabBarStyle: { display: 'none' } }}
+      />
+      <Tabs.Screen
+        name="one-x-two"
+        options={{ href: null, tabBarStyle: { display: 'none' } }}
+      />
+      <Tabs.Screen
+        name="correct-score"
+        options={{ href: null, tabBarStyle: { display: 'none' } }}
+      />
       <Tabs.Screen name="rule"            options={{ href: null }} />
       <Tabs.Screen name="change-password" options={{ href: null }} />
       <Tabs.Screen name="auto-deposit"    options={{ href: null }} />

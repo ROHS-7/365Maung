@@ -23,6 +23,9 @@ const MOCK_MATCHES: FootballMatchesResponse = {
       single_goal_odds: '2=',
       mix_odds: '0/0.5',
       mix_goal_odds: '2.5=',
+      one_x_two_odds: { home: 1.85, draw: 3.4, away: 4.2 },
+      correct_score_odds: { '1-0': 7.5, '2-1': 8.5, '2-0': 9.0, AOS: 20.0 },
+      sone_ma_odds: { sone: 0.91, ma: 0.99 },
       home_result: null,
       away_result: null,
       is_show: true,
@@ -42,6 +45,9 @@ const MOCK_MATCHES: FootballMatchesResponse = {
       single_goal_odds: '2=',
       mix_odds: '1',
       mix_goal_odds: '2=',
+      one_x_two_odds: { home: 2.1, draw: 3.2, away: 3.5 },
+      correct_score_odds: { '1-0': 6.5, '1-1': 5.5, AOS: 18.0 },
+      sone_ma_odds: { sone: 0.95, ma: 0.95 },
       home_result: null,
       away_result: null,
       is_show: true,
@@ -61,6 +67,9 @@ const MOCK_MATCHES: FootballMatchesResponse = {
       single_goal_odds: '2.5=',
       mix_odds: '0',
       mix_goal_odds: '2.5=',
+      one_x_two_odds: { home: 1.7, draw: 3.6, away: 4.8 },
+      correct_score_odds: { '2-0': 8.0, '2-1': 7.0, AOS: 22.0 },
+      sone_ma_odds: { sone: 0.9, ma: 1.0 },
       home_result: null,
       away_result: null,
       is_show: true,
@@ -135,12 +144,16 @@ function normalizeLeg(raw: unknown): BetSlipLeg {
 
   const goalUpDown = r.goal_up_down;
   const soneMa = r.sone_ma;
+  const marketRaw = typeof r.market === 'string' ? r.market : null;
+  const selectionRaw = typeof r.selection === 'string' ? r.selection : null;
 
   return {
     id: Number(r.id ?? 0),
     bet_amount: Number(r.bet_amount ?? 0),
     odds: String(r.odds ?? ''),
     goal_odds: r.goal_odds != null ? String(r.goal_odds) : null,
+    market: marketRaw as BetSlipLeg['market'],
+    selection: selectionRaw,
     goal_up_down:
       goalUpDown === 'up' || goalUpDown === 'down' ? goalUpDown : null,
     sone_ma: soneMa === 'sone' || soneMa === 'ma' ? soneMa : null,
@@ -221,12 +234,14 @@ export async function submitBetSlip(
             ? home
             : m.selected_team_id === away.id
               ? away
-              : { id: m.selected_team_id, name: 'Pick', name_en: 'Pick' };
+              : { id: m.selected_team_id ?? 0, name: 'Pick', name_en: 'Pick' };
         return {
           id: Date.now() + i,
           bet_amount: m.bet_amount,
-          odds: m.goal_up_down || m.sone_ma ? '' : '0',
+          odds: m.goal_up_down || m.sone_ma || m.selection ? '' : '0',
           goal_odds: m.goal_up_down ? match?.single_goal_odds ?? '2=' : null,
+          market: m.market ?? null,
+          selection: m.selection ?? null,
           goal_up_down: m.goal_up_down ?? null,
           sone_ma: m.sone_ma ?? null,
           is_bingo: false,

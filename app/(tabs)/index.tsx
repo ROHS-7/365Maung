@@ -39,6 +39,9 @@ const MENU_ROUTES: Record<string, string> = {
   score: "/(tabs)/scores",
   mix: "/(tabs)/maung",
   hdp: "/(tabs)/hdp",
+  sonema: "/(tabs)/sone-ma",
+  onextwo: "/(tabs)/one-x-two",
+  correctscore: "/(tabs)/correct-score",
   betlist: "/(tabs)/bets",
   news: "/(tabs)/news",
 };
@@ -228,7 +231,7 @@ function QuickTile({ item }: { item: MenuEntry }) {
       onPress={() => navigate(item.id, route)}
     >
       <View style={[s.quickIcon, { backgroundColor: item.bg }]}>
-        <Ionicons name={item.icon} size={24} color="#fff" />
+        <Ionicons name={item.icon} size={28} color="#fff" />
       </View>
       <Text style={s.quickLabel} numberOfLines={2}>
         {(tr as Record<string, string>)[item.labelKey]}
@@ -260,6 +263,9 @@ function ServiceTile({ item }: { item: MenuEntry }) {
 const QUICK_PLAY: MenuEntry[] = [
   { id: "mix", labelKey: "menuMixParlay", icon: "trophy", bg: "#27AE60" },
   { id: "hdp", labelKey: "menuHDP", icon: "football", bg: "#2980B9" },
+  { id: "sonema", labelKey: "menuSoneMa", icon: "shuffle", bg: "#8E44AD" },
+  { id: "onextwo", labelKey: "menu1x2", icon: "grid", bg: "#16A085" },
+  { id: "correctscore", labelKey: "menuCorrectScore", icon: "keypad", bg: "#D35400" },
   { id: "score", labelKey: "menuScore", icon: "pulse", bg: "#E74C3C" },
   { id: "news", labelKey: "menuNews", icon: "newspaper", bg: "#34495E" },
 ];
@@ -378,7 +384,7 @@ export default function HomeScreen() {
           <AnnouncementBanner text={announcement} />
 
           <Text style={s.sectionTitle}>{tr.homeQuickPlay}</Text>
-          <View style={s.quickRow}>
+          <View style={s.quickGrid}>
             {QUICK_PLAY.map((item) => (
               <QuickTile key={item.id} item={item} />
             ))}
@@ -634,35 +640,35 @@ const s = StyleSheet.create({
     color: Colors.light.text,
     marginBottom: Spacing.sm,
   },
-  quickRow: {
+  quickGrid: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: Spacing.lg,
+    flexWrap: "wrap",
     gap: Spacing.sm,
+    marginBottom: Spacing.lg,
   },
   quickTile: {
-    flex: 1,
+    width: "31.5%",
     backgroundColor: "#fff",
     borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: 6,
+    paddingVertical: Spacing.md + 2,
+    paddingHorizontal: Spacing.sm,
     alignItems: "center",
     ...Shadow.sm,
   },
   quickIcon: {
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: BorderRadius.lg,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,
   },
   quickLabel: {
-    fontSize: 11,
+    fontSize: FontSize.sm,
     fontWeight: FontWeight.semibold,
     color: Colors.light.text,
     textAlign: "center",
-    lineHeight: 14,
+    lineHeight: 18,
   },
   serviceGrid: {
     flexDirection: "row",
@@ -671,28 +677,28 @@ const s = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   serviceTile: {
-    width: "31%",
+    width: "31.5%",
     backgroundColor: "#fff",
     borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: 6,
+    paddingVertical: Spacing.md + 2,
+    paddingHorizontal: Spacing.sm,
     alignItems: "center",
     ...Shadow.sm,
   },
   serviceIcon: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     borderRadius: BorderRadius.md,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,
   },
   serviceLabel: {
-    fontSize: 11,
+    fontSize: FontSize.sm,
     fontWeight: FontWeight.semibold,
     color: Colors.light.text,
     textAlign: "center",
-    lineHeight: 14,
+    lineHeight: 18,
   },
   tilePressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
 });

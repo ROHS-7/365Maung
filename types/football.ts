@@ -9,6 +9,27 @@ export type FootballLeague = {
   name: string;
 };
 
+export type OneXTwoOdds = {
+  home: number;
+  draw: number;
+  away: number;
+};
+
+export type SoneMaOdds = {
+  sone: number;
+  ma: number;
+};
+
+/** Keys are score strings e.g. "1-0", "2-1", "AOS" */
+export type CorrectScoreOdds = Record<string, number>;
+
+export type FootballMarket =
+  | 'asian_handicap'
+  | 'goals_ou'
+  | 'sone_ma'
+  | 'match_winner_1x2'
+  | 'correct_score';
+
 export type FootballMatch = {
   id: number;
   match_id: number;
@@ -18,6 +39,9 @@ export type FootballMatch = {
   single_goal_odds: string;
   mix_odds: string;
   mix_goal_odds: string;
+  one_x_two_odds?: OneXTwoOdds | null;
+  correct_score_odds?: CorrectScoreOdds | null;
+  sone_ma_odds?: SoneMaOdds | null;
   home_result: number | null;
   away_result: number | null;
   is_show: boolean;
@@ -35,10 +59,12 @@ export type FootballMatchesResponse = {
 
 export type BetSlipLegPayload = {
   match_id: number;
-  selected_team_id: number;
   bet_amount: number;
+  market?: FootballMarket;
+  selected_team_id?: number;
   goal_up_down?: 'up' | 'down';
   sone_ma?: 'sone' | 'ma';
+  selection?: string;
 };
 
 export type SubmitBetSlipPayload = {
@@ -53,6 +79,8 @@ export type BetSlipLeg = {
   bet_amount: number;
   odds: string;
   goal_odds: string | null;
+  market?: FootballMarket | null;
+  selection?: string | null;
   goal_up_down?: 'up' | 'down' | null;
   sone_ma?: 'sone' | 'ma' | null;
   is_bingo: boolean;

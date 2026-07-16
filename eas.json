@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 16.0.0"
+    "version": ">= 16.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -9,9 +10,12 @@
     },
     "preview": {
       "distribution": "internal",
+      "node": "22.14.0",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.myanmarkyay.com/api"
+      },
       "android": {
-        "buildType": "apk",
-        "image": "latest"
+        "buildType": "apk"
       },
       "ios": {
         "simulator": false
