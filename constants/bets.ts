@@ -3,6 +3,8 @@ import { calcHdpQuotedReturn } from '@/utils/hdp-settlement';
 
 export type BetStatus = 'pending' | 'win' | 'loss';
 
+export type SelectedSide = 'home' | 'away' | 'draw';
+
 export type HdpOuBet = {
   kind: 'hdpou';
   id: string;
@@ -17,6 +19,8 @@ export type HdpOuBet = {
   /** Profit amount (not total return). */
   payout: number;
   status: BetStatus;
+  /** Which side the user picked, when applicable. */
+  selectedSide?: SelectedSide | null;
   /** Team giving the handicap (HDP only). */
   hdpGiving?: 'home' | 'away';
   /** Final score — settled HDP with margin tiers. */
@@ -30,7 +34,12 @@ export type ParlayBet = {
   kind: 'parlay';
   id: string;
   time: string;
-  picks: { home: string; away: string; pick: string }[];
+  picks: {
+    home: string;
+    away: string;
+    pick: string;
+    selectedSide?: SelectedSide | null;
+  }[];
   totalOdds: number;
   stake: number;
   payout: number;

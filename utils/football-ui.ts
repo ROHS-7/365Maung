@@ -60,6 +60,91 @@ function parseOddsNumber(raw: string): number {
   return m ? parseInt(m[0], 10) : 0;
 }
 
+/** Reject empty / placeholder odds like "-", "*", "—" */
+export function isValidOddsValue(raw: unknown): boolean {
+  if (raw == null) return false;
+  if (typeof raw === 'number') return Number.isFinite(raw);
+  const s = String(raw).trim();
+  if (!s) return false;
+  const lower = s.toLowerCase();
+  if (
+    lower === '-' ||
+    lower === '*' ||
+    lower === '—' ||
+    lower === '–' ||
+    lower === '?' ||
+    lower === '#' ||
+    lower === 'n/a' ||
+    lower === 'na' ||
+    lower === 'null' ||
+    lower === 'undefined' ||
+    lower === 'none'
+  ) {
+    return false;
+  }
+  // Must contain a digit or letter (e.g. "0", "0/0.5", "AOS")
+  return /[0-9a-z]/i.test(s);
+}
+
+export function matchHasValidMarket(
+  match: FootballMatch,
+  mode: 'single' | 'mix',
+  market: FootballMarket,
+): boolean {
+  switch (market) {
+    case 'asian_handicap': {
+      const raw = mode === 'single' ? match.single_odds : match.mix_odds;
+      return isValidOddsValue(raw);
+    }
+    case 'goals_ou': {
+      const raw = mode === 'single' ? match.single_goal_odds : match.mix_goal_odds;
+      return isValidOddsValue(raw);
+    }
+    case 'sone_ma':
+      return (
+        match.sone_ma_odds != null &&
+        Number.isFinite(match.sone_ma_odds.sone) &&
+        Number.isFinite(match.sone_ma_odds.ma)
+      );
+    case 'match_winner_1x2':
+      return (
+        match.one_x_two_odds != null &&
+        Number.isFinite(match.one_x_two_odds.home) &&
+        Number.isFinite(match.one_x_two_odds.draw) &&
+        Number.isFinite(match.one_x_two_odds.away)
+      );
+    case 'correct_score':
+      return Boolean(
+        match.correct_score_odds &&
+          Object.values(match.correct_score_odds).some((n) => Number.isFinite(n)),
+      );
+    default:
+      return false;
+  }
+}
+
+export function uiMatchHasValidMarket(match: UiMatchData, market: FootballMarket): boolean {
+  switch (market) {
+    case 'asian_handicap':
+      return isValidOddsValue(match.hdpLine);
+    case 'goals_ou':
+      return isValidOddsValue(match.ouLine);
+    case 'sone_ma':
+      return Number.isFinite(match.soneOdds) && Number.isFinite(match.maOdds);
+    case 'match_winner_1x2':
+      return (
+        match.oneXTwo != null &&
+        Number.isFinite(match.oneXTwo.home) &&
+        Number.isFinite(match.oneXTwo.draw) &&
+        Number.isFinite(match.oneXTwo.away)
+      );
+    case 'correct_score':
+      return match.correctScores.some((c) => Number.isFinite(c.odds));
+    default:
+      return false;
+  }
+}
+
 export function makeSelectKey(matchId: string, market: FootballMarket, pick: string): SelectKey {
   return `${matchId}:${market}:${pick}`;
 }
@@ -86,9 +171,16 @@ export function mapFootballMatchToUi(
   const goalRaw = mode === 'single' ? match.single_goal_odds : match.mix_goal_odds;
   const hdpGiving = match.odds_team.id === match.home.id ? 'home' : 'away';
   const d = new Date(match.match_time);
-  const dateStr = Number.isNaN(d.getTime())
-    ? match.draw_date
-    : `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  let dateStr = match.draw_date;
+  if (!Number.isNaN(d.getTime())) {
+    const md = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    dateStr = `${md} ${hours}:${minutes} ${ampm}`;
+  }
 
   const cs = match.correct_score_odds
     ? Object.entries(match.correct_score_odds).map(([key, odds]) => ({ key, odds }))
@@ -125,20 +217,29 @@ export function groupMatchesByLeague(
   matches: FootballMatch[],
   mode: 'single' | 'mix',
   lang: Lang,
+  markets?: FootballMarket[],
 ): UiLeagueData[] {
   const map = new Map<string, UiMatchData[]>();
   for (const m of matches) {
     if (!m.is_show || m.is_settle) continue;
+    if (
+      markets?.length &&
+      !markets.some((market) => matchHasValidMarket(m, mode, market))
+    ) {
+      continue;
+    }
     const leagueName = m.league.name;
     const ui = mapFootballMatchToUi(m, mode, lang);
     const arr = map.get(leagueName) ?? [];
     arr.push(ui);
     map.set(leagueName, arr);
   }
-  return Array.from(map.entries()).map(([name, leagueMatches]) => ({
-    name,
-    matches: leagueMatches.sort((a, b) => Number(b.isMajor) - Number(a.isMajor)),
-  }));
+  return Array.from(map.entries())
+    .map(([name, leagueMatches]) => ({
+      name,
+      matches: leagueMatches.sort((a, b) => Number(b.isMajor) - Number(a.isMajor)),
+    }))
+    .filter((league) => league.matches.length > 0);
 }
 
 export function buildMatchMap(leagues: UiLeagueData[]): Map<string, UiMatchData> {
@@ -357,6 +458,27 @@ function parseOddsMultiplier(raw: string): number {
   return 1 + 100 / Math.abs(n);
 }
 
+function resolveSelectedSide(leg: BetSlipLeg): 'home' | 'away' | 'draw' | null {
+  if (leg.selection === 'home' || leg.selection === 'away' || leg.selection === 'draw') {
+    return leg.selection;
+  }
+  if (leg.market === 'match_winner_1x2') {
+    if (leg.selection === 'home' || leg.selection === 'away' || leg.selection === 'draw') {
+      return leg.selection;
+    }
+  }
+  if (leg.goal_odds || leg.goal_up_down || leg.market === 'goals_ou') return null;
+  if (leg.sone_ma || leg.market === 'sone_ma') return null;
+  if (leg.market === 'correct_score') return null;
+
+  const selectedId = readTeamId(leg.selected_team);
+  const homeId = readTeamId(leg.home) ?? readTeamId(leg.match?.home);
+  const awayId = readTeamId(leg.away) ?? readTeamId(leg.match?.away);
+  if (selectedId != null && homeId != null && selectedId === homeId) return 'home';
+  if (selectedId != null && awayId != null && selectedId === awayId) return 'away';
+  return null;
+}
+
 function inferBetType(leg: BetSlipLeg): HdpOuBet['betType'] {
   if (leg.market === 'match_winner_1x2') return '1X2';
   if (leg.market === 'correct_score') return 'CS';
@@ -384,6 +506,7 @@ export function mapBetSlipToBet(slip: BetSlip, tr: Translations, lang: Lang = 'm
           home: teams.home,
           away: teams.away,
           pick: legPickLabel(leg, tr, lang),
+          selectedSide: resolveSelectedSide(leg),
         };
       }),
       totalOdds: Math.round(totalOdds * 100) / 100,
@@ -410,6 +533,7 @@ export function mapBetSlipToBet(slip: BetSlip, tr: Translations, lang: Lang = 'm
     stake: slip.total_amount,
     payout: slip.bingo_amount ?? 0,
     status,
+    selectedSide: leg ? resolveSelectedSide(leg) : null,
     hdpGiving:
       leg && readTeamId(leg.selected_team) === readTeamId(leg.home) ? 'home' : 'away',
   };

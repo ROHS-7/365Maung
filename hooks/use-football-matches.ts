@@ -1,10 +1,21 @@
-import { useAuth } from '@/contexts/auth';
-import { useLanguage } from '@/contexts/language';
-import { fetchFootballMatches } from '@/services/football';
-import { formatDrawDate, groupMatchesByLeague, type UiLeagueData } from '@/utils/football-ui';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAuth } from "@/contexts/auth";
+import { useLanguage } from "@/contexts/language";
+import { fetchFootballMatches } from "@/services/football";
+import type { FootballMarket } from "@/types/football";
+import {
+  formatDrawDate,
+  groupMatchesByLeague,
+  type UiLeagueData,
+} from "@/utils/football-ui";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-export function useFootballMatches(mode: 'single' | 'mix', drawDate?: Date) {
+export function useFootballMatches(
+  mode: "single" | "mix",
+  options?: {
+    drawDate?: Date;
+    markets?: FootballMarket[];
+  },
+) {
   const { token } = useAuth();
   const { lang } = useLanguage();
   const [leagues, setLeagues] = useState<UiLeagueData[]>([]);
@@ -12,6 +23,14 @@ export function useFootballMatches(mode: 'single' | 'mix', drawDate?: Date) {
   const [error, setError] = useState<string | null>(null);
   const leaguesRef = useRef(leagues);
   leaguesRef.current = leagues;
+
+  const drawDate = options?.drawDate;
+  const marketsKey = options?.markets?.join(",") ?? "";
+  const markets = useMemo(
+    () => options?.markets,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [marketsKey],
+  );
 
   const drawDateStr = useMemo(
     () => formatDrawDate(drawDate ?? new Date()),
@@ -30,14 +49,14 @@ export function useFootballMatches(mode: 'single' | 'mix', drawDate?: Date) {
 
     try {
       const data = await fetchFootballMatches(token, drawDateStr);
-      setLeagues(groupMatchesByLeague(data.matches, mode, lang));
+      setLeagues(groupMatchesByLeague(data.matches, mode, lang, markets));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load matches');
+      setError(e instanceof Error ? e.message : "Failed to load matches");
       if (isInitial) setLeagues([]);
     } finally {
       setLoading(false);
     }
-  }, [token, drawDateStr, mode, lang]);
+  }, [token, drawDateStr, mode, lang, markets]);
 
   useEffect(() => {
     load();

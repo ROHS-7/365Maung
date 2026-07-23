@@ -255,6 +255,16 @@ const translations = {
     // Live screen
     liveTitle: "Live",
     liveEmpty: "No live matches right now",
+    liveLoading: "Loading live matches…",
+    liveLoadFailed: "Could not load live matches",
+    liveNow: "LIVE",
+    liveUpcoming: "Upcoming",
+    liveWatch: "Watch stream",
+    liveServers: "servers",
+    liveNoStream: "Stream not available yet",
+    liveSelectServer: "Select server",
+    liveMatchNotFound: "Match not found. Open it again from the live list.",
+    liveBackToList: "Back to list",
 
     // Scores screen
     scoresTitle: "Scores",
@@ -401,7 +411,7 @@ const translations = {
     menuHDP: "ဘော်ဒီ",
     menuSoneMa: "စုံ / မ",
     menu1x2: "1X2",
-    menuCorrectScore: "ဂိုးမှန်",
+    menuCorrectScore: "Correct Score",
     menuScore: "ပွဲရလဒ်",
     menuBetList: "လောင်းထားသောပွဲစဉ်",
     menuDeposit: "အော်တိုငွေသွင်းစနစ်",
@@ -611,6 +621,16 @@ const translations = {
     // Live screen
     liveTitle: "Live",
     liveEmpty: "Live ပွဲများ မရှိသေးပါ",
+    liveLoading: "Live ပွဲများ ရယူနေသည်…",
+    liveLoadFailed: "Live ပွဲများ မရယူနိုင်ပါ",
+    liveNow: "LIVE",
+    liveUpcoming: "လာမည့်ပွဲ",
+    liveWatch: "ကြည့်မည်",
+    liveServers: "server",
+    liveNoStream: "Stream မရသေးပါ",
+    liveSelectServer: "Server ရွေးပါ",
+    liveMatchNotFound: "ပွဲ မတွေ့ပါ။ Live စာရင်းမှ ပြန်ဖွင့်ပါ။",
+    liveBackToList: "စာရင်းသို့ ပြန်သွားမည်",
 
     // Scores screen
     scoresTitle: "Scores",
@@ -702,8 +722,8 @@ const translations = {
     football1x2: "1X2",
     football1x2Title: "1X2",
     footballDraw: "သရေ",
-    footballCorrectScore: "ဂိုးမှန်",
-    footballCorrectScoreTitle: "ဂိုးမှန်",
+    footballCorrectScore: "CS",
+    footballCorrectScoreTitle: "Correct Score",
     footballMajorMatch: "အဓိကပွဲ",
     footballSoneMaTitle: "စုံ / မ",
     footballSinglePickHint: "အနည်းဆုံး ၁ ခု ရွေးပြီး လောင်းပါ",

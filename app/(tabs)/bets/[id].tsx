@@ -11,21 +11,38 @@ import { useAuth } from '@/contexts/auth';
 import { useEffect, useState } from 'react';
 import {
   formatBetOdds,
-  calcHdpOuPotential,
   type BetStatus,
   type HdpOuBet,
   type ParlayBet,
   type Bet,
+  type SelectedSide,
 } from '@/constants/bets';
-import {
-  formatHdpTierLabel,
-  hdpPendingReturns,
-  hdpUsesMarginTiers,
-} from '@/utils/hdp-settlement';
+import { formatHdpTierLabel } from '@/utils/hdp-settlement';
 import { fetchBetSlips, getCachedBetSlip } from '@/services/football';
 import { mapBetSlipToBet } from '@/utils/football-ui';
 
 const GREEN = '#27A060';
+
+function MatchTeamsTitle({
+  home,
+  away,
+  selectedSide,
+  compact,
+}: {
+  home: string;
+  away: string;
+  selectedSide?: SelectedSide | null;
+  compact?: boolean;
+}) {
+  return (
+    <Text style={compact ? d.legMatch : d.matchTitle}>
+      <Text style={selectedSide === 'home' ? d.teamSelected : undefined}>{home}</Text>
+      <Text style={d.vsText}> vs </Text>
+      <Text style={selectedSide === 'away' ? d.teamSelected : undefined}>{away}</Text>
+      {selectedSide === 'draw' ? <Text style={d.teamSelected}> · X</Text> : null}
+    </Text>
+  );
+}
 
 function statusLabel(status: BetStatus, tr: Translations) {
   if (status === 'win') return tr.betStatusWin;
@@ -60,12 +77,6 @@ function HdpOuDetail({ bet }: { bet: HdpOuBet }) {
       ? formatHdpTierLabel(bet.hdpTier, bet.line, bet.odds, tr)
       : null;
 
-  const pendingPotential =
-    bet.betType === 'HDP' && hdpUsesMarginTiers(bet.line)
-      ? hdpPendingReturns(bet.stake, bet.odds, bet.line)
-      : null;
-  const singlePotential = calcHdpOuPotential(bet.stake, bet.odds);
-
   return (
     <>
       <View style={[d.statusBanner, { backgroundColor: cfg.bg }]}>
@@ -82,7 +93,7 @@ function HdpOuDetail({ bet }: { bet: HdpOuBet }) {
         </View>
 
         <Text style={d.sectionTitle}>{tr.betDetailMatch}</Text>
-        <Text style={d.matchTitle}>{bet.home} vs {bet.away}</Text>
+        <MatchTeamsTitle home={bet.home} away={bet.away} selectedSide={bet.selectedSide} />
         {hasScore && (
           <Text style={d.finalScore}>
             {tr.betDetailScore}: {bet.homeScore} – {bet.awayScore}
@@ -93,31 +104,17 @@ function HdpOuDetail({ bet }: { bet: HdpOuBet }) {
 
         <Text style={d.sectionTitle}>{tr.betDetailSummary}</Text>
         <DetailRow label={tr.betDetailBetId} value={bet.id.toUpperCase()} />
-        <DetailRow label={tr.betListPick} value={bet.pick} />
+        <DetailRow label={tr.betListPick} value={bet.pick} highlight />
         <DetailRow label={tr.betListLineOdds} value={oddsStr} />
         {tierLabel && <DetailRow label={tr.betListPayout} value={tierLabel} />}
         <DetailRow label={tr.betListStake} value={`${bet.stake.toLocaleString()} ${tr.currencyUnit}`} highlight />
-        {isPending && pendingPotential?.usesTiers ? (
-          <>
-            <DetailRow
-              label={tr.betHdpPotentialMin}
-              value={`+${(pendingPotential.minReturn - bet.stake).toLocaleString()} ${tr.currencyUnit}`}
-            />
-            <DetailRow
-              label={tr.betHdpPotentialMax}
-              value={`+${(pendingPotential.maxReturn - bet.stake).toLocaleString()} ${tr.currencyUnit}`}
-              highlight
-            />
-          </>
-        ) : (
+        {!isPending && (
           <DetailRow
-            label={isPending ? tr.betListPotential : tr.betListPayout}
+            label={tr.betListPayout}
             value={
-              isPending
-                ? `${singlePotential.toLocaleString()} ${tr.currencyUnit}`
-                : isWin
-                  ? `+${bet.payout.toLocaleString()} ${tr.currencyUnit}`
-                  : tr.betListStkLost
+              isWin
+                ? `+${bet.payout.toLocaleString()} ${tr.currencyUnit}`
+                : tr.betListStkLost
             }
             highlight
           />
@@ -127,11 +124,7 @@ function HdpOuDetail({ bet }: { bet: HdpOuBet }) {
       {isPending && (
         <View style={d.pendingNote}>
           <Ionicons name="information-circle-outline" size={18} color={GREEN} />
-          <Text style={d.pendingNoteText}>
-            {pendingPotential?.usesTiers
-              ? `${tr.betHdpTierQuoted.replace('{n}', String(pendingPotential.lineInt)).replace('{pct}', String(bet.odds >= 0 ? bet.odds : `100/${Math.abs(bet.odds)}`))} · ${tr.betHdpTierFull.replace('{n}', String(pendingPotential.lineInt + 1))}`
-              : tr.betDetailPendingNote}
-          </Text>
+          <Text style={d.pendingNoteText}>{tr.betDetailPendingNote}</Text>
         </View>
       )}
     </>
@@ -143,7 +136,6 @@ function ParlayDetail({ bet }: { bet: ParlayBet }) {
   const cfg = STATUS_CFG[bet.status];
   const isPending = bet.status === 'pending';
   const isWin = bet.status === 'win';
-  const potential = Math.round(bet.stake * bet.totalOdds);
 
   return (
     <>
@@ -167,7 +159,7 @@ function ParlayDetail({ bet }: { bet: ParlayBet }) {
               <Text style={d.legIndexText}>{i + 1}</Text>
             </View>
             <View style={d.legBody}>
-              <Text style={d.legMatch}>{p.home} vs {p.away}</Text>
+              <MatchTeamsTitle home={p.home} away={p.away} selectedSide={p.selectedSide} compact />
               <Text style={d.legPick}>{p.pick}</Text>
             </View>
           </View>
@@ -177,19 +169,18 @@ function ParlayDetail({ bet }: { bet: ParlayBet }) {
 
         <Text style={d.sectionTitle}>{tr.betDetailSummary}</Text>
         <DetailRow label={tr.betDetailBetId} value={bet.id.toUpperCase()} />
-        <DetailRow label={tr.betListTotalOdds} value={`×${bet.totalOdds}`} />
         <DetailRow label={tr.betListStake} value={`${bet.stake.toLocaleString()} ${tr.currencyUnit}`} highlight />
-        <DetailRow
-          label={isPending ? tr.betListPotential : tr.betListPayout}
-          value={
-            isPending
-              ? `${potential.toLocaleString()} ${tr.currencyUnit}`
-              : isWin
+        {!isPending && (
+          <DetailRow
+            label={tr.betListPayout}
+            value={
+              isWin
                 ? `+${bet.payout.toLocaleString()} ${tr.currencyUnit}`
                 : tr.betListStkLost
-          }
-          highlight
-        />
+            }
+            highlight
+          />
+        )}
       </View>
 
       {isPending && (
@@ -341,6 +332,8 @@ const d = StyleSheet.create({
     letterSpacing: 0.4,
   },
   matchTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#111827', marginBottom: Spacing.sm },
+  teamSelected: { color: GREEN, fontWeight: FontWeight.extrabold },
+  vsText: { color: '#9CA3AF', fontWeight: FontWeight.medium },
   finalScore: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: '#374151', marginBottom: Spacing.sm },
   divider: { height: 1, backgroundColor: '#F0F4F2', marginVertical: Spacing.md },
 
@@ -375,7 +368,7 @@ const d = StyleSheet.create({
   legIndexText: { fontSize: 12, fontWeight: FontWeight.bold, color: GREEN },
   legBody: { flex: 1 },
   legMatch: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: '#111827' },
-  legPick: { fontSize: FontSize.sm, color: '#6B7280', marginTop: 2 },
+  legPick: { fontSize: FontSize.sm, color: GREEN, marginTop: 2, fontWeight: FontWeight.semibold },
 
   pendingNote: {
     flexDirection: 'row',

@@ -13,14 +13,10 @@ import {
   type BetStatus,
   type HdpOuBet,
   type ParlayBet,
+  type SelectedSide,
   formatBetOdds,
-  calcHdpOuPotential,
 } from '@/constants/bets';
-import {
-  formatHdpTierLabel,
-  hdpPendingReturns,
-  hdpUsesMarginTiers,
-} from '@/utils/hdp-settlement';
+import { formatHdpTierLabel } from '@/utils/hdp-settlement';
 import { fetchBetSlips } from '@/services/football';
 import { formatDrawDate, mapBetSlipsToBets } from '@/utils/football-ui';
 
@@ -28,6 +24,35 @@ type BetTab = 'unfinished' | 'finished';
 type BetType = 'hdpou' | 'parlay';
 
 const GREEN = '#27A060';
+
+function MatchTeamsText({
+  home,
+  away,
+  selectedSide,
+  style,
+  homeStyle,
+  awayStyle,
+  vsStyle,
+}: {
+  home: string;
+  away: string;
+  selectedSide?: SelectedSide | null;
+  style?: object;
+  homeStyle?: object;
+  awayStyle?: object;
+  vsStyle?: object;
+}) {
+  return (
+    <Text style={style} numberOfLines={1}>
+      <Text style={[homeStyle, selectedSide === 'home' && card.teamSelected]}>{home}</Text>
+      <Text style={vsStyle}> vs </Text>
+      <Text style={[awayStyle, selectedSide === 'away' && card.teamSelected]}>{away}</Text>
+      {selectedSide === 'draw' ? (
+        <Text style={card.drawTag}>  · X</Text>
+      ) : null}
+    </Text>
+  );
+}
 
 function addDays(d: Date, n: number) {
   const r = new Date(d);
@@ -73,15 +98,6 @@ function openBetDetail(id: string) {
   router.push(`/(tabs)/bets/${id}`);
 }
 
-function formatPotentialValue(stake: number, bet: HdpOuBet, tr: Translations): string {
-  if (bet.betType === 'HDP' && hdpUsesMarginTiers(bet.line)) {
-    const { minReturn, maxReturn } = hdpPendingReturns(stake, bet.odds, bet.line);
-    return `${minReturn.toLocaleString()} – ${maxReturn.toLocaleString()} ${tr.currencyUnit}`;
-  }
-  const potential = calcHdpOuPotential(stake, bet.odds);
-  return `${potential.toLocaleString()} ${tr.currencyUnit}`;
-}
-
 function HdpOuCard({ bet }: { bet: HdpOuBet }) {
   const { tr } = useLanguage();
   const isWin = bet.status === 'win';
@@ -104,11 +120,15 @@ function HdpOuCard({ bet }: { bet: HdpOuBet }) {
           <StatusBadge status={bet.status} />
           <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
         </View>
-        <Text style={card.matchTeams} numberOfLines={1}>
-          {bet.home} <Text style={card.vs}>vs</Text> {bet.away}
-        </Text>
+        <MatchTeamsText
+          home={bet.home}
+          away={bet.away}
+          selectedSide={bet.selectedSide}
+          style={card.matchTeams}
+          vsStyle={card.vs}
+        />
         <Text style={card.pickLine} numberOfLines={1}>
-          {bet.pick} · {oddsStr}
+          <Text style={card.pickHighlight}>{bet.pick}</Text> · {oddsStr}
           {hasScore ? ` · ${bet.homeScore}-${bet.awayScore}` : ''}
         </Text>
         <View style={card.infoRow}>
@@ -120,21 +140,14 @@ function HdpOuCard({ bet }: { bet: HdpOuBet }) {
             <Text style={card.infoLabel}>{tr.betListStake}</Text>
             <Text style={card.infoValue}>{bet.stake.toLocaleString()} {tr.currencyUnit}</Text>
           </View>
-          <View style={[card.infoCell, card.infoCellBorder]}>
-            <Text style={card.infoLabel}>{isPending ? tr.betListPotential : tr.betListPayout}</Text>
-            <Text style={card.infoValue}>
-              {isPending
-                ? formatPotentialValue(bet.stake, bet, tr)
-                : isWin
-                  ? `+${bet.payout.toLocaleString()} ${tr.currencyUnit}`
-                  : '—'}
-            </Text>
-            {isPending && bet.betType === 'HDP' && hdpUsesMarginTiers(bet.line) && (
-              <Text style={card.tierHint}>
-                {tr.betHdpPotentialMin} / {tr.betHdpPotentialMax}
+          {!isPending && (
+            <View style={[card.infoCell, card.infoCellBorder]}>
+              <Text style={card.infoLabel}>{tr.betListPayout}</Text>
+              <Text style={card.infoValue}>
+                {isWin ? `+${bet.payout.toLocaleString()} ${tr.currencyUnit}` : '—'}
               </Text>
-            )}
-          </View>
+            </View>
+          )}
         </View>
         {!isPending && (
           <View style={[card.resultBar, { backgroundColor: isWin ? '#F0FDF4' : '#FEF2F2' }]}>
@@ -163,7 +176,7 @@ function ParlayCard({ bet }: { bet: ParlayBet }) {
           <View style={[card.typePill, { backgroundColor: '#7C3AED' }]}>
             <Text style={card.typePillText}>PARLAY</Text>
           </View>
-          <Text style={card.time}>{bet.picks.length} {tr.betListPicks} · ×{bet.totalOdds}</Text>
+          <Text style={card.time}>{bet.picks.length} {tr.betListPicks}</Text>
           <StatusBadge status={bet.status} />
           <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
         </View>
@@ -171,25 +184,34 @@ function ParlayCard({ bet }: { bet: ParlayBet }) {
           {bet.picks.map((p, i) => (
             <View key={i} style={card.parlayPickRow}>
               <View style={card.parlayDot} />
-              <Text style={card.parlayPickText} numberOfLines={1}>
-                {p.home} vs {p.away}<Text style={card.parlayPickBold}>  →  {p.pick}</Text>
-              </Text>
+              <View style={card.parlayPickBody}>
+                <MatchTeamsText
+                  home={p.home}
+                  away={p.away}
+                  selectedSide={p.selectedSide}
+                  style={card.parlayPickText}
+                  vsStyle={card.vs}
+                />
+                <Text style={card.parlayPickBold} numberOfLines={1}>
+                  → {p.pick}
+                </Text>
+              </View>
             </View>
           ))}
         </View>
         <View style={card.infoRow}>
           <View style={card.infoCell}>
-            <Text style={card.infoLabel}>{tr.betListTotalOdds}</Text>
-            <Text style={card.infoValue}>×{bet.totalOdds}</Text>
-          </View>
-          <View style={[card.infoCell, card.infoCellBorder]}>
             <Text style={card.infoLabel}>{tr.betListStake}</Text>
             <Text style={card.infoValue}>{bet.stake.toLocaleString()} {tr.currencyUnit}</Text>
           </View>
-          <View style={[card.infoCell, card.infoCellBorder]}>
-            <Text style={card.infoLabel}>{tr.betListPotential}</Text>
-            <Text style={card.infoValue}>{(bet.stake * bet.totalOdds).toLocaleString()} {tr.currencyUnit}</Text>
-          </View>
+          {!isPending && (
+            <View style={[card.infoCell, card.infoCellBorder]}>
+              <Text style={card.infoLabel}>{tr.betListPayout}</Text>
+              <Text style={card.infoValue}>
+                {isWin ? `+${bet.payout.toLocaleString()} ${tr.currencyUnit}` : '—'}
+              </Text>
+            </View>
+          )}
         </View>
         {!isPending && (
           <View style={[card.resultBar, { backgroundColor: isWin ? '#F0FDF4' : '#FEF2F2' }]}>
@@ -213,20 +235,23 @@ const card = StyleSheet.create({
   time: { flex: 1, fontSize: FontSize.xs, color: '#6B7280', fontWeight: FontWeight.medium },
   matchTeams: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: '#111827', paddingHorizontal: 12, paddingTop: 10, paddingBottom: 4 },
   pickLine: { fontSize: 11, color: '#6B7280', paddingHorizontal: 12, paddingBottom: 8 },
+  pickHighlight: { fontWeight: FontWeight.bold, color: GREEN },
+  teamSelected: { color: GREEN, fontWeight: FontWeight.bold },
+  drawTag: { color: GREEN, fontWeight: FontWeight.bold },
   vs: { color: '#9CA3AF', fontWeight: FontWeight.regular },
   infoRow: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#F0F4F2' },
   infoCell: { flex: 1, paddingVertical: 10, paddingHorizontal: 10, alignItems: 'center' },
   infoCellBorder: { borderLeftWidth: 1, borderLeftColor: '#F0F4F2' },
   infoLabel: { fontSize: 10, color: '#9CA3AF', marginBottom: 3, fontWeight: FontWeight.medium },
   infoValue: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold, color: '#111827', textAlign: 'center' },
-  tierHint: { fontSize: 9, color: '#9CA3AF', marginTop: 2, textAlign: 'center' },
   resultBar: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderTopWidth: 1, borderTopColor: '#F0F4F2' },
   resultText: { fontSize: FontSize.xs, fontWeight: FontWeight.bold },
   parlayPicks: { paddingHorizontal: 12, paddingVertical: 8, gap: 5 },
-  parlayPickRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  parlayDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: GREEN, flexShrink: 0 },
-  parlayPickText: { flex: 1, fontSize: 12, color: '#4B5563' },
-  parlayPickBold: { fontWeight: FontWeight.semibold, color: '#111827' },
+  parlayPickRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
+  parlayDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: GREEN, flexShrink: 0, marginTop: 5 },
+  parlayPickBody: { flex: 1, gap: 2 },
+  parlayPickText: { fontSize: 12, color: '#4B5563' },
+  parlayPickBold: { fontWeight: FontWeight.semibold, color: GREEN, fontSize: 12 },
 });
 
 function EmptyState() {
@@ -272,7 +297,13 @@ export default function BetsScreen() {
         type: betType === 'hdpou' ? 'single' : 'mix',
         is_settled: tab === 'finished',
       });
-      setBets(mapBetSlipsToBets(slips, tr, lang));
+      const mapped = mapBetSlipsToBets(slips, tr, lang);
+      // Guard: API may ignore is_settled — keep list matching the active tab
+      setBets(
+        mapped.filter((b) =>
+          tab === 'finished' ? b.status !== 'pending' : b.status === 'pending',
+        ),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : tr.footballBetListFailed);
       setBets([]);

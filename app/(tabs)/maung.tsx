@@ -1,4 +1,4 @@
-import { FootballBetScreen, ALL_MARKETS } from '@/components/football-bet-screen';
+import { FootballBetScreen } from '@/components/football-bet-screen';
 import { useLanguage } from '@/contexts/language';
 
 export default function MaungScreen() {
@@ -7,7 +7,7 @@ export default function MaungScreen() {
     <FootballBetScreen
       title={tr.maungTitle}
       mode="mix"
-      markets={ALL_MARKETS}
+      markets={['asian_handicap', 'goals_ou']}
       minPicks={2}
       stakePlaceholder="500"
       hint={tr.maungMinPicksHint}

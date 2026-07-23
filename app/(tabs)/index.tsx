@@ -231,7 +231,7 @@ function QuickTile({ item }: { item: MenuEntry }) {
       onPress={() => navigate(item.id, route)}
     >
       <View style={[s.quickIcon, { backgroundColor: item.bg }]}>
-        <Ionicons name={item.icon} size={28} color="#fff" />
+        <Ionicons name={item.icon} size={18} color="#fff" />
       </View>
       <Text style={s.quickLabel} numberOfLines={2}>
         {(tr as Record<string, string>)[item.labelKey]}
@@ -251,7 +251,7 @@ function ServiceTile({ item }: { item: MenuEntry }) {
       onPress={() => navigate(item.id, route)}
     >
       <View style={[s.serviceIcon, { backgroundColor: item.bg + "18" }]}>
-        <Ionicons name={item.icon} size={22} color={item.bg} />
+        <Ionicons name={item.icon} size={18} color={item.bg} />
       </View>
       <Text style={s.serviceLabel} numberOfLines={2}>
         {(tr as Record<string, string>)[item.labelKey]}
@@ -643,62 +643,62 @@ const s = StyleSheet.create({
   quickGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: Spacing.sm,
+    gap: 8,
     marginBottom: Spacing.lg,
   },
   quickTile: {
-    width: "31.5%",
+    width: "23%",
     backgroundColor: "#fff",
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md + 2,
-    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     alignItems: "center",
     ...Shadow.sm,
   },
   quickIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: BorderRadius.lg,
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.sm,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: Spacing.sm,
+    marginBottom: 4,
   },
   quickLabel: {
-    fontSize: FontSize.sm,
+    fontSize: 11,
     fontWeight: FontWeight.semibold,
     color: Colors.light.text,
     textAlign: "center",
-    lineHeight: 18,
+    lineHeight: 14,
   },
   serviceGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: Spacing.sm,
+    gap: 8,
     marginBottom: Spacing.md,
   },
   serviceTile: {
-    width: "31.5%",
+    width: "23%",
     backgroundColor: "#fff",
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md + 2,
-    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     alignItems: "center",
     ...Shadow.sm,
   },
   serviceIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: BorderRadius.md,
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.sm,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: Spacing.sm,
+    marginBottom: 4,
   },
   serviceLabel: {
-    fontSize: FontSize.sm,
+    fontSize: 11,
     fontWeight: FontWeight.semibold,
     color: Colors.light.text,
     textAlign: "center",
-    lineHeight: 18,
+    lineHeight: 14,
   },
   tilePressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
 });
