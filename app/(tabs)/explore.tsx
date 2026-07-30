@@ -42,7 +42,7 @@ export default function AccountScreen() {
         style: 'destructive',
         onPress: async () => {
           await logout();
-          router.replace('/(tabs)');
+          router.replace('/');
         },
       },
     ]);

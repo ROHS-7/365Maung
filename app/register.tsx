@@ -55,7 +55,7 @@ export default function RegisterScreen() {
         nickname: nickname.trim() || undefined,
         phone: phone.trim() || undefined,
       });
-      router.replace('/(tabs)');
+      router.replace('/');
     } catch (e) {
       Alert.alert('', e instanceof Error ? e.message : tr.registerFailed);
     } finally {

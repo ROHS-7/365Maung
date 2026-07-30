@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +31,15 @@ import {
 import type { LiveStreamServer } from '@/types/live-matches';
 
 function toVideoSource(server: LiveStreamServer): VideoSource {
+  // Browsers cannot set arbitrary Referer headers on media requests.
+  // Native still sends Referer for CDN allowlists.
+  if (Platform.OS === 'web') {
+    return {
+      uri: server.stream_url,
+      contentType: 'hls',
+      useCaching: false,
+    };
+  }
   return {
     uri: server.stream_url,
     headers: {
@@ -102,6 +112,9 @@ export default function LivePlayerScreen() {
           allowsFullscreen
           nativeControls
           contentFit="contain"
+          {...(Platform.OS === 'web'
+            ? { crossOrigin: 'anonymous' as const }
+            : {})}
         />
         {!activeServer && (
           <View style={p.videoLoading}>

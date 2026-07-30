@@ -35,6 +35,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -48,6 +49,17 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
+type LeagueFilterModalProps = {
+  visible: boolean;
+  leagues: UiLeagueData[];
+  selected: string[];
+  onClose: () => void;
+  onApply: (names: string[]) => void;
+  title: string;
+  allLabel: string;
+  applyLabel: string;
+};
+
 type Props = {
   title: string;
   mode: "single" | "mix";
@@ -59,6 +71,136 @@ type Props = {
   /** Defaults to football matches API. */
   source?: "football" | "esports";
 };
+
+function LeagueFilterModal({
+  visible,
+  leagues,
+  selected,
+  onClose,
+  onApply,
+  title,
+  allLabel,
+  applyLabel,
+}: LeagueFilterModalProps) {
+  const [draft, setDraft] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (visible) setDraft(selected);
+  }, [visible, selected]);
+
+  const allSelected =
+    draft.length === 0 ||
+    (leagues.length > 0 && draft.length === leagues.length);
+
+  function toggleAll() {
+    setDraft([]);
+  }
+
+  function toggleLeague(name: string) {
+    setDraft((prev) => {
+      // Empty draft means "all" — start from full list then toggle off
+      const base =
+        prev.length === 0 ? leagues.map((l) => l.name) : [...prev];
+      if (base.includes(name)) {
+        const next = base.filter((n) => n !== name);
+        return next.length === leagues.length ? [] : next;
+      }
+      const next = [...base, name];
+      return next.length === leagues.length ? [] : next;
+    });
+  }
+
+  function isChecked(name: string) {
+    return draft.length === 0 || draft.includes(name);
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity
+        style={styles.filterOverlay}
+        activeOpacity={1}
+        onPress={onClose}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.filterSheet}
+          onPress={(e) => e.stopPropagation?.()}
+        >
+          <View style={styles.filterHandle} />
+          <View style={styles.filterHeader}>
+            <Text style={styles.filterTitle}>{title}</Text>
+            <TouchableOpacity onPress={onClose} hitSlop={10}>
+              <Ionicons
+                name="close"
+                size={22}
+                color={Colors.light.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.filterList}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Pressable onPress={toggleAll} style={styles.filterRow}>
+              <Ionicons
+                name={allSelected ? "checkbox" : "square-outline"}
+                size={22}
+                color={
+                  allSelected
+                    ? Colors.brand.greenButton
+                    : Colors.light.placeholder
+                }
+              />
+              <Text style={styles.filterRowText}>{allLabel}</Text>
+            </Pressable>
+
+            {leagues.map((league) => {
+              const checked = isChecked(league.name);
+              return (
+                <Pressable
+                  key={league.name}
+                  onPress={() => toggleLeague(league.name)}
+                  style={styles.filterRow}
+                >
+                  <Ionicons
+                    name={checked ? "checkbox" : "square-outline"}
+                    size={22}
+                    color={
+                      checked
+                        ? Colors.brand.greenButton
+                        : Colors.light.placeholder
+                    }
+                  />
+                  <Text style={styles.filterRowText} numberOfLines={2}>
+                    {league.name}
+                  </Text>
+                  <Text style={styles.filterRowCount}>
+                    {league.matches.length}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <TouchableOpacity
+            style={styles.filterApplyBtn}
+            onPress={() => onApply(draft)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.filterApplyText}>{applyLabel}</Text>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
 
 function OddsChip({
   label,
@@ -505,22 +647,29 @@ export function FootballBetScreen({
   const [stake, setStake] = useState(stakePlaceholder);
   const [drawerExpanded, setDrawerExpanded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
+  /** Empty = show all leagues (default). */
+  const [selectedLeagues, setSelectedLeagues] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const filteredLeagues = useMemo(() => {
-    if (!selectedLeague) return leagues;
-    return leagues.filter((l) => l.name === selectedLeague);
-  }, [leagues, selectedLeague]);
+    if (selectedLeagues.length === 0) return leagues;
+    const set = new Set(selectedLeagues);
+    return leagues.filter((l) => set.has(l.name));
+  }, [leagues, selectedLeagues]);
 
   useEffect(() => {
-    if (
-      selectedLeague &&
-      leagues.length > 0 &&
-      !leagues.some((l) => l.name === selectedLeague)
-    ) {
-      setSelectedLeague(null);
+    if (selectedLeagues.length === 0 || leagues.length === 0) return;
+    const names = new Set(leagues.map((l) => l.name));
+    const next = selectedLeagues.filter((n) => names.has(n));
+    if (next.length !== selectedLeagues.length) {
+      setSelectedLeagues(next.length === leagues.length ? [] : next);
     }
-  }, [leagues, selectedLeague]);
+  }, [leagues, selectedLeagues]);
+
+  const filterActive = selectedLeagues.length > 0;
+  const filterSummary = filterActive
+    ? String(selectedLeagues.length)
+    : tr.footballAllLeagues;
 
   const count = Object.keys(selections).length;
   const canBet = count >= minPicks;
@@ -652,61 +801,61 @@ export function FootballBetScreen({
         )}
 
         {!loading && !error && leagues.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.leagueFilter}
-            contentContainerStyle={styles.leagueFilterContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Pressable
-              onPress={() => setSelectedLeague(null)}
+          <View style={styles.filterBar}>
+            <TouchableOpacity
               style={[
-                styles.leagueChip,
-                selectedLeague == null && styles.leagueChipActive,
+                styles.filterBtn,
+                filterActive && styles.filterBtnActive,
               ]}
+              onPress={() => setFilterOpen(true)}
+              activeOpacity={0.85}
             >
+              <Ionicons
+                name="options-outline"
+                size={16}
+                color={filterActive ? "#fff" : Colors.brand.greenMid}
+              />
               <Text
                 style={[
-                  styles.leagueChipText,
-                  selectedLeague == null && styles.leagueChipTextActive,
+                  styles.filterBtnText,
+                  filterActive && styles.filterBtnTextActive,
                 ]}
               >
-                {tr.footballAllLeagues}
+                {tr.footballLeagueFilter}
               </Text>
-            </Pressable>
-            {leagues.map((league) => {
-              const active = selectedLeague === league.name;
-              return (
-                <Pressable
-                  key={league.name}
-                  onPress={() =>
-                    setSelectedLeague(active ? null : league.name)
-                  }
-                  style={[styles.leagueChip, active && styles.leagueChipActive]}
+              <View
+                style={[
+                  styles.filterBadge,
+                  filterActive && styles.filterBadgeActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.filterBadgeText,
+                    filterActive && styles.filterBadgeTextActive,
+                  ]}
+                  numberOfLines={1}
                 >
-                  <Text
-                    style={[
-                      styles.leagueChipText,
-                      active && styles.leagueChipTextActive,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {league.name}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.leagueChipCount,
-                      active && styles.leagueChipCountActive,
-                    ]}
-                  >
-                    {league.matches.length}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+                  {filterSummary}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         )}
+
+        <LeagueFilterModal
+          visible={filterOpen}
+          leagues={leagues}
+          selected={selectedLeagues}
+          onClose={() => setFilterOpen(false)}
+          onApply={(names) => {
+            setSelectedLeagues(names);
+            setFilterOpen(false);
+          }}
+          title={tr.hdpLeagues}
+          allLabel={tr.footballAllLeagues}
+          applyLabel={tr.footballApplyFilter}
+        />
 
         <ScrollView
           style={styles.scroll}
@@ -822,53 +971,113 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.light.textSecondary,
   },
-  leagueFilter: {
-    flexGrow: 0,
-    marginTop: Spacing.sm,
-  },
-  leagueFilterContent: {
+  filterBar: {
     paddingHorizontal: Spacing.md,
-    gap: 8,
-    alignItems: "center",
+    paddingTop: Spacing.sm,
   },
-  leagueChip: {
+  filterBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    maxWidth: 220,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: BorderRadius.full,
+    gap: 8,
+    alignSelf: "flex-start",
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: Colors.light.border,
+    borderRadius: BorderRadius.full,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    ...Shadow.sm,
   },
-  leagueChipActive: {
+  filterBtnActive: {
     backgroundColor: Colors.brand.greenButton,
     borderColor: Colors.brand.greenButton,
   },
-  leagueChipText: {
-    flexShrink: 1,
-    fontSize: FontSize.xs,
+  filterBtnText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.brand.greenMid,
+  },
+  filterBtnTextActive: { color: "#fff" },
+  filterBadge: {
+    maxWidth: 120,
+    backgroundColor: Colors.brand.offWhite,
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  filterBadgeActive: { backgroundColor: "rgba(255,255,255,0.25)" },
+  filterBadgeText: {
+    fontSize: 11,
+    fontWeight: FontWeight.bold,
+    color: Colors.light.textSecondary,
+  },
+  filterBadgeTextActive: { color: "#fff" },
+  filterOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
+  },
+  filterSheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: 28,
+    maxHeight: "75%",
+    ...Shadow.lg,
+  },
+  filterHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.light.border,
+    alignSelf: "center",
+    marginBottom: Spacing.md,
+  },
+  filterHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.sm,
+  },
+  filterTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    color: Colors.light.text,
+  },
+  filterList: { flexGrow: 0 },
+  filterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.light.border,
+  },
+  filterRowText: {
+    flex: 1,
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.medium,
+    color: Colors.light.text,
+  },
+  filterRowCount: {
+    fontSize: 12,
     fontWeight: FontWeight.semibold,
     color: Colors.light.textSecondary,
   },
-  leagueChipTextActive: {
-    color: "#fff",
+  filterApplyBtn: {
+    marginTop: Spacing.md,
+    backgroundColor: Colors.brand.greenButton,
+    borderRadius: BorderRadius.xl,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  leagueChipCount: {
-    fontSize: 10,
+  filterApplyText: {
+    fontSize: FontSize.md,
     fontWeight: FontWeight.bold,
-    color: Colors.light.placeholder,
-    backgroundColor: Colors.brand.offWhite,
-    overflow: "hidden",
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: BorderRadius.full,
-  },
-  leagueChipCountActive: {
-    color: Colors.brand.greenDark,
-    backgroundColor: "#fff",
+    color: "#fff",
   },
   scroll: { flex: 1 },
   scrollContent: {

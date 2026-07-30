@@ -7,11 +7,15 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import { AUTH_TOKEN_KEY } from '@/constants/config';
 import { ApiError } from '@/lib/api-client';
 import { fetchMe, loginRequest, logoutRequest, registerRequest } from '@/services/auth';
 import type { MeUser, RegisterPayload } from '@/types/api';
+import {
+  deleteSecureItem,
+  getSecureItem,
+  setSecureItem,
+} from '@/utils/secure-storage';
 
 type AuthContextValue = {
   token: string | null;
@@ -28,18 +32,14 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function readToken() {
-  try {
-    return await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
-  } catch {
-    return null;
-  }
+  return getSecureItem(AUTH_TOKEN_KEY);
 }
 
 async function writeToken(token: string | null) {
   if (token) {
-    await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
+    await setSecureItem(AUTH_TOKEN_KEY, token);
   } else {
-    await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+    await deleteSecureItem(AUTH_TOKEN_KEY);
   }
 }
 
