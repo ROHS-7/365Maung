@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/auth';
 import { useEffect, useState } from 'react';
 import {
   formatBetOdds,
+  formatHdpOuOddsLine,
   type BetStatus,
   type HdpOuBet,
   type ParlayBet,
@@ -70,7 +71,7 @@ function HdpOuDetail({ bet }: { bet: HdpOuBet }) {
   const cfg = STATUS_CFG[bet.status];
   const isPending = bet.status === 'pending';
   const isWin = bet.status === 'win';
-  const oddsStr = `${bet.line} (${formatBetOdds(bet.odds)})`;
+  const oddsStr = formatHdpOuOddsLine(bet);
   const hasScore = bet.homeScore != null && bet.awayScore != null;
   const tierLabel =
     isWin && bet.betType === 'HDP' && bet.hdpTier

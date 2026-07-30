@@ -9,6 +9,7 @@ import {
 } from "@/constants/theme";
 import { useAuth } from "@/contexts/auth";
 import { useLanguage } from "@/contexts/language";
+import { useEsportsMatches } from "@/hooks/use-esports-matches";
 import { useFootballMatches } from "@/hooks/use-football-matches";
 import { useHideParentTabBar } from "@/hooks/use-hide-parent-tab-bar";
 import { useRequireAuth } from "@/hooks/use-require-auth";
@@ -22,13 +23,15 @@ import {
   makeSelectKey,
   parseSelectKey,
   pickLabel,
+  hdpMarketFromList,
+  ouMarketFromList,
   uiMatchHasValidMarket,
   type UiLeagueData,
   type UiMatchData,
 } from "@/utils/football-ui";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -53,6 +56,8 @@ type Props = {
   stakePlaceholder?: string;
   hint: string;
   minErr: string;
+  /** Defaults to football matches API. */
+  source?: "football" | "esports";
 };
 
 function OddsChip({
@@ -200,6 +205,8 @@ function MatchMarkets({
   const receiving = match.hdpGiving === "home" ? match.away : match.home;
   const hasSelection = selectedKey != null;
   const hideMarketTitle = true;
+  const hdpMarket = hdpMarketFromList(markets);
+  const ouMarket = ouMarketFromList(markets);
 
   return (
     <View
@@ -261,8 +268,8 @@ function MatchMarkets({
       <View
         style={[styles.marketsBody, match.isMajor && styles.marketsBodyMajor]}
       >
-        {markets.includes("asian_handicap") &&
-          uiMatchHasValidMarket(match, "asian_handicap") && (
+        {hdpMarket &&
+          uiMatchHasValidMarket(match, hdpMarket) && (
           <MarketSection title={tr.maungHDP} hideTitle={hideMarketTitle}>
             <View style={styles.chipRow}>
               <OddsChip
@@ -270,37 +277,37 @@ function MatchMarkets({
                 odds={match.hdpLine}
                 selected={
                   selectedKey ===
-                  makeSelectKey(match.id, "asian_handicap", "giving")
+                  makeSelectKey(match.id, hdpMarket, "giving")
                 }
-                onPress={() => onPick("asian_handicap", "giving")}
+                onPress={() => onPick(hdpMarket, "giving")}
               />
               <OddsChip
                 label={receiving}
                 selected={
                   selectedKey ===
-                  makeSelectKey(match.id, "asian_handicap", "receiving")
+                  makeSelectKey(match.id, hdpMarket, "receiving")
                 }
-                onPress={() => onPick("asian_handicap", "receiving")}
+                onPress={() => onPick(hdpMarket, "receiving")}
               />
             </View>
           </MarketSection>
         )}
 
-        {markets.includes("goals_ou") &&
-          uiMatchHasValidMarket(match, "goals_ou") && (
+        {ouMarket &&
+          uiMatchHasValidMarket(match, ouMarket) && (
           <MarketSection title={tr.maungOU} hideTitle={hideMarketTitle}>
             <TriLineRow
               leftLabel={tr.maungOver}
               rightLabel={tr.maungUnder}
               centerLine={match.ouLine}
               leftSelected={
-                selectedKey === makeSelectKey(match.id, "goals_ou", "up")
+                selectedKey === makeSelectKey(match.id, ouMarket, "up")
               }
               rightSelected={
-                selectedKey === makeSelectKey(match.id, "goals_ou", "down")
+                selectedKey === makeSelectKey(match.id, ouMarket, "down")
               }
-              onLeft={() => onPick("goals_ou", "up")}
-              onRight={() => onPick("goals_ou", "down")}
+              onLeft={() => onPick(ouMarket, "up")}
+              onRight={() => onPick(ouMarket, "down")}
             />
           </MarketSection>
         )}
@@ -365,6 +372,31 @@ function MatchMarkets({
           </MarketSection>
         )}
 
+        {markets.includes("to_win") &&
+          uiMatchHasValidMarket(match, "to_win") &&
+          match.toWin && (
+          <MarketSection title={tr.esportsToWin} hideTitle={hideMarketTitle}>
+            <View style={styles.chipRow}>
+              <OddsChip
+                label={match.home}
+                odds={formatDecimalOdds(match.toWin.home)}
+                selected={
+                  selectedKey === makeSelectKey(match.id, "to_win", "home")
+                }
+                onPress={() => onPick("to_win", "home")}
+              />
+              <OddsChip
+                label={match.away}
+                odds={formatDecimalOdds(match.toWin.away)}
+                selected={
+                  selectedKey === makeSelectKey(match.id, "to_win", "away")
+                }
+                onPress={() => onPick("to_win", "away")}
+              />
+            </View>
+          </MarketSection>
+        )}
+
         {markets.includes("correct_score") &&
           uiMatchHasValidMarket(match, "correct_score") &&
           match.correctScores.length > 0 && (
@@ -400,11 +432,13 @@ function LeagueBlock({
   markets,
   selections,
   onPick,
+  source = "football",
 }: {
   league: UiLeagueData;
   markets: FootballMarket[];
   selections: Record<string, true>;
   onPick: (matchId: string, market: FootballMarket, pick: string) => void;
+  source?: "football" | "esports";
 }) {
   return (
     <View style={styles.leagueBlock}>
@@ -412,7 +446,7 @@ function LeagueBlock({
         <View style={styles.leagueAccent} />
         <View style={styles.leagueIcon}>
           <Ionicons
-            name="football"
+            name={source === "esports" ? "game-controller" : "football"}
             size={11}
             color={Colors.brand.greenButton}
           />
@@ -452,18 +486,41 @@ export function FootballBetScreen({
   stakePlaceholder = "500",
   hint,
   minErr,
+  source = "football",
 }: Props) {
   useRequireAuth();
   useHideParentTabBar();
   const { tr } = useLanguage();
   const { token, refreshUser } = useAuth();
-  const { leagues, loading, error, reload } = useFootballMatches(mode, { markets });
+  const football = useFootballMatches(mode, {
+    markets: source === "football" ? markets : undefined,
+    enabled: source === "football",
+  });
+  const esports = useEsportsMatches({ enabled: source === "esports" });
+  const { leagues, loading, error, reload } =
+    source === "esports" ? esports : football;
   const matchMap = useMemo(() => buildMatchMap(leagues), [leagues]);
   const insets = useSafeAreaInsets();
   const [selections, setSelections] = useState<Record<string, true>>({});
   const [stake, setStake] = useState(stakePlaceholder);
   const [drawerExpanded, setDrawerExpanded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedLeague, setSelectedLeague] = useState<string | null>(null);
+
+  const filteredLeagues = useMemo(() => {
+    if (!selectedLeague) return leagues;
+    return leagues.filter((l) => l.name === selectedLeague);
+  }, [leagues, selectedLeague]);
+
+  useEffect(() => {
+    if (
+      selectedLeague &&
+      leagues.length > 0 &&
+      !leagues.some((l) => l.name === selectedLeague)
+    ) {
+      setSelectedLeague(null);
+    }
+  }, [leagues, selectedLeague]);
 
   const count = Object.keys(selections).length;
   const canBet = count >= minPicks;
@@ -491,11 +548,6 @@ export function FootballBetScreen({
       currencyUnit: tr.currencyUnit,
     }),
     [tr, hint],
-  );
-
-  console.log(
-    "leages matches",
-    leagues.map((league) => league.matches),
   );
 
   function handlePick(matchId: string, market: FootballMarket, pick: string) {
@@ -599,6 +651,63 @@ export function FootballBetScreen({
           </View>
         )}
 
+        {!loading && !error && leagues.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.leagueFilter}
+            contentContainerStyle={styles.leagueFilterContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Pressable
+              onPress={() => setSelectedLeague(null)}
+              style={[
+                styles.leagueChip,
+                selectedLeague == null && styles.leagueChipActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.leagueChipText,
+                  selectedLeague == null && styles.leagueChipTextActive,
+                ]}
+              >
+                {tr.footballAllLeagues}
+              </Text>
+            </Pressable>
+            {leagues.map((league) => {
+              const active = selectedLeague === league.name;
+              return (
+                <Pressable
+                  key={league.name}
+                  onPress={() =>
+                    setSelectedLeague(active ? null : league.name)
+                  }
+                  style={[styles.leagueChip, active && styles.leagueChipActive]}
+                >
+                  <Text
+                    style={[
+                      styles.leagueChipText,
+                      active && styles.leagueChipTextActive,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {league.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.leagueChipCount,
+                      active && styles.leagueChipCountActive,
+                    ]}
+                  >
+                    {league.matches.length}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        )}
+
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={[
@@ -619,18 +728,19 @@ export function FootballBetScreen({
                 <Text style={styles.retryText}>{tr.footballRetry}</Text>
               </TouchableOpacity>
             </View>
-          ) : leagues.length === 0 ? (
+          ) : filteredLeagues.length === 0 ? (
             <View style={styles.loadWrap}>
               <Text style={styles.loadText}>{tr.footballNoMatches}</Text>
             </View>
           ) : (
-            leagues.map((league) => (
+            filteredLeagues.map((league) => (
               <LeagueBlock
                 key={league.name}
                 league={league}
                 markets={markets}
                 selections={selections}
                 onPick={handlePick}
+                source={source}
               />
             ))
           )}
@@ -711,6 +821,54 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FontSize.sm,
     color: Colors.light.textSecondary,
+  },
+  leagueFilter: {
+    flexGrow: 0,
+    marginTop: Spacing.sm,
+  },
+  leagueFilterContent: {
+    paddingHorizontal: Spacing.md,
+    gap: 8,
+    alignItems: "center",
+  },
+  leagueChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    maxWidth: 220,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.full,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  leagueChipActive: {
+    backgroundColor: Colors.brand.greenButton,
+    borderColor: Colors.brand.greenButton,
+  },
+  leagueChipText: {
+    flexShrink: 1,
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+    color: Colors.light.textSecondary,
+  },
+  leagueChipTextActive: {
+    color: "#fff",
+  },
+  leagueChipCount: {
+    fontSize: 10,
+    fontWeight: FontWeight.bold,
+    color: Colors.light.placeholder,
+    backgroundColor: Colors.brand.offWhite,
+    overflow: "hidden",
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: BorderRadius.full,
+  },
+  leagueChipCountActive: {
+    color: Colors.brand.greenDark,
+    backgroundColor: "#fff",
   },
   scroll: { flex: 1 },
   scrollContent: {

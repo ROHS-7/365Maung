@@ -15,8 +15,8 @@ import { LoginPromptCard } from '@/components/login-prompt-card';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useLanguage } from '@/contexts/language';
-import { fetchFootballMatchResults } from '@/services/football';
-import type { FootballMatchResult } from '@/types/football';
+import { fetchEsportsMatchResults } from '@/services/esports';
+import type { EsportsMatchResult } from '@/types/esports';
 import { formatDrawDate, teamDisplayName } from '@/utils/football-ui';
 
 type MatchRow = {
@@ -24,14 +24,8 @@ type MatchRow = {
   time: string;
   home: string;
   away: string;
-  /** Score shown in the main pill (FT preferred, else HT). */
-  displayHome: number | null;
-  displayAway: number | null;
-  htHome: number | null;
-  htAway: number | null;
-  hasFt: boolean;
-  hasHt: boolean;
-  status: 'FT' | 'HT' | 'FT/HT';
+  homeScore: number;
+  awayScore: number;
 };
 
 type League = { name: string; matches: MatchRow[] };
@@ -89,51 +83,32 @@ function formatMatchTime(iso: string): string {
   return `${hours}:${minutes} ${ampm}`;
 }
 
-function hasFtPair(m: FootballMatchResult): boolean {
-  return m.home_result != null && m.away_result != null;
-}
-
-function hasHtPair(m: FootballMatchResult): boolean {
-  return m.home_ht_result != null && m.away_ht_result != null;
-}
-
 function mapResultToRow(
-  m: FootballMatchResult,
+  m: EsportsMatchResult,
   lang: 'en' | 'my',
 ): MatchRow | null {
-  const ft = hasFtPair(m);
-  const ht = hasHtPair(m);
-  if (!ft && !ht) return null;
-
-  let status: MatchRow['status'] = 'FT';
-  if (ft && ht) status = 'FT/HT';
-  else if (ht && !ft) status = 'HT';
-  else status = 'FT';
-
+  if (!Number.isFinite(m.home_result) || !Number.isFinite(m.away_result)) {
+    return null;
+  }
   return {
     id: m.id,
     time: formatMatchTime(m.match_time),
     home: teamDisplayName(m.home, lang),
     away: teamDisplayName(m.away, lang),
-    displayHome: ft ? m.home_result : m.home_ht_result,
-    displayAway: ft ? m.away_result : m.away_ht_result,
-    htHome: ht ? m.home_ht_result : null,
-    htAway: ht ? m.away_ht_result : null,
-    hasFt: ft,
-    hasHt: ht,
-    status,
+    homeScore: m.home_result,
+    awayScore: m.away_result,
   };
 }
 
 function groupResultsByLeague(
-  matches: FootballMatchResult[],
+  matches: EsportsMatchResult[],
   lang: 'en' | 'my',
 ): League[] {
   const map = new Map<string, MatchRow[]>();
   for (const m of matches) {
     const row = mapResultToRow(m, lang);
     if (!row) continue;
-    const name = m.league.name || 'Football';
+    const name = m.league.name || 'E-Sports';
     const arr = map.get(name) ?? [];
     arr.push(row);
     map.set(name, arr);
@@ -145,28 +120,15 @@ function groupResultsByLeague(
 }
 
 function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
-  const highlight = m.hasFt;
-  const homeWin =
-    highlight &&
-    m.displayHome != null &&
-    m.displayAway != null &&
-    m.displayHome > m.displayAway;
-  const awayWin =
-    highlight &&
-    m.displayHome != null &&
-    m.displayAway != null &&
-    m.displayAway > m.displayHome;
-  const isDraw =
-    highlight &&
-    m.displayHome != null &&
-    m.displayAway != null &&
-    m.displayHome === m.displayAway;
+  const homeWin = m.homeScore > m.awayScore;
+  const awayWin = m.awayScore > m.homeScore;
+  const isDraw = m.homeScore === m.awayScore;
 
   return (
     <View style={[s.matchCard, !last && s.matchCardBorder]}>
       <View style={s.matchTop}>
         <View style={s.statusPill}>
-          <Text style={s.statusPillText}>{m.status}</Text>
+          <Text style={s.statusPillText}>FT</Text>
         </View>
         <Text style={s.matchTime}>{m.time}</Text>
       </View>
@@ -186,11 +148,11 @@ function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
 
         <View style={s.scorePill}>
           <Text style={[s.scorePillNum, homeWin && s.scorePillNumWin]}>
-            {m.displayHome ?? '—'}
+            {m.homeScore}
           </Text>
           <Text style={s.scorePillSep}>:</Text>
           <Text style={[s.scorePillNum, awayWin && s.scorePillNumWin]}>
-            {m.displayAway ?? '—'}
+            {m.awayScore}
           </Text>
         </View>
 
@@ -210,12 +172,6 @@ function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
           </View>
         </View>
       </View>
-
-      {m.hasHt && m.hasFt ? (
-        <Text style={s.htLine}>
-          HT {m.htHome} - {m.htAway}
-        </Text>
-      ) : null}
     </View>
   );
 }
@@ -225,7 +181,11 @@ function LeagueCard({ league }: { league: League }) {
     <View style={s.leagueSection}>
       <View style={s.leagueHeader}>
         <View style={s.leagueIconWrap}>
-          <Ionicons name="football" size={15} color={Colors.brand.greenMid} />
+          <Ionicons
+            name="game-controller"
+            size={15}
+            color={Colors.brand.greenMid}
+          />
         </View>
         <Text style={s.leagueName}>{league.name}</Text>
         <Text style={s.leagueCount}>{league.matches.length}</Text>
@@ -243,7 +203,7 @@ function LeagueCard({ league }: { league: League }) {
   );
 }
 
-export default function ScoresScreen() {
+export default function EsportsScoresScreen() {
   const { tr, lang } = useLanguage();
   const { isAuthenticated, token } = useAuth();
   const [date, setDate] = useState(new Date());
@@ -260,17 +220,17 @@ export default function ScoresScreen() {
       if (!opts?.soft) setLoading(true);
       setError(null);
       try {
-        const data = await fetchFootballMatchResults(token, drawDateStr);
+        const data = await fetchEsportsMatchResults(token, drawDateStr);
         setLeagues(groupResultsByLeague(data.matches, lang));
       } catch (e) {
-        setError(e instanceof Error ? e.message : tr.scoresEmpty);
+        setError(e instanceof Error ? e.message : tr.esportsScoresEmpty);
         setLeagues([]);
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [token, drawDateStr, lang, tr.scoresEmpty],
+    [token, drawDateStr, lang, tr.esportsScoresEmpty],
   );
 
   useEffect(() => {
@@ -291,7 +251,7 @@ export default function ScoresScreen() {
           >
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={s.headerTitle}>{tr.scoresTitle}</Text>
+          <Text style={s.headerTitle}>{tr.esportsScoresTitle}</Text>
           <View style={s.headerBtn} />
         </View>
         <View style={s.guestWrap}>
@@ -314,7 +274,7 @@ export default function ScoresScreen() {
         >
           <Ionicons name="chevron-back" size={22} color="#fff" />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>{tr.scoresTitle}</Text>
+        <Text style={s.headerTitle}>{tr.esportsScoresTitle}</Text>
         <View style={s.headerBtn} />
       </View>
 
@@ -378,7 +338,7 @@ export default function ScoresScreen() {
           </View>
         ) : leagues.length === 0 ? (
           <View style={s.stateWrap}>
-            <Text style={s.emptyText}>{tr.scoresEmpty}</Text>
+            <Text style={s.emptyText}>{tr.esportsScoresEmpty}</Text>
           </View>
         ) : (
           leagues.map((league) => (
@@ -604,11 +564,5 @@ const s = StyleSheet.create({
     fontSize: FontSize.sm,
     fontWeight: FontWeight.bold,
     color: Colors.light.placeholder,
-  },
-  htLine: {
-    fontSize: 10,
-    color: Colors.light.placeholder,
-    textAlign: 'center',
-    marginTop: 6,
   },
 });

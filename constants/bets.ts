@@ -11,7 +11,7 @@ export type HdpOuBet = {
   time: string;
   home: string;
   away: string;
-  betType: 'HDP' | 'O/U' | 'O/E' | '1X2' | 'CS';
+  betType: 'HDP' | 'O/U' | 'O/E' | '1X2' | 'CS' | 'HDP 1H' | 'O/U 1H' | 'To Win';
   pick: string;
   line: string;
   odds: number;
@@ -126,6 +126,19 @@ export function getBetById(id: string): Bet | undefined {
 
 export function formatBetOdds(odds: number) {
   return `${odds > 0 ? '+' : ''}${odds}`;
+}
+
+/** Decimal-odds markets (1X2, CS, To Win) — show the multiplier as-is. */
+export function isDecimalOddsBetType(betType: HdpOuBet['betType']): boolean {
+  return betType === '1X2' || betType === 'CS' || betType === 'To Win';
+}
+
+export function formatHdpOuOddsLine(bet: HdpOuBet): string {
+  if (isDecimalOddsBetType(bet.betType)) {
+    const n = bet.odds > 0 ? bet.odds : Number(bet.line);
+    return Number.isFinite(n) && n > 0 ? String(n) : bet.line;
+  }
+  return `${bet.line} (${formatBetOdds(bet.odds)})`;
 }
 
 /** Total return if O/U or non-tier HDP wins at quoted odds. */

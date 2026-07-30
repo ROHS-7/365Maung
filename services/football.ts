@@ -7,6 +7,8 @@ import type {
   BetSlipsQuery,
   BetSlipsResponse,
   FootballLeague,
+  FootballMatchResult,
+  FootballMatchResultsResponse,
   FootballMatchesResponse,
   FootballTeam,
   SubmitBetSlipPayload,
@@ -23,17 +25,25 @@ const MOCK_MATCHES: FootballMatchesResponse = {
       single_goal_odds: '2=',
       mix_odds: '0/0.5',
       mix_goal_odds: '2.5=',
+      single_fh_odds: '0',
+      mix_fh_odds: '0/0.5',
+      single_fh_goal_odds: '1=',
+      mix_fh_goal_odds: '1.5=',
       one_x_two_odds: { home: 1.85, draw: 3.4, away: 4.2 },
       correct_score_odds: { '1-0': 7.5, '2-1': 8.5, '2-0': 9.0, AOS: 20.0 },
       sone_ma_odds: { sone: 0.91, ma: 0.99 },
       home_result: null,
       away_result: null,
+      home_ht_result: null,
+      away_ht_result: null,
       is_show: true,
       is_major: true,
       is_settle: false,
+      is_ht_settle: false,
       home: { id: 10, name: 'Man U', name_en: 'Man U' },
       away: { id: 11, name: 'Chelsea', name_en: 'Chelsea' },
       odds_team: { id: 10, name: 'Man U', name_en: 'Man U' },
+      fh_odds_team: { id: 10, name: 'Man U', name_en: 'Man U' },
       league: { id: 1, name: 'PREMIER LEAGUE' },
     },
     {
@@ -45,17 +55,25 @@ const MOCK_MATCHES: FootballMatchesResponse = {
       single_goal_odds: '2=',
       mix_odds: '1',
       mix_goal_odds: '2=',
+      single_fh_odds: '0.5',
+      mix_fh_odds: '0.5',
+      single_fh_goal_odds: '0.5=',
+      mix_fh_goal_odds: '1=',
       one_x_two_odds: { home: 2.1, draw: 3.2, away: 3.5 },
       correct_score_odds: { '1-0': 6.5, '1-1': 5.5, AOS: 18.0 },
       sone_ma_odds: { sone: 0.95, ma: 0.95 },
       home_result: null,
       away_result: null,
+      home_ht_result: null,
+      away_ht_result: null,
       is_show: true,
       is_major: false,
       is_settle: false,
+      is_ht_settle: false,
       home: { id: 20, name: 'Liverpool', name_en: 'Liverpool' },
       away: { id: 21, name: 'Man City', name_en: 'Man City' },
       odds_team: { id: 20, name: 'Liverpool', name_en: 'Liverpool' },
+      fh_odds_team: { id: 21, name: 'Man City', name_en: 'Man City' },
       league: { id: 1, name: 'PREMIER LEAGUE' },
     },
     {
@@ -67,17 +85,25 @@ const MOCK_MATCHES: FootballMatchesResponse = {
       single_goal_odds: '2.5=',
       mix_odds: '0',
       mix_goal_odds: '2.5=',
+      single_fh_odds: '0',
+      mix_fh_odds: '0',
+      single_fh_goal_odds: '1=',
+      mix_fh_goal_odds: '1=',
       one_x_two_odds: { home: 1.7, draw: 3.6, away: 4.8 },
       correct_score_odds: { '2-0': 8.0, '2-1': 7.0, AOS: 22.0 },
       sone_ma_odds: { sone: 0.9, ma: 1.0 },
       home_result: null,
       away_result: null,
+      home_ht_result: null,
+      away_ht_result: null,
       is_show: true,
       is_major: false,
       is_settle: false,
+      is_ht_settle: false,
       home: { id: 30, name: 'Boca Juniors', name_en: 'Boca Juniors' },
       away: { id: 31, name: 'River Plate', name_en: 'River Plate' },
       odds_team: { id: 30, name: 'Boca Juniors', name_en: 'Boca Juniors' },
+      fh_odds_team: { id: 30, name: 'Boca Juniors', name_en: 'Boca Juniors' },
       league: { id: 2, name: 'ARGENTINA CUP' },
     },
   ],
@@ -209,6 +235,94 @@ export async function fetchFootballMatches(
   if (!API_BASE_URL) return MOCK_MATCHES;
   const q = drawDate ? `?draw_date=${drawDate}` : '';
   return apiRequest<FootballMatchesResponse>(`/football/matches${q}`, { token });
+}
+
+const MOCK_RESULTS: FootballMatchResultsResponse = {
+  matches: [
+    {
+      id: 1,
+      match_id: 12345,
+      sport: 'football',
+      draw_date: new Date().toISOString().slice(0, 10),
+      match_time: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      home_result: 2,
+      away_result: 1,
+      home_ht_result: 1,
+      away_ht_result: 0,
+      is_settle: true,
+      is_ht_settle: true,
+      home: { id: 10, name: 'Man U', name_en: 'Man U' },
+      away: { id: 11, name: 'Chelsea', name_en: 'Chelsea' },
+      league: { id: 1, name: 'PREMIER LEAGUE' },
+    },
+    {
+      id: 2,
+      match_id: 12346,
+      sport: 'football',
+      draw_date: new Date().toISOString().slice(0, 10),
+      match_time: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+      home_result: null,
+      away_result: null,
+      home_ht_result: 0,
+      away_ht_result: 1,
+      is_settle: false,
+      is_ht_settle: true,
+      home: { id: 20, name: 'Liverpool', name_en: 'Liverpool' },
+      away: { id: 21, name: 'Man City', name_en: 'Man City' },
+      league: { id: 1, name: 'PREMIER LEAGUE' },
+    },
+    {
+      id: 3,
+      match_id: 12347,
+      sport: 'football',
+      draw_date: new Date().toISOString().slice(0, 10),
+      match_time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      home_result: 1,
+      away_result: 1,
+      home_ht_result: 0,
+      away_ht_result: 0,
+      is_settle: true,
+      is_ht_settle: true,
+      home: { id: 30, name: 'Boca Juniors', name_en: 'Boca Juniors' },
+      away: { id: 31, name: 'River Plate', name_en: 'River Plate' },
+      league: { id: 2, name: 'ARGENTINA CUP' },
+    },
+  ],
+};
+
+function normalizeMatchResult(raw: unknown): FootballMatchResult {
+  const m = (raw ?? {}) as Record<string, unknown>;
+  return {
+    id: Number(m.id ?? 0),
+    match_id: Number(m.match_id ?? 0),
+    sport: typeof m.sport === 'string' ? m.sport : 'football',
+    draw_date: String(m.draw_date ?? ''),
+    match_time: String(m.match_time ?? ''),
+    home_result: m.home_result == null ? null : Number(m.home_result),
+    away_result: m.away_result == null ? null : Number(m.away_result),
+    home_ht_result: m.home_ht_result == null ? null : Number(m.home_ht_result),
+    away_ht_result: m.away_ht_result == null ? null : Number(m.away_ht_result),
+    is_settle: Boolean(m.is_settle),
+    is_ht_settle: Boolean(m.is_ht_settle),
+    home: normalizeTeam(m.home),
+    away: normalizeTeam(m.away),
+    league: normalizeLeague(m.league),
+  };
+}
+
+export async function fetchFootballMatchResults(
+  token: string,
+  drawDate?: string,
+): Promise<FootballMatchResultsResponse> {
+  if (!API_BASE_URL) return MOCK_RESULTS;
+  const q = drawDate ? `?draw_date=${drawDate}` : '';
+  const data = await apiRequest<FootballMatchResultsResponse>(
+    `/football/matches/results${q}`,
+    { token },
+  );
+  return {
+    matches: (data.matches ?? []).map(normalizeMatchResult),
+  };
 }
 
 export async function submitBetSlip(

@@ -1,5 +1,5 @@
-import { LoginPromptCard } from "@/components/login-prompt-card";
 import { ActivitySheet } from "@/components/activity-sheet";
+import { LoginPromptCard } from "@/components/login-prompt-card";
 import {
   BorderRadius,
   Colors,
@@ -21,6 +21,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
+  Image,
+  type ImageSourcePropType,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -31,6 +33,25 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const MENU_ICONS = {
+  mix: require("@/assets/bet365 icons/Maung.png"),
+  hdp: require("@/assets/bet365 icons/BODY.png"),
+  "mix-fh": require("@/assets/bet365 icons/First-Maung.png"),
+  "hdp-fh": require("@/assets/bet365 icons/First-BODY.png"),
+  esports: require("@/assets/bet365 icons/Esport.png"),
+  "esports-score": require("@/assets/bet365 icons/Esportresult.png"),
+  sonema: require("@/assets/bet365 icons/Evenodd.png"),
+  onextwo: require("@/assets/bet365 icons/1x2.png"),
+  correctscore: require("@/assets/bet365 icons/Correct-score.png"),
+  score: require("@/assets/bet365 icons/result.png"),
+  news: require("@/assets/bet365 icons/news.png"),
+  betlist: require("@/assets/bet365 icons/betting-match.png"),
+  deposit: require("@/assets/bet365 icons/autodeposit.png"),
+  withdraw: require("@/assets/bet365 icons/withdrawl.png"),
+  rule: require("@/assets/bet365 icons/rules.png"),
+  pw: require("@/assets/bet365 icons/change-password.png"),
+} as const;
+
 const MENU_ROUTES: Record<string, string> = {
   rule: "/(tabs)/rule",
   pw: "/(tabs)/change-password",
@@ -39,9 +60,13 @@ const MENU_ROUTES: Record<string, string> = {
   score: "/(tabs)/scores",
   mix: "/(tabs)/maung",
   hdp: "/(tabs)/hdp",
+  "mix-fh": "/(tabs)/maung-fh",
+  "hdp-fh": "/(tabs)/hdp-fh",
   sonema: "/(tabs)/sone-ma",
   onextwo: "/(tabs)/one-x-two",
   correctscore: "/(tabs)/correct-score",
+  esports: "/(tabs)/esports",
+  "esports-score": "/(tabs)/esports-scores",
   betlist: "/(tabs)/bets",
   news: "/(tabs)/news",
 };
@@ -193,7 +218,11 @@ function WalletCard({
           />
           <Text style={s.walletBtnPrimaryText}>{tr.homeDeposit}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.walletBtnGhost} activeOpacity={0.85} onPress={() => router.push("/(tabs)/withdraw" as never)}>
+        <TouchableOpacity
+          style={s.walletBtnGhost}
+          activeOpacity={0.85}
+          onPress={() => router.push("/(tabs)/withdraw" as never)}
+        >
           <Ionicons name="arrow-up-circle-outline" size={18} color="#fff" />
           <Text style={s.walletBtnGhostText}>{tr.homeWithdraw}</Text>
         </TouchableOpacity>
@@ -215,9 +244,7 @@ function WalletCard({
 type MenuEntry = {
   id: string;
   labelKey: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  bg: string;
-  featured?: boolean;
+  icon: ImageSourcePropType;
 };
 
 function QuickTile({ item }: { item: MenuEntry }) {
@@ -230,8 +257,8 @@ function QuickTile({ item }: { item: MenuEntry }) {
       style={({ pressed }) => [s.quickTile, pressed && s.tilePressed]}
       onPress={() => navigate(item.id, route)}
     >
-      <View style={[s.quickIcon, { backgroundColor: item.bg }]}>
-        <Ionicons name={item.icon} size={18} color="#fff" />
+      <View style={s.quickIcon}>
+        <Image source={item.icon} style={s.menuIconImg} />
       </View>
       <Text style={s.quickLabel} numberOfLines={2}>
         {(tr as Record<string, string>)[item.labelKey]}
@@ -250,8 +277,8 @@ function ServiceTile({ item }: { item: MenuEntry }) {
       style={({ pressed }) => [s.serviceTile, pressed && s.tilePressed]}
       onPress={() => navigate(item.id, route)}
     >
-      <View style={[s.serviceIcon, { backgroundColor: item.bg + "18" }]}>
-        <Ionicons name={item.icon} size={18} color={item.bg} />
+      <View style={s.serviceIcon}>
+        <Image source={item.icon} style={s.menuIconImg} />
       </View>
       <Text style={s.serviceLabel} numberOfLines={2}>
         {(tr as Record<string, string>)[item.labelKey]}
@@ -261,31 +288,33 @@ function ServiceTile({ item }: { item: MenuEntry }) {
 }
 
 const QUICK_PLAY: MenuEntry[] = [
-  { id: "mix", labelKey: "menuMixParlay", icon: "trophy", bg: "#27AE60" },
-  { id: "hdp", labelKey: "menuHDP", icon: "football", bg: "#2980B9" },
-  { id: "sonema", labelKey: "menuSoneMa", icon: "shuffle", bg: "#8E44AD" },
-  { id: "onextwo", labelKey: "menu1x2", icon: "grid", bg: "#16A085" },
-  { id: "correctscore", labelKey: "menuCorrectScore", icon: "keypad", bg: "#D35400" },
-  { id: "score", labelKey: "menuScore", icon: "pulse", bg: "#E74C3C" },
-  { id: "news", labelKey: "menuNews", icon: "newspaper", bg: "#34495E" },
+  { id: "mix", labelKey: "menuMixParlay", icon: MENU_ICONS.mix },
+  { id: "hdp", labelKey: "menuHDP", icon: MENU_ICONS.hdp },
+  { id: "mix-fh", labelKey: "menuMixParlayFh", icon: MENU_ICONS["mix-fh"] },
+  { id: "hdp-fh", labelKey: "menuHdpFh", icon: MENU_ICONS["hdp-fh"] },
+  { id: "esports", labelKey: "menuEsports", icon: MENU_ICONS.esports },
+  { id: "sonema", labelKey: "menuSoneMa", icon: MENU_ICONS.sonema },
+  { id: "onextwo", labelKey: "menu1x2", icon: MENU_ICONS.onextwo },
+  {
+    id: "correctscore",
+    labelKey: "menuCorrectScore",
+    icon: MENU_ICONS.correctscore,
+  },
+  {
+    id: "esports-score",
+    labelKey: "menuEsportsScore",
+    icon: MENU_ICONS["esports-score"],
+  },
+  { id: "score", labelKey: "menuScore", icon: MENU_ICONS.score },
+  { id: "news", labelKey: "menuNews", icon: MENU_ICONS.news },
 ];
 
 const SERVICES: MenuEntry[] = [
-  {
-    id: "betlist",
-    labelKey: "menuBetList",
-    icon: "document-text",
-    bg: "#16A085",
-  },
-  {
-    id: "deposit",
-    labelKey: "menuDeposit",
-    icon: "arrow-down-circle",
-    bg: "#E67E22",
-  },
-  { id: "withdraw", labelKey: "menuWithdraw", icon: "wallet", bg: "#F39C12" },
-  { id: "rule", labelKey: "menuRule", icon: "book-outline", bg: "#1ABC9C" },
-  { id: "pw", labelKey: "menuChangePw", icon: "lock-closed", bg: "#9B59B6" },
+  { id: "betlist", labelKey: "menuBetList", icon: MENU_ICONS.betlist },
+  { id: "deposit", labelKey: "menuDeposit", icon: MENU_ICONS.deposit },
+  { id: "withdraw", labelKey: "menuWithdraw", icon: MENU_ICONS.withdraw },
+  { id: "rule", labelKey: "menuRule", icon: MENU_ICONS.rule },
+  { id: "pw", labelKey: "menuChangePw", icon: MENU_ICONS.pw },
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -656,12 +685,18 @@ const s = StyleSheet.create({
     ...Shadow.sm,
   },
   quickIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.sm,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
+    overflow: "hidden",
+  },
+  menuIconImg: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
   },
   quickLabel: {
     fontSize: 11,
@@ -686,12 +721,13 @@ const s = StyleSheet.create({
     ...Shadow.sm,
   },
   serviceIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.sm,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
+    overflow: "hidden",
   },
   serviceLabel: {
     fontSize: 11,

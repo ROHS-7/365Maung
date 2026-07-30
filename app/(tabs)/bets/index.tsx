@@ -15,6 +15,7 @@ import {
   type ParlayBet,
   type SelectedSide,
   formatBetOdds,
+  formatHdpOuOddsLine,
 } from '@/constants/bets';
 import { formatHdpTierLabel } from '@/utils/hdp-settlement';
 import { fetchBetSlips } from '@/services/football';
@@ -102,7 +103,7 @@ function HdpOuCard({ bet }: { bet: HdpOuBet }) {
   const { tr } = useLanguage();
   const isWin = bet.status === 'win';
   const isPending = bet.status === 'pending';
-  const oddsStr = `${bet.line} (${formatBetOdds(bet.odds)})`;
+  const oddsStr = formatHdpOuOddsLine(bet);
   const hasScore = bet.homeScore != null && bet.awayScore != null;
   const tierLabel =
     isWin && bet.betType === 'HDP' && bet.hdpTier

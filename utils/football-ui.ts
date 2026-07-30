@@ -30,18 +30,59 @@ export type UiMatchData = {
   soneOdds: number | null;
   maOdds: number | null;
   oneXTwo: { home: number; draw: number; away: number } | null;
+  toWin: { home: number; away: number } | null;
   correctScores: { key: string; odds: number }[];
   isMajor: boolean;
 };
+
+export type OddsPeriod = 'ft' | 'fh';
+
+export function isAsianHandicapMarket(
+  market: FootballMarket,
+): market is 'asian_handicap' | 'asian_handicap_fh' {
+  return market === 'asian_handicap' || market === 'asian_handicap_fh';
+}
+
+export function isGoalsOuMarket(
+  market: FootballMarket,
+): market is 'goals_ou' | 'goals_ou_fh' {
+  return market === 'goals_ou' || market === 'goals_ou_fh';
+}
+
+export function hdpMarketFromList(
+  markets: FootballMarket[],
+): 'asian_handicap' | 'asian_handicap_fh' | null {
+  if (markets.includes('asian_handicap_fh')) return 'asian_handicap_fh';
+  if (markets.includes('asian_handicap')) return 'asian_handicap';
+  return null;
+}
+
+export function ouMarketFromList(
+  markets: FootballMarket[],
+): 'goals_ou' | 'goals_ou_fh' | null {
+  if (markets.includes('goals_ou_fh')) return 'goals_ou_fh';
+  if (markets.includes('goals_ou')) return 'goals_ou';
+  return null;
+}
+
+export function oddsPeriodFromMarkets(markets?: FootballMarket[]): OddsPeriod {
+  if (!markets?.length) return 'ft';
+  return markets.some((m) => m === 'asian_handicap_fh' || m === 'goals_ou_fh')
+    ? 'fh'
+    : 'ft';
+}
 
 export type UiLeagueData = { name: string; matches: UiMatchData[] };
 
 export const ALL_MARKETS: FootballMarket[] = [
   'asian_handicap',
   'goals_ou',
+  'asian_handicap_fh',
+  'goals_ou_fh',
   'sone_ma',
   'match_winner_1x2',
   'correct_score',
+  'to_win',
 ];
 
 export function formatDrawDate(d: Date): string {
@@ -100,6 +141,14 @@ export function matchHasValidMarket(
       const raw = mode === 'single' ? match.single_goal_odds : match.mix_goal_odds;
       return isValidOddsValue(raw);
     }
+    case 'asian_handicap_fh': {
+      const raw = mode === 'single' ? match.single_fh_odds : match.mix_fh_odds;
+      return isValidOddsValue(raw);
+    }
+    case 'goals_ou_fh': {
+      const raw = mode === 'single' ? match.single_fh_goal_odds : match.mix_fh_goal_odds;
+      return isValidOddsValue(raw);
+    }
     case 'sone_ma':
       return (
         match.sone_ma_odds != null &&
@@ -126,8 +175,10 @@ export function matchHasValidMarket(
 export function uiMatchHasValidMarket(match: UiMatchData, market: FootballMarket): boolean {
   switch (market) {
     case 'asian_handicap':
+    case 'asian_handicap_fh':
       return isValidOddsValue(match.hdpLine);
     case 'goals_ou':
+    case 'goals_ou_fh':
       return isValidOddsValue(match.ouLine);
     case 'sone_ma':
       return Number.isFinite(match.soneOdds) && Number.isFinite(match.maOdds);
@@ -140,6 +191,12 @@ export function uiMatchHasValidMarket(match: UiMatchData, market: FootballMarket
       );
     case 'correct_score':
       return match.correctScores.some((c) => Number.isFinite(c.odds));
+    case 'to_win':
+      return (
+        match.toWin != null &&
+        Number.isFinite(match.toWin.home) &&
+        Number.isFinite(match.toWin.away)
+      );
     default:
       return false;
   }
@@ -166,10 +223,27 @@ export function mapFootballMatchToUi(
   match: FootballMatch,
   mode: 'single' | 'mix',
   lang: Lang,
+  period: OddsPeriod = 'ft',
 ): UiMatchData {
-  const hdpRaw = mode === 'single' ? match.single_odds : match.mix_odds;
-  const goalRaw = mode === 'single' ? match.single_goal_odds : match.mix_goal_odds;
-  const hdpGiving = match.odds_team.id === match.home.id ? 'home' : 'away';
+  const hdpRaw =
+    period === 'fh'
+      ? mode === 'single'
+        ? match.single_fh_odds
+        : match.mix_fh_odds
+      : mode === 'single'
+        ? match.single_odds
+        : match.mix_odds;
+  const goalRaw =
+    period === 'fh'
+      ? mode === 'single'
+        ? match.single_fh_goal_odds
+        : match.mix_fh_goal_odds
+      : mode === 'single'
+        ? match.single_goal_odds
+        : match.mix_goal_odds;
+  const oddsTeam =
+    period === 'fh' && match.fh_odds_team ? match.fh_odds_team : match.odds_team;
+  const hdpGiving = oddsTeam.id === match.home.id ? 'home' : 'away';
   const d = new Date(match.match_time);
   let dateStr = match.draw_date;
   if (!Number.isNaN(d.getTime())) {
@@ -186,6 +260,9 @@ export function mapFootballMatchToUi(
     ? Object.entries(match.correct_score_odds).map(([key, odds]) => ({ key, odds }))
     : [];
 
+  const hdpStr = hdpRaw ?? '';
+  const goalStr = goalRaw ?? '';
+
   return {
     id: String(match.id),
     matchDbId: match.id,
@@ -195,10 +272,10 @@ export function mapFootballMatchToUi(
     away: teamDisplayName(match.away, lang),
     date: dateStr,
     hdpGiving,
-    hdpLine: hdpRaw || '—',
-    hdpOdds: parseOddsNumber(hdpRaw),
-    ouLine: goalRaw?.replace('=', '') || '—',
-    ouOdds: parseOddsNumber(goalRaw ?? ''),
+    hdpLine: isValidOddsValue(hdpStr) ? hdpStr : '—',
+    hdpOdds: parseOddsNumber(hdpStr),
+    ouLine: isValidOddsValue(goalStr) ? goalStr.replace('=', '') : '—',
+    ouOdds: parseOddsNumber(goalStr),
     soneOdds: match.sone_ma_odds?.sone ?? null,
     maOdds: match.sone_ma_odds?.ma ?? null,
     oneXTwo: match.one_x_two_odds
@@ -208,6 +285,7 @@ export function mapFootballMatchToUi(
           away: match.one_x_two_odds.away,
         }
       : null,
+    toWin: null,
     correctScores: cs,
     isMajor: Boolean(match.is_major),
   };
@@ -219,9 +297,11 @@ export function groupMatchesByLeague(
   lang: Lang,
   markets?: FootballMarket[],
 ): UiLeagueData[] {
+  const period = oddsPeriodFromMarkets(markets);
   const map = new Map<string, UiMatchData[]>();
   for (const m of matches) {
-    if (!m.is_show || m.is_settle) continue;
+    if (!m.is_show) continue;
+    if (period === 'fh' ? m.is_ht_settle : m.is_settle) continue;
     if (
       markets?.length &&
       !markets.some((market) => matchHasValidMarket(m, mode, market))
@@ -229,7 +309,7 @@ export function groupMatchesByLeague(
       continue;
     }
     const leagueName = m.league.name;
-    const ui = mapFootballMatchToUi(m, mode, lang);
+    const ui = mapFootballMatchToUi(m, mode, lang, period);
     const arr = map.get(leagueName) ?? [];
     arr.push(ui);
     map.set(leagueName, arr);
@@ -264,15 +344,16 @@ export function pickLabel(
   pick: string,
   tr: Translations,
 ): string {
-  if (market === 'asian_handicap') {
+  const fh = market === 'asian_handicap_fh' || market === 'goals_ou_fh' ? '1H ' : '';
+  if (isAsianHandicapMarket(market)) {
     const giving = match.hdpGiving === 'home' ? match.home : match.away;
     const receiving = match.hdpGiving === 'home' ? match.away : match.home;
     const team = pick === 'giving' ? giving : receiving;
-    return `${team} ${match.hdpLine}`;
+    return `${fh}${team} ${match.hdpLine}`;
   }
-  if (market === 'goals_ou') {
+  if (isGoalsOuMarket(market)) {
     const label = pick === 'up' ? tr.maungOver : tr.maungUnder;
-    return `${label} ${match.ouLine}`;
+    return `${fh}${label} ${match.ouLine}`;
   }
   if (market === 'sone_ma') {
     return pick === 'sone' ? tr.maungOdd : tr.maungEven;
@@ -281,6 +362,13 @@ export function pickLabel(
     if (pick === 'home') return `${match.home} (1)`;
     if (pick === 'away') return `${match.away} (2)`;
     return `${tr.footballDraw} (X)`;
+  }
+  if (market === 'to_win') {
+    const odds =
+      pick === 'home' ? match.toWin?.home : pick === 'away' ? match.toWin?.away : null;
+    const team = pick === 'home' ? match.home : match.away;
+    if (odds != null && Number.isFinite(odds)) return `${team} @ ${odds}`;
+    return team;
   }
   return `${tr.footballCorrectScore} ${pick}`;
 }
@@ -291,7 +379,7 @@ export function buildBetLeg(
   pick: string,
   betAmount: number,
 ): BetSlipLegPayload {
-  if (market === 'asian_handicap') {
+  if (isAsianHandicapMarket(market)) {
     const givingId = match.hdpGiving === 'home' ? match.homeId : match.awayId;
     const receivingId = match.hdpGiving === 'home' ? match.awayId : match.homeId;
     return {
@@ -301,7 +389,7 @@ export function buildBetLeg(
       bet_amount: betAmount,
     };
   }
-  if (market === 'goals_ou') {
+  if (isGoalsOuMarket(market)) {
     return {
       match_id: match.matchDbId,
       market,
@@ -327,6 +415,15 @@ export function buildBetLeg(
       bet_amount: betAmount,
       selected_team_id:
         pick === 'home' ? match.homeId : pick === 'away' ? match.awayId : match.homeId,
+    };
+  }
+  if (market === 'to_win') {
+    return {
+      match_id: match.matchDbId,
+      market: 'to_win',
+      selection: pick,
+      bet_amount: betAmount,
+      selected_team_id: pick === 'away' ? match.awayId : match.homeId,
     };
   }
   return {
@@ -404,10 +501,20 @@ function teamNameById(leg: BetSlipLeg, teamId: number | undefined, lang: Lang): 
 }
 
 function legPickLabel(leg: BetSlipLeg, tr: Translations, lang: Lang): string {
-  if (leg.market === 'match_winner_1x2' && leg.selection) {
+  if ((leg.market === 'match_winner_1x2' || leg.market === 'to_win') && leg.selection) {
     const teams = resolveLegTeams(leg, lang);
-    if (leg.selection === 'home') return `${teams.home} (1)`;
-    if (leg.selection === 'away') return `${teams.away} (2)`;
+    if (leg.selection === 'home') {
+      if (leg.market === 'to_win' && leg.decimal_odds != null) {
+        return `${teams.home} @ ${leg.decimal_odds}`;
+      }
+      return `${teams.home} (1)`;
+    }
+    if (leg.selection === 'away') {
+      if (leg.market === 'to_win' && leg.decimal_odds != null) {
+        return `${teams.away} @ ${leg.decimal_odds}`;
+      }
+      return `${teams.away} (2)`;
+    }
     if (leg.selection === 'draw') return `${tr.footballDraw} (X)`;
     return leg.selection;
   }
@@ -421,17 +528,18 @@ function legPickLabel(leg: BetSlipLeg, tr: Translations, lang: Lang): string {
   }
 
   const goalLine = (leg.goal_odds ?? '').replace('=', '').trim();
-  if (leg.goal_odds || leg.goal_up_down || leg.market === 'goals_ou') {
+  if (leg.goal_odds || leg.goal_up_down || isGoalsOuMarket(leg.market as FootballMarket)) {
     const pick =
       leg.goal_up_down === 'up'
         ? tr.maungOver
         : leg.goal_up_down === 'down'
           ? tr.maungUnder
           : null;
-    if (pick && goalLine) return `${pick} ${goalLine}`;
-    if (pick) return pick;
-    if (goalLine) return `${tr.maungOver}/${tr.maungUnder} ${goalLine}`;
-    return `${tr.maungOver}/${tr.maungUnder}`;
+    const fh = leg.market === 'goals_ou_fh' ? '1H ' : '';
+    if (pick && goalLine) return `${fh}${pick} ${goalLine}`;
+    if (pick) return `${fh}${pick}`;
+    if (goalLine) return `${fh}${tr.maungOver}/${tr.maungUnder} ${goalLine}`;
+    return `${fh}${tr.maungOver}/${tr.maungUnder}`;
   }
 
   if (leg.sone_ma || leg.market === 'sone_ma') {
@@ -442,11 +550,15 @@ function legPickLabel(leg: BetSlipLeg, tr: Translations, lang: Lang): string {
     readTeamName(leg.selected_team, lang) ||
     teamNameById(leg, readTeamId(leg.selected_team), lang);
   const line = leg.odds?.trim();
-  if (team && line) return `${team} ${line}`;
+  const fh = leg.market === 'asian_handicap_fh' ? '1H ' : '';
+  if (team && line) return `${fh}${team} ${line}`;
   return team || line || '—';
 }
 
 function legOddsValue(leg: BetSlipLeg): number {
+  if (leg.decimal_odds != null && Number.isFinite(leg.decimal_odds)) {
+    return leg.decimal_odds;
+  }
   if (leg.goal_odds) return parseOddsNumber(leg.goal_odds);
   return parseOddsNumber(leg.odds ?? '');
 }
@@ -462,12 +574,12 @@ function resolveSelectedSide(leg: BetSlipLeg): 'home' | 'away' | 'draw' | null {
   if (leg.selection === 'home' || leg.selection === 'away' || leg.selection === 'draw') {
     return leg.selection;
   }
-  if (leg.market === 'match_winner_1x2') {
+  if (leg.market === 'match_winner_1x2' || leg.market === 'to_win') {
     if (leg.selection === 'home' || leg.selection === 'away' || leg.selection === 'draw') {
       return leg.selection;
     }
   }
-  if (leg.goal_odds || leg.goal_up_down || leg.market === 'goals_ou') return null;
+  if (leg.goal_odds || leg.goal_up_down || leg.market === 'goals_ou' || leg.market === 'goals_ou_fh') return null;
   if (leg.sone_ma || leg.market === 'sone_ma') return null;
   if (leg.market === 'correct_score') return null;
 
@@ -480,8 +592,11 @@ function resolveSelectedSide(leg: BetSlipLeg): 'home' | 'away' | 'draw' | null {
 }
 
 function inferBetType(leg: BetSlipLeg): HdpOuBet['betType'] {
+  if (leg.market === 'to_win') return 'To Win';
   if (leg.market === 'match_winner_1x2') return '1X2';
   if (leg.market === 'correct_score') return 'CS';
+  if (leg.market === 'goals_ou_fh') return 'O/U 1H';
+  if (leg.market === 'asian_handicap_fh') return 'HDP 1H';
   if (leg.goal_odds || leg.goal_up_down || leg.market === 'goals_ou') return 'O/U';
   if (leg.sone_ma || leg.market === 'sone_ma') return 'O/E';
   return 'HDP';
@@ -520,6 +635,10 @@ export function mapBetSlipToBet(slip: BetSlip, tr: Translations, lang: Lang = 'm
   const leg = slip.legs[0];
   const betType = leg ? inferBetType(leg) : 'HDP';
   const teams = leg ? resolveLegTeams(leg, lang) : { home: '—', away: '—' };
+  const line =
+    leg?.decimal_odds != null && Number.isFinite(leg.decimal_odds)
+      ? String(leg.decimal_odds)
+      : leg?.odds?.trim() || leg?.goal_odds || leg?.selection || '—';
   const hdp: HdpOuBet = {
     kind: 'hdpou',
     id: String(slip.id),
@@ -528,7 +647,7 @@ export function mapBetSlipToBet(slip: BetSlip, tr: Translations, lang: Lang = 'm
     away: teams.away,
     betType,
     pick: leg ? legPickLabel(leg, tr, lang) : '—',
-    line: leg?.odds?.trim() || leg?.goal_odds || leg?.selection || '—',
+    line,
     odds: leg ? legOddsValue(leg) : 0,
     stake: slip.total_amount,
     payout: slip.bingo_amount ?? 0,

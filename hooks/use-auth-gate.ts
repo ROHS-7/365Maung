@@ -4,6 +4,10 @@ import { useAuth } from '@/contexts/auth';
 const AUTH_ROUTES = new Set([
   'mix',
   'hdp',
+  'mix-fh',
+  'hdp-fh',
+  'esports',
+  'esports-score',
   'betlist',
   'deposit',
   'withdraw',

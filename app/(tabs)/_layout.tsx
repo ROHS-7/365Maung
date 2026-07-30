@@ -77,6 +77,14 @@ export default function TabLayout() {
         options={{ href: null, tabBarStyle: { display: 'none' } }}
       />
       <Tabs.Screen
+        name="maung-fh"
+        options={{ href: null, tabBarStyle: { display: 'none' } }}
+      />
+      <Tabs.Screen
+        name="hdp-fh"
+        options={{ href: null, tabBarStyle: { display: 'none' } }}
+      />
+      <Tabs.Screen
         name="sone-ma"
         options={{ href: null, tabBarStyle: { display: 'none' } }}
       />
@@ -86,6 +94,14 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="correct-score"
+        options={{ href: null, tabBarStyle: { display: 'none' } }}
+      />
+      <Tabs.Screen
+        name="esports"
+        options={{ href: null, tabBarStyle: { display: 'none' } }}
+      />
+      <Tabs.Screen
+        name="esports-scores"
         options={{ href: null, tabBarStyle: { display: 'none' } }}
       />
       <Tabs.Screen name="rule"            options={{ href: null }} />

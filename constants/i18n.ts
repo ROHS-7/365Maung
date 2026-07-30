@@ -43,6 +43,10 @@ const translations = {
     // Menu items
     menuMixParlay: "Mix Parlay",
     menuHDP: "Body",
+    menuMixParlayFh: "1H Mix",
+    menuHdpFh: "1H Body",
+    menuEsports: "E-Sports",
+    menuEsportsScore: "E-Sports Score",
     menuSoneMa: "Odd / Even",
     menu1x2: "1X2",
     menuCorrectScore: "Correct Score",
@@ -122,8 +126,10 @@ const translations = {
     paymentAccountDeleteConfirm: "Delete",
     paymentAccountDeleteFailed: "Could not delete account",
     paymentAccountGateTitle: "Payment account required",
-    paymentAccountGateDeposit: "Add and bind a payment account before you can deposit.",
-    paymentAccountGateWithdraw: "Add and bind a payment account before you can withdraw.",
+    paymentAccountGateDeposit:
+      "Add and bind a payment account before you can deposit.",
+    paymentAccountGateWithdraw:
+      "Add and bind a payment account before you can withdraw.",
     paymentAccountGateAction: "Set up payment account",
 
     // Deposit
@@ -137,14 +143,17 @@ const translations = {
     depositSubmit: "Submit deposit request",
     depositAmountRequired: "Enter a valid amount",
     depositConfirmTitle: "Submit deposit?",
-    depositConfirmMsg: "Only submit after you have sent the money from your bound wallet.",
+    depositConfirmMsg:
+      "Only submit after you have sent the money from your bound wallet.",
     depositSuccessTitle: "Request submitted",
     depositSuccessMsg: "Your deposit is pending agent approval.",
     depositFailed: "Deposit request failed",
     depositLoadFailed: "Could not load deposit accounts",
     depositNoAgent: "You are not assigned to an agent. Contact support.",
-    depositNoMatchingProvider: "No agent account matches your bound wallet provider.",
-    depositPendingNote: "Transfer first in your KBZ/Wave app, then submit. Agent will verify and approve.",
+    depositNoMatchingProvider:
+      "No agent account matches your bound wallet provider.",
+    depositPendingNote:
+      "Transfer first in your KBZ/Wave app, then submit. Agent will verify and approve.",
 
     // Withdraw
     withdrawTitle: "Withdraw",
@@ -158,11 +167,13 @@ const translations = {
     withdrawAmountRequired: "Enter a valid amount",
     withdrawInsufficient: "Amount exceeds your balance",
     withdrawConfirmTitle: "Confirm withdrawal?",
-    withdrawConfirmMsg: "Coins will be deducted immediately and held until your agent approves or rejects.",
+    withdrawConfirmMsg:
+      "Coins will be deducted immediately and held until your agent approves or rejects.",
     withdrawSuccessTitle: "Request submitted",
     withdrawSuccessMsg: "Your withdrawal is pending agent approval.",
     withdrawFailed: "Withdrawal request failed",
-    withdrawHoldNote: "Coins are deducted immediately and held until your agent approves or rejects.",
+    withdrawHoldNote:
+      "Coins are deducted immediately and held until your agent approves or rejects.",
 
     // Coin requests
     coinRequestTitle: "Deposit & Withdraw",
@@ -308,17 +319,19 @@ const translations = {
     newsLoading: "Loading news…",
 
     // HDP & O/U
-    hdpTitle:        'HDP & O/U',
-    hdpLeagues:      'Leagues',
-    hdpSelected:     'Selected',
-    hdpUnits:        'Units',
-    hdpMinErr:       'Select at least 1 pick',
-    hdpMinPicksHint: 'Select at least 1 pick to place a bet',
-    hdpPlaceBet:     'Place bet',
-    hdpReviewBet:    'Review & bet',
+    hdpTitle: "HDP & O/U",
+    hdpFhTitle: "1H Body",
+    hdpLeagues: "Leagues",
+    hdpSelected: "Selected",
+    hdpUnits: "Units",
+    hdpMinErr: "Select at least 1 pick",
+    hdpMinPicksHint: "Select at least 1 pick to place a bet",
+    hdpPlaceBet: "Place bet",
+    hdpReviewBet: "Review & bet",
 
     // Mix Parlay
     maungTitle: "Mix Parlay",
+    maungFhTitle: "1H Mix Parlay",
     maungOver: "Over",
     maungUnder: "Under",
     maungOdd: "Odd",
@@ -361,6 +374,11 @@ const translations = {
     footballSoneMaTitle: "Odd / Even",
     footballSinglePickHint: "Select 1 pick to place a bet",
     footballSinglePickErr: "Select at least 1 pick",
+    footballAllLeagues: "All",
+    esportsTitle: "E-Sports",
+    esportsToWin: "To Win",
+    esportsScoresTitle: "E-Sports Scores",
+    esportsScoresEmpty: "No e-sports scores available",
 
     // Language picker
     langEnglish: "English",
@@ -409,10 +427,14 @@ const translations = {
     // Menu items
     menuMixParlay: "မောင်း",
     menuHDP: "ဘော်ဒီ",
+    menuMixParlayFh: "ပထမပိုင်း မောင်း",
+    menuHdpFh: "ပထမပိုင်း ဘော်ဒီ",
+    menuEsports: "E-Sports",
+    menuEsportsScore: "E-Sports ရလဒ်",
     menuSoneMa: "စုံ / မ",
     menu1x2: "1X2",
     menuCorrectScore: "Correct Score",
-    menuScore: "ပွဲရလဒ်",
+    menuScore: "ဘောလုံးပွဲရလဒ်",
     menuBetList: "လောင်းထားသောပွဲစဉ်",
     menuDeposit: "အော်တိုငွေသွင်းစနစ်",
     menuWithdraw: "ငွေထုတ်ရန်",
@@ -449,7 +471,8 @@ const translations = {
     activitiesSub: "အကောင့် မှတ်တမ်း",
     activitiesSeeAll: "အားလုံးကြည့်ရန်",
     activitiesEmpty: "လုပ်ဆောင်ချက် မရှိသေးပါ",
-    activitiesEmptySub: "ငွေသွင်း၊ လောင်းကြေး နှင့် လက်ကျန်ငွေ ပြောင်းလဲမှုများ ဤနေရာတွင် ပေါ်လာမည်",
+    activitiesEmptySub:
+      "ငွေသွင်း၊ လောင်းကြေး နှင့် လက်ကျန်ငွေ ပြောင်းလဲမှုများ ဤနေရာတွင် ပေါ်လာမည်",
     activitiesLoadFailed: "လုပ်ဆောင်ချက် မဖတ်နိုင်ပါ",
     activitiesRetry: "ထပ်စမ်းမည်",
 
@@ -464,7 +487,8 @@ const translations = {
     coinTxReceived: "လက်ခံရရှိ",
     coinTxSent: "ပို့ပြီး",
     coinTxEmpty: "ငွေလွှဲမှု မရှိသေးပါ",
-    coinTxEmptySub: "ငွေလွှဲပြောင်း နှင့် လက်ကျန်ငွေ ပြောင်းလဲမှုများ ဤနေရာတွင် ပေါ်လာမည်",
+    coinTxEmptySub:
+      "ငွေလွှဲပြောင်း နှင့် လက်ကျန်ငွေ ပြောင်းလဲမှုများ ဤနေရာတွင် ပေါ်လာမည်",
     coinTxLoadFailed: "ငွေမှတ်တမ်း မဖတ်နိုင်ပါ",
     coinTxRetry: "ထပ်စမ်းမည်",
 
@@ -488,8 +512,10 @@ const translations = {
     paymentAccountDeleteConfirm: "ဖျက်မည်",
     paymentAccountDeleteFailed: "အကောင့် ဖျက်၍ မရပါ",
     paymentAccountGateTitle: "ပိုက်ဆံအကောင့် လိုအပ်သည်",
-    paymentAccountGateDeposit: "ငွေသွင်းမီ ပိုက်ဆံအကောင့် ထည့်ပြီး အသုံးပြုရန် သတ်မှတ်ပါ။",
-    paymentAccountGateWithdraw: "ငွေထုတ်မီ ပိုက်ဆံအကောင့် ထည့်ပြီး အသုံးပြုရန် သတ်မှတ်ပါ။",
+    paymentAccountGateDeposit:
+      "ငွေသွင်းမီ ပိုက်ဆံအကောင့် ထည့်ပြီး အသုံးပြုရန် သတ်မှတ်ပါ။",
+    paymentAccountGateWithdraw:
+      "ငွေထုတ်မီ ပိုက်ဆံအကောင့် ထည့်ပြီး အသုံးပြုရန် သတ်မှတ်ပါ။",
     paymentAccountGateAction: "အကောင့်သတ်မှတ်မည်",
 
     // Deposit
@@ -509,8 +535,10 @@ const translations = {
     depositFailed: "ငွေသွင်းတောင်းဆို၍ မရပါ",
     depositLoadFailed: "ငွေသွင်းအကောင့် မဖတ်နိုင်ပါ",
     depositNoAgent: "အေးဂျင့်မရှိပါ။ အကူအညီ ဆက်သွယ်ပါ။",
-    depositNoMatchingProvider: "သင့်ပိုက်ဆံအကောင့်နှင့် တူသော အေးဂျင့်အကောင့် မရှိပါ။",
-    depositPendingNote: "KBZ/Wave မှ ငွေလွှဲပြီး တောင်းဆိုပါ။ အေးဂျင့်စစ်ဆေးပြီး အတည်ပြုမည်။",
+    depositNoMatchingProvider:
+      "သင့်ပိုက်ဆံအကောင့်နှင့် တူသော အေးဂျင့်အကောင့် မရှိပါ။",
+    depositPendingNote:
+      "KBZ/Wave မှ ငွေလွှဲပြီး တောင်းဆိုပါ။ အေးဂျင့်စစ်ဆေးပြီး အတည်ပြုမည်။",
 
     // Withdraw
     withdrawTitle: "ငွေထုတ်",
@@ -524,11 +552,13 @@ const translations = {
     withdrawAmountRequired: "ပမာဏ မှန်ကန်စွာ ထည့်ပါ",
     withdrawInsufficient: "လက်ကျန်ငွေ မလုံလောက်ပါ",
     withdrawConfirmTitle: "ငွေထုတ်တောင်းဆိုမည်လား?",
-    withdrawConfirmMsg: "ငွေကို ချက်ချင်း နုတ်ယူပြီး အေးဂျင့်အတည်ပြုချက်အထိ ထားရှိမည်။",
+    withdrawConfirmMsg:
+      "ငွေကို ချက်ချင်း နုတ်ယူပြီး အေးဂျင့်အတည်ပြုချက်အထိ ထားရှိမည်။",
     withdrawSuccessTitle: "တောင်းဆိုပြီး",
     withdrawSuccessMsg: "ငွေထုတ်တောင်းဆိုချက် စောင့်ဆိုင်းနေသည်။",
     withdrawFailed: "ငွေထုတ်တောင်းဆို၍ မရပါ",
-    withdrawHoldNote: "ငွေကို ချက်ချင်း နုတ်ယူပြီး အေးဂျင့်အတည်ပြုချက်အထိ ထားရှိမည်။",
+    withdrawHoldNote:
+      "ငွေကို ချက်ချင်း နုတ်ယူပြီး အေးဂျင့်အတည်ပြုချက်အထိ ထားရှိမည်။",
 
     // Coin requests
     coinRequestTitle: "ငွေသွင်း / ငွေထုတ်",
@@ -540,7 +570,8 @@ const translations = {
     coinRequestStatusAccepted: "အတည်ပြု",
     coinRequestStatusRejected: "ငြင်းပယ်",
     coinRequestEmpty: "တောင်းဆိုမှု မရှိသေးပါ",
-    coinRequestEmptySub: "ငွေသွင်း နှင့် ငွေထုတ် တောင်းဆိုမှုများ ဤနေရာတွင် ပေါ်လာမည်",
+    coinRequestEmptySub:
+      "ငွေသွင်း နှင့် ငွေထုတ် တောင်းဆိုမှုများ ဤနေရာတွင် ပေါ်လာမည်",
     coinRequestLoadFailed: "တောင်းဆိုမှု မဖတ်နိုင်ပါ",
     coinRequestRetry: "ထပ်စမ်းမည်",
     coinRequestViewRequests: "တောင်းဆိုမှုများ ကြည့်ရန်",
@@ -675,17 +706,19 @@ const translations = {
     newsLoading: "သတင်း ရယူနေသည်…",
 
     // HDP & O/U
-    hdpTitle:        'ဘော်ဒီ',
-    hdpLeagues:      'လိဂ်များ',
-    hdpSelected:     'ရွေးထားသော',
-    hdpUnits:        'ယူနစ်',
-    hdpMinErr:       'အနည်းဆုံး ၁ ပွဲ ရွေးပါ',
-    hdpMinPicksHint: 'အနည်းဆုံး ၁ ပွဲ ရွေးပြီး လောင်းပါ',
-    hdpPlaceBet:     'လောင်းမည်',
-    hdpReviewBet:    'စစ်ဆေးပြီး လောင်းမည်',
+    hdpTitle: "ဘော်ဒီ",
+    hdpFhTitle: "ပထမပိုင်း ဘော်ဒီ",
+    hdpLeagues: "လိဂ်များ",
+    hdpSelected: "ရွေးထားသော",
+    hdpUnits: "ယူနစ်",
+    hdpMinErr: "အနည်းဆုံး ၁ ပွဲ ရွေးပါ",
+    hdpMinPicksHint: "အနည်းဆုံး ၁ ပွဲ ရွေးပြီး လောင်းပါ",
+    hdpPlaceBet: "လောင်းမည်",
+    hdpReviewBet: "စစ်ဆေးပြီး လောင်းမည်",
 
     // Mix Parlay
     maungTitle: "မောင်း",
+    maungFhTitle: "ပထမပိုင်း မောင်း",
     maungOver: "ဂိုးပေါ်",
     maungUnder: "ဂိုးအောက်",
     maungOdd: "မ",
@@ -728,6 +761,11 @@ const translations = {
     footballSoneMaTitle: "စုံ / မ",
     footballSinglePickHint: "အနည်းဆုံး ၁ ခု ရွေးပြီး လောင်းပါ",
     footballSinglePickErr: "အနည်းဆုံး ၁ ခု ရွေးပါ",
+    footballAllLeagues: "အားလုံး",
+    esportsTitle: "E-Sports",
+    esportsToWin: "အနိုင်ယူ",
+    esportsScoresTitle: "E-Sports ရလဒ်",
+    esportsScoresEmpty: "E-Sports ရလဒ် မရှိသေးပါ",
 
     // Language picker
     langEnglish: "English",

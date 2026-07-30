@@ -7,6 +7,7 @@ const MOCK_APPLICATION: Application = {
   app_title: "365 မောင်း",
   football_rules: "",
   interface_content: "Minimum bet 500 Kyat, Maximum 20,000 Kyat ✦ ",
+  is_esports_open: true,
   updated_at: new Date().toISOString(),
 };
 
