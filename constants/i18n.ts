@@ -12,32 +12,12 @@ const translations = {
     loginButton: "Login",
     loginFailed: "Login failed",
     loginHelp: "Contact us if you need help",
-    loginNoAccount: "Don't have an account?",
-    loginGoRegister: "Register",
-
-    // Register
-    registerSubtitle: "Create account",
-    registerUsernameLabel: "Username",
-    registerUsernamePh: "Enter username",
-    registerNicknameLabel: "Nickname (optional)",
-    registerNicknamePh: "Enter nickname",
-    registerPhoneLabel: "Phone (optional)",
-    registerPhonePh: "Enter phone number",
-    registerPasswordLabel: "Password",
-    registerPasswordPh: "Enter password",
-    registerConfirmLabel: "Confirm password",
-    registerConfirmPh: "Re-enter password",
-    registerPasswordMismatch: "Passwords do not match",
-    registerButton: "Register",
-    registerHaveAccount: "Already have an account?",
-    registerGoLogin: "Login",
-    registerFailed: "Registration failed",
 
     // Home – profile card
     profileRefresh: "Refresh",
     profileBalance: "Balance",
     profilePhone: "Phone",
-    profileUserId: "User ID",
+    profileUserId: "Username",
     profileCashOut: "Cash Out",
     profileCashCode: "Cash Code",
     profileTitle: "Profile",
@@ -316,7 +296,6 @@ const translations = {
     guestWelcomeTitle: "Welcome",
     guestWelcomeSub: "Sign in to see your balance and place bets",
     guestLoginBtn: "Login",
-    guestRegisterBtn: "Register",
     menuNews: "News",
 
     // Football news
@@ -412,32 +391,12 @@ const translations = {
     loginButton: "ဝင်ရောက်မည်",
     loginFailed: "ဝင်ရောက်မှု မအောင်မြင်ပါ",
     loginHelp: "အကူအညီ လိုအပ်ပါက ဆက်သွယ်ပါ",
-    loginNoAccount: "အကောင့် မရှိသေးဘူးလား?",
-    loginGoRegister: "စာရင်းသွင်းမည်",
-
-    // Register
-    registerSubtitle: "အကောင့်ဖွင့်ရန်",
-    registerUsernameLabel: "အသုံးပြုသူအမည်",
-    registerUsernamePh: "အသုံးပြုသူအမည် ထည့်ပါ",
-    registerNicknameLabel: "နာမည်ပြောင် (မဖြည့်လည်းရ)",
-    registerNicknamePh: "နာမည်ပြောင် ထည့်ပါ",
-    registerPhoneLabel: "ဖုန်း (မဖြည့်လည်းရ)",
-    registerPhonePh: "ဖုန်းနံပါတ် ထည့်ပါ",
-    registerPasswordLabel: "စကားဝှက်",
-    registerPasswordPh: "စကားဝှက် ထည့်ပါ",
-    registerConfirmLabel: "စကားဝှက် အတည်ပြု",
-    registerConfirmPh: "စကားဝှက် ထပ်ရိုက်ပါ",
-    registerPasswordMismatch: "စကားဝှက် မတူညီပါ",
-    registerButton: "စာရင်းသွင်းမည်",
-    registerHaveAccount: "အကောင့် ရှိပြီးသားလား?",
-    registerGoLogin: "ဝင်ရောက်မည်",
-    registerFailed: "စာရင်းသွင်းမှု မအောင်မြင်ပါ",
 
     // Home – profile card
     profileRefresh: "ပြန်ရယူ",
     profileBalance: "လက်ကျန်ငွေ",
     profilePhone: "ဖုန်း",
-    profileUserId: "User ID",
+    profileUserId: "အသုံးပြုသူအမည်",
     profileCashOut: "ထုတ်ငွေ",
     profileCashCode: "ငွေထုတ်ကုဒ်",
     profileTitle: "ပရိုဖိုင်",
@@ -719,7 +678,6 @@ const translations = {
     guestWelcomeTitle: "ကြိုဆိုပါတယ်",
     guestWelcomeSub: "လက်ကျန်ငွေကြည့်ရန် နှင့် လောင်းရန် အကောင့်ဝင်ပါ",
     guestLoginBtn: "အကောင့်ဝင်မည်",
-    guestRegisterBtn: "စာရင်းသွင်းမည်",
     menuNews: "သတင်း",
 
     // Football news

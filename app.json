@@ -1,24 +1,43 @@
 {
   "expo": {
-    "name": "365Maung",
+    "name": "Burma90",
     "slug": "365Maung",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/burma90-app-icon.png",
     "scheme": "burma90",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#ffffff",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "icon": "./assets/images/burma90-app-icon.png"
+      "icon": "./assets/images/burma90-app-icon.png",
+      "backgroundColor": "#ffffff",
+      "splash": {
+        "image": "./assets/images/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff"
+      }
     },
     "android": {
       "package": "com.dobbieq.maung365",
       "versionCode": 1,
+      "backgroundColor": "#ffffff",
+      "icon": "./assets/images/android-icon-foreground.png",
       "adaptiveIcon": {
-        "backgroundColor": "#0B5C2E",
-        "foregroundImage": "./assets/images/burma90-app-icon.png",
-        "monochromeImage": "./assets/images/burma90-app-icon.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-foreground.png"
+      },
+      "splash": {
+        "image": "./assets/images/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -32,17 +51,33 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/burma90-app-icon.png",
+          "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#0B5C2E",
+          "backgroundColor": "#ffffff",
           "dark": {
-            "backgroundColor": "#0B5C2E"
+            "backgroundColor": "#ffffff"
           }
         }
       ],
       "expo-secure-store",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableBundleCompression": true,
+            "useLegacyPackaging": true,
+            "networkInspector": false,
+            "packagingOptions": {
+              "exclude": ["lib/x86/**", "lib/x86_64/**"]
+            },
+            "extraProguardRules": "-keep class com.swmansion.reanimated.** { *; }\n-keep class com.facebook.react.turbomodule.** { *; }\n-keep class com.swmansion.gesturehandler.** { *; }\n-keep class expo.modules.** { *; }"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

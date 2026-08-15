@@ -9,8 +9,8 @@ import {
 } from 'react';
 import { AUTH_TOKEN_KEY } from '@/constants/config';
 import { ApiError } from '@/lib/api-client';
-import { fetchMe, loginRequest, logoutRequest, registerRequest } from '@/services/auth';
-import type { MeUser, RegisterPayload } from '@/types/api';
+import { fetchMe, loginRequest, logoutRequest } from '@/services/auth';
+import type { MeUser } from '@/types/api';
 import {
   deleteSecureItem,
   getSecureItem,
@@ -24,7 +24,6 @@ type AuthContextValue = {
   isLoading: boolean;
   isRefreshing: boolean;
   login: (username: string, password: string) => Promise<void>;
-  register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
@@ -96,11 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await applySession(session.token, session.user);
   }, [applySession]);
 
-  const register = useCallback(async (payload: RegisterPayload) => {
-    const session = await registerRequest(payload);
-    await applySession(session.token, session.user);
-  }, [applySession]);
-
   const clearSession = useCallback(async () => {
     await writeToken(null);
     setToken(null);
@@ -142,11 +136,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       isRefreshing,
       login,
-      register,
       logout,
       refreshUser,
     }),
-    [token, user, isLoading, isRefreshing, login, register, logout, refreshUser],
+    [token, user, isLoading, isRefreshing, login, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

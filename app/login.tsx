@@ -119,15 +119,6 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={s.switchRow}
-            onPress={() => router.push('/register')}
-            activeOpacity={0.7}
-          >
-            <Text style={s.switchText}>{tr.loginNoAccount} </Text>
-            <Text style={s.switchLink}>{tr.loginGoRegister}</Text>
-          </TouchableOpacity>
-
           <Text style={s.helpText}>{tr.loginHelp}</Text>
         </View>
       </KeyboardAvoidingView>
@@ -176,11 +167,5 @@ const s = StyleSheet.create({
   },
   loginButtonDisabled: { opacity: 0.7 },
   loginButtonText: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.brand.white, letterSpacing: 0.5 },
-  switchRow: {
-    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-    marginTop: Spacing.md, paddingVertical: 4,
-  },
-  switchText: { fontSize: FontSize.sm, color: Colors.light.textSecondary },
-  switchLink: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: Colors.brand.greenButton },
   helpText: { fontSize: FontSize.sm, color: Colors.light.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
 });

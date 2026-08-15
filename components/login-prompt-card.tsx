@@ -38,13 +38,6 @@ export function LoginPromptCard({ title, subtitle, compact }: Props) {
           <Ionicons name="log-in-outline" size={18} color={Colors.brand.greenDark} />
           <Text style={s.btnText}>{tr.guestLoginBtn}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={s.btnGhost}
-          activeOpacity={0.85}
-          onPress={() => router.push('/register')}
-        >
-          <Text style={s.btnGhostText}>{tr.guestRegisterBtn}</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -130,18 +123,5 @@ const s = StyleSheet.create({
     fontSize: FontSize.sm,
     fontWeight: FontWeight.bold,
     color: Colors.brand.greenDark,
-  },
-  btnGhost: {
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.45)',
-  },
-  btnGhostText: {
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.bold,
-    color: '#fff',
-    textAlign: 'center',
   },
 });

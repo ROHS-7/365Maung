@@ -7,7 +7,7 @@ export type Application = {
   updated_at: string;
 };
 
-/** Raw user payload from API (register / login / me). */
+/** Raw user payload from API (login / me). */
 export type ApiUser = {
   id?: number;
   username: string;
@@ -57,19 +57,6 @@ export type LoginResponse = {
 
 export type LogoutResponse = {
   message: string;
-};
-
-export type RegisterPayload = {
-  username: string;
-  password: string;
-  password_confirmation: string;
-  nickname?: string;
-  phone?: string;
-};
-
-export type RegisterResponse = {
-  user: ApiUser;
-  token: string;
 };
 
 export type ChangePasswordPayload = {

@@ -155,7 +155,7 @@ function WalletCard({
   });
   const stats = [
     { key: "profilePhone" as const, value: user.phone ?? "—" },
-    { key: "profileUserId" as const, value: user.id != null ? String(user.id) : "—" },
+    { key: "profileUserId" as const, value: user.username || "—" },
     { key: "profileCashOut" as const, value: user.cash_out ?? "—" },
   ];
 
@@ -170,7 +170,9 @@ function WalletCard({
             <Ionicons name="person" size={18} color={Colors.brand.greenMid} />
           </View>
           <View style={s.walletUserText}>
-            <Text style={s.walletName}>{user.username}</Text>
+            <Text style={s.walletName}>
+              {user.nickname?.trim() || user.username}
+            </Text>
             <Text style={s.walletBalanceInline}>
               {tr.profileBalance}: {formatBalance(user.balance, lang)}{" "}
               {tr.currencyUnit}

@@ -6,8 +6,6 @@ import type {
   LogoutResponse,
   MeResponse,
   MeUser,
-  RegisterPayload,
-  RegisterResponse,
 } from '@/types/api';
 import { mapApiUser } from '@/types/api';
 import { apiRequest } from '@/lib/api-client';
@@ -38,42 +36,6 @@ export async function loginRequest(username: string, password: string): Promise<
   const data = await apiRequest<LoginResponse>('/login', {
     method: 'POST',
     body: { username: username.trim(), password },
-  });
-  return { token: data.token, user: mapApiUser(data.user) };
-}
-
-export async function registerRequest(payload: RegisterPayload): Promise<AuthSession> {
-  if (!API_BASE_URL) {
-    if (!payload.username.trim() || !payload.password.trim()) {
-      throw new Error('Username and password are required');
-    }
-    if (payload.password !== payload.password_confirmation) {
-      throw new Error('Password confirmation does not match');
-    }
-    return {
-      token: 'mock-dev-token',
-      user: {
-        id: Date.now(),
-        username: payload.username.trim(),
-        nickname: payload.nickname?.trim() || null,
-        phone: payload.phone?.trim() || null,
-        balance: 0,
-        role: 4,
-      },
-    };
-  }
-
-  const body: RegisterPayload = {
-    username: payload.username.trim(),
-    password: payload.password,
-    password_confirmation: payload.password_confirmation,
-  };
-  if (payload.nickname?.trim()) body.nickname = payload.nickname.trim();
-  if (payload.phone?.trim()) body.phone = payload.phone.trim();
-
-  const data = await apiRequest<RegisterResponse>('/register', {
-    method: 'POST',
-    body,
   });
   return { token: data.token, user: mapApiUser(data.user) };
 }
