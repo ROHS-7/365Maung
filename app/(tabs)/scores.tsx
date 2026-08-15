@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { LoginPromptCard } from '@/components/login-prompt-card';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
@@ -18,6 +17,7 @@ import { useLanguage } from '@/contexts/language';
 import { fetchFootballMatchResults } from '@/services/football';
 import type { FootballMatchResult } from '@/types/football';
 import { formatDrawDate, teamDisplayName } from '@/utils/football-ui';
+import { safeBack } from '@/utils/navigation';
 
 type MatchRow = {
   id: number;
@@ -285,7 +285,7 @@ export default function ScoresScreen() {
       <SafeAreaView style={s.root} edges={['top']}>
         <View style={s.header}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => safeBack()}
             style={s.headerBtn}
             activeOpacity={0.7}
           >
@@ -308,7 +308,7 @@ export default function ScoresScreen() {
     <SafeAreaView style={s.root} edges={['top']}>
       <View style={s.header}>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => safeBack()}
           style={s.headerBtn}
           activeOpacity={0.7}
         >

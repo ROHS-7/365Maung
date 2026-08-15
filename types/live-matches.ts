@@ -18,6 +18,10 @@ export type LiveMatch = {
   servers: LiveStreamServer[] | null;
 };
 
+export type LiveMatchesResponse = {
+  matches: LiveMatch[];
+};
+
 export type UiLiveMatch = LiveMatch & {
   id: string;
   hasStream: boolean;

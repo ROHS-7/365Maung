@@ -33,10 +33,10 @@ export function getSignedTransactionAmount(tx: CoinTransaction): number {
   return tx.direction === 'received' ? amount : -amount;
 }
 
-export function formatTransactionDate(iso: string, lang: Lang): string {
+export function formatTransactionDate(iso: string, _lang?: Lang): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(lang === 'my' ? 'my-MM' : 'en-GB', {
+  return d.toLocaleString('en-GB', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',

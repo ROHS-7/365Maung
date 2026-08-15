@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -7,11 +7,22 @@ import { useLanguage } from '@/contexts/language';
 import { useAuth } from '@/contexts/auth';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { formatBalance } from '@/utils/format-balance';
+import { useCallback, useState } from 'react';
 
 export default function ProfileScreen() { 
   useRequireAuth();
   const { tr, lang } = useLanguage();
-  const { user } = useAuth();
+  const { user, refreshUser, isRefreshing } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshUser();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshUser]);
 
   if (!user) return null;
 
@@ -29,11 +40,22 @@ export default function ProfileScreen() {
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={22} color="#fff" />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Profile</Text>
+        <Text style={s.headerTitle}>{tr.profileTitle}</Text>
         <View style={s.headerBtn} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing || isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={Colors.brand.greenButton}
+            colors={[Colors.brand.greenButton]}
+          />
+        }
+      >
 
         {/* Avatar banner */}
         <View style={s.banner}>
@@ -51,7 +73,7 @@ export default function ProfileScreen() {
 
         {/* Info card */}
         <View style={s.card}>
-          <Text style={s.cardTitle}>Account Info</Text>
+          <Text style={s.cardTitle}>{tr.profileAccountInfo}</Text>
 
           {infoRows.map((row, i, arr) => (
             <View key={row.label}>
@@ -71,7 +93,7 @@ export default function ProfileScreen() {
 
         {/* Quick actions */}
         <View style={s.card}>
-          <Text style={s.cardTitle}>Quick Actions</Text>
+          <Text style={s.cardTitle}>{tr.profileQuickActions}</Text>
           {[
             { icon: 'lock-closed-outline', label: tr.accountChangePw, route: '/change-password' },
             { icon: 'arrow-down-circle-outline', label: tr.accountDeposit, route: '/auto-deposit' },

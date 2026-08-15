@@ -9,16 +9,9 @@ import {
   Animated,
   Pressable,
   Easing,
-  LayoutAnimation,
-  Platform,
-  UIManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const QUICK_STAKES = ['500', '1000', '2000', '5000', '10000'];
 const HANDLE_H = 82;
@@ -54,7 +47,6 @@ export type BetSlipDrawerProps = {
   tabBarOffset: number;
   copy: BetSlipCopy;
   minPicks: number;
-  autoExpandAt: number;
   stakePlaceholder?: string;
   onExpandedChange?: (expanded: boolean) => void;
 };
@@ -72,7 +64,6 @@ export function BetSlipDrawer({
   tabBarOffset,
   copy,
   minPicks,
-  autoExpandAt,
   stakePlaceholder = '500',
   onExpandedChange,
 }: BetSlipDrawerProps) {
@@ -100,7 +91,6 @@ export function BetSlipDrawer({
   });
 
   function animate(toExpanded: boolean) {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded(toExpanded);
     onExpandedChange?.(toExpanded);
     Animated.timing(progress, {
@@ -122,14 +112,11 @@ export function BetSlipDrawer({
   }
 
   useEffect(() => {
-    if (count >= autoExpandAt && !expanded) {
-      open();
-    }
     if (count === 0 && expanded) {
       close();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count, autoExpandAt]);
+  }, [count]);
 
   const stakeDisplay = Number(stake.replace(/,/g, '') || 0).toLocaleString();
 

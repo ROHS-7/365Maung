@@ -106,7 +106,7 @@ export type PaginationMeta = {
 
 export type ActivitiesResponse = {
   activities: Activity[];
-  meta: PaginationMeta;
+  meta?: PaginationMeta;
 };
 
 export type TransactionUserRef =

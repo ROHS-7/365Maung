@@ -12,7 +12,8 @@
       "distribution": "internal",
       "node": "22.14.0",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.myanmarkyay.com/api"
+        "EXPO_PUBLIC_API_URL": "https://api.myanmarkyay.com/api",
+        "EXPO_PUBLIC_APP_PAYLOAD_KEY": "mK8pQ2vL9xN4wR7t"
       },
       "android": {
         "buildType": "apk"
@@ -22,7 +23,11 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.myanmarkyay.com/api",
+        "EXPO_PUBLIC_APP_PAYLOAD_KEY": "mK8pQ2vL9xN4wR7t"
+      }
     }
   },
   "submit": {

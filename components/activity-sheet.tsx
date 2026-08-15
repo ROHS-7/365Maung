@@ -41,7 +41,7 @@ export function ActivitySheet({ visible, onClose }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchActivities(token, 1);
+      const data = await fetchActivities(token, { page: 1 });
       setActivities(data.activities.slice(0, SHEET_PREVIEW_COUNT));
     } catch (e) {
       setError(e instanceof Error ? e.message : tr.activitiesLoadFailed);

@@ -50,7 +50,7 @@ export default function ChangePasswordScreen() {
         password_confirmation: confirm,
       });
       Alert.alert(tr.changePwSuccess, tr.changePwSuccessMsg, [
-        { text: 'OK', onPress: () => router.back() },
+        { text: tr.ok, onPress: () => router.back() },
       ]);
     } catch (e) {
       Alert.alert('', e instanceof Error ? e.message : tr.changePwFailed);

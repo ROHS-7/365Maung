@@ -44,6 +44,8 @@ export type ParlayBet = {
   stake: number;
   payout: number;
   status: BetStatus;
+  /** First-half mix when legs are FH markets. */
+  period?: 'ft' | 'fh';
 };
 
 export type Bet = HdpOuBet | ParlayBet;

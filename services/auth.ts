@@ -18,6 +18,7 @@ const MOCK_USER: MeUser = {
   nickname: 'မောင်မောင်',
   balance: 367000,
   phone: '09',
+  cash_out: '88880001',
   cash_out_id: '88880001',
   cash_code: '114947',
 };

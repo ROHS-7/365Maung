@@ -20,6 +20,8 @@ import {
   Shadow,
   Spacing,
 } from '@/constants/theme';
+import { LoginPromptCard } from '@/components/login-prompt-card';
+import { useAuth } from '@/contexts/auth';
 import { useLanguage } from '@/contexts/language';
 import {
   fetchLiveMatches,
@@ -111,17 +113,19 @@ function MatchCard({ match }: { match: UiLiveMatch }) {
 
 export default function LiveScreen() {
   const { tr } = useLanguage();
+  const { isAuthenticated, token } = useAuth();
   const [matches, setMatches] = useState<UiLiveMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (isRefresh = false) => {
+    if (!token) return;
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError(null);
     try {
-      const data = await fetchLiveMatches();
+      const data = await fetchLiveMatches(token);
       setMatches(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : tr.liveLoadFailed);
@@ -130,11 +134,11 @@ export default function LiveScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [tr.liveLoadFailed]);
+  }, [token, tr.liveLoadFailed]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (isAuthenticated) load();
+  }, [isAuthenticated, load]);
 
   const liveMatches = useMemo(() => matches.filter((m) => m.isLive), [matches]);
   const upcomingMatches = useMemo(() => matches.filter((m) => !m.isLive), [matches]);
@@ -149,7 +153,14 @@ export default function LiveScreen() {
         </Pressable>
       </View>
 
-      {loading ? (
+      {!isAuthenticated ? (
+        <View style={s.guestWrap}>
+          <LoginPromptCard
+            title={tr.guestWelcomeTitle}
+            subtitle={tr.guestWelcomeSub}
+          />
+        </View>
+      ) : loading ? (
         <View style={s.center}>
           <ActivityIndicator color={Colors.brand.greenButton} />
           <Text style={s.centerText}>{tr.liveLoading}</Text>
@@ -226,6 +237,11 @@ const s = StyleSheet.create({
     color: '#fff',
   },
   refreshBtn: { padding: 4 },
+  guestWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
   scroll: { flex: 1 },
   scrollContent: { padding: Spacing.md, gap: Spacing.lg, paddingBottom: 32 },
   section: { gap: Spacing.sm },

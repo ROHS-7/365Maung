@@ -153,12 +153,10 @@ function WalletCard({
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],
   });
-  const cashOut = user.cash_out_id ?? user.cash_out ?? "—";
-
   const stats = [
     { key: "profilePhone" as const, value: user.phone ?? "—" },
-    { key: "profileCashOut" as const, value: cashOut },
-    { key: "profileCashCode" as const, value: user.cash_code ?? "—" },
+    { key: "profileUserId" as const, value: user.id != null ? String(user.id) : "—" },
+    { key: "profileCashOut" as const, value: user.cash_out ?? "—" },
   ];
 
   return (
@@ -331,7 +329,6 @@ export default function HomeScreen() {
 
   const announcement =
     application?.interface_content?.trim() || tr.announcement;
-  const appSubtitle = application?.app_title?.trim() || "မောင်း";
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -350,9 +347,11 @@ export default function HomeScreen() {
       <SafeAreaView edges={["top"]} style={s.headerSafe}>
         <View style={s.header}>
           <View style={s.headerLogo}>
-            <Text style={s.logoBet}>bet</Text>
-            <Text style={s.logo365}>365</Text>
-            <Text style={s.logoSub}>{appSubtitle}</Text>
+            <Image
+              source={require("@/assets/images/burma90.png")}
+              style={s.headerLogoImg}
+              resizeMode="contain"
+            />
           </View>
           <View style={s.headerActions}>
             {isAuthenticated ? (
@@ -445,29 +444,12 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: Spacing.md,
+    // paddingLeft: Spacing.xs,
+    paddingRight: Spacing.md,
     paddingBottom: 6,
   },
-  headerLogo: { flexDirection: "row", alignItems: "baseline", gap: 0 },
-  logoBet: {
-    fontSize: FontSize.xl,
-    fontWeight: FontWeight.extrabold,
-    color: "#fff",
-    letterSpacing: -0.5,
-  },
-  logo365: {
-    fontSize: FontSize.xl,
-    fontWeight: FontWeight.extrabold,
-    color: Colors.brand.gold,
-    letterSpacing: -0.5,
-  },
-  logoSub: {
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.bold,
-    color: "rgba(255,255,255,0.75)",
-    marginLeft: 4,
-    marginBottom: 1,
-  },
+  headerLogo: { justifyContent: "center", marginLeft: 0 },
+  headerLogoImg: { width: 118, height: 40 },
   headerActions: { flexDirection: "row", gap: 6 },
   headerIconBtn: {
     width: 34,

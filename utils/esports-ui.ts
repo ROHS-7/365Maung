@@ -20,6 +20,8 @@ function formatMatchDate(matchTime: string, drawDate: string): string {
 }
 
 export function mapEsportsMatchToUi(match: EsportsMatch, lang: Lang): UiMatchData {
+  const d = new Date(match.match_time);
+  const matchTimeMs = Number.isNaN(d.getTime()) ? Number.POSITIVE_INFINITY : d.getTime();
   return {
     id: String(match.id),
     matchDbId: match.id,
@@ -28,6 +30,7 @@ export function mapEsportsMatchToUi(match: EsportsMatch, lang: Lang): UiMatchDat
     home: teamDisplayName(match.home, lang),
     away: teamDisplayName(match.away, lang),
     date: formatMatchDate(match.match_time, match.draw_date),
+    matchTimeMs,
     hdpGiving: 'home',
     hdpLine: '—',
     hdpOdds: 0,

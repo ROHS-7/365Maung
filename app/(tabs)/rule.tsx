@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { useCallback, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -28,8 +29,18 @@ const FALLBACK_RULES = `1. အကောင့်တစ်ခုစီသည် �
 
 export default function RuleScreen() {
   const { tr } = useLanguage();
-  const { application } = useAppConfig();
+  const { application, refresh } = useAppConfig();
+  const [refreshing, setRefreshing] = useState(false);
   const ruleText = application?.football_rules?.trim() || FALLBACK_RULES;
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
@@ -44,7 +55,19 @@ export default function RuleScreen() {
         <Ionicons name="book-outline" size={22} color="rgba(255,255,255,0.4)" />
       </View>
 
-      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={Colors.brand.greenButton}
+            colors={[Colors.brand.greenButton]}
+          />
+        }
+      >
         <Text style={s.ruleText}>{ruleText}</Text>
       </ScrollView>
     </SafeAreaView>

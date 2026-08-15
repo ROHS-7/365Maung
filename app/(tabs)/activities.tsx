@@ -1,5 +1,9 @@
 import { ActivityRow } from "@/components/activity-row";
 import {
+  ActivityDateFilterModal,
+  formatFilterDate,
+} from "@/components/activity-date-filter-modal";
+import {
   BorderRadius,
   Colors,
   FontSize,
@@ -13,7 +17,7 @@ import { fetchActivities } from "@/services/activities";
 import type { Activity } from "@/types/api";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -36,32 +40,55 @@ export default function ActivitiesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const inflightRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const loadPage = useCallback(
     async (nextPage: number, mode: "replace" | "append" | "refresh") => {
       if (!token) return;
+      if (mode === "append" && inflightRef.current) return;
+      const requestId = ++requestIdRef.current;
+      inflightRef.current = true;
       if (mode === "append") setLoadingMore(true);
       else if (mode === "refresh") setRefreshing(true);
       else setLoading(true);
       setError(null);
 
       try {
-        const data = await fetchActivities(token, nextPage);
-        setPage(data.meta.current_page);
-        setLastPage(data.meta.last_page);
-        setItems((prev) =>
-          mode === "append" ? [...prev, ...data.activities] : data.activities,
-        );
+        const data = await fetchActivities(token, {
+          page: nextPage,
+          startDate,
+          endDate,
+        });
+        if (requestId !== requestIdRef.current) return;
+        const current = data.meta?.current_page ?? nextPage;
+        const last = data.meta?.last_page ?? 1;
+        setPage(current);
+        setLastPage(last);
+        setItems((prev) => {
+          const incoming = data.activities ?? [];
+          if (mode !== "append") return incoming;
+          const seen = new Set(prev.map((item) => item.id));
+          return [...prev, ...incoming.filter((item) => !seen.has(item.id))];
+        });
       } catch (e) {
+        if (requestId !== requestIdRef.current) return;
         setError(e instanceof Error ? e.message : tr.activitiesLoadFailed);
         if (mode === "replace") setItems([]);
       } finally {
-        setLoading(false);
-        setRefreshing(false);
-        setLoadingMore(false);
+        if (requestId === requestIdRef.current) {
+          inflightRef.current = false;
+          setLoading(false);
+          setRefreshing(false);
+          setLoadingMore(false);
+        }
       }
     },
-    [token, tr.activitiesLoadFailed],
+    [token, startDate, endDate, tr.activitiesLoadFailed],
   );
 
   useEffect(() => {
@@ -78,6 +105,28 @@ export default function ActivitiesScreen() {
   }
 
   const showEmpty = !loading && !refreshing && items.length === 0;
+  const hasMorePages = lastPage > 1 && page < lastPage;
+  const hasDateFilter = Boolean(startDate || endDate);
+
+  function filterSummary(): string {
+    if (startDate && endDate) {
+      return `${formatFilterDate(startDate)} – ${formatFilterDate(endDate)}`;
+    }
+    if (startDate) return `${tr.activitiesStartDate}: ${formatFilterDate(startDate)}`;
+    if (endDate) return `${tr.activitiesEndDate}: ${formatFilterDate(endDate)}`;
+    return "";
+  }
+
+  function handleApplyFilter(nextStart: string | null, nextEnd: string | null) {
+    setFilterOpen(false);
+    setStartDate(nextStart);
+    setEndDate(nextEnd);
+  }
+
+  function handleClearFilter() {
+    setStartDate(null);
+    setEndDate(null);
+  }
 
   return (
     <SafeAreaView style={s.root} edges={["top"]}>
@@ -93,8 +142,31 @@ export default function ActivitiesScreen() {
           <Text style={s.headerTitle}>{tr.activitiesTitle}</Text>
           <Text style={s.headerSub}>{tr.activitiesSub}</Text>
         </View>
-        <Ionicons name="time-outline" size={22} color="rgba(255,255,255,0.4)" />
+        <TouchableOpacity
+          onPress={() => setFilterOpen(true)}
+          hitSlop={10}
+          style={s.filterIconBtn}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name="time-outline"
+            size={22}
+            color={hasDateFilter ? Colors.brand.gold : "#fff"}
+          />
+        </TouchableOpacity>
       </View>
+
+      {hasDateFilter ? (
+        <View style={s.filterBar}>
+          <Ionicons name="calendar-outline" size={14} color={Colors.brand.greenDark} />
+          <Text style={s.filterBarText} numberOfLines={1}>
+            {filterSummary()}
+          </Text>
+          <TouchableOpacity onPress={handleClearFilter} hitSlop={8}>
+            <Ionicons name="close-circle" size={18} color={Colors.light.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
       {loading && items.length === 0 ? (
         <View style={s.centered}>
@@ -131,7 +203,7 @@ export default function ActivitiesScreen() {
               tintColor={Colors.brand.greenButton}
             />
           }
-          onEndReached={handleLoadMore}
+          onEndReached={hasMorePages ? handleLoadMore : undefined}
           onEndReachedThreshold={0.3}
           ListEmptyComponent={
             showEmpty ? (
@@ -156,6 +228,14 @@ export default function ActivitiesScreen() {
           }
         />
       )}
+
+      <ActivityDateFilterModal
+        visible={filterOpen}
+        startDate={startDate}
+        endDate={endDate}
+        onClose={() => setFilterOpen(false)}
+        onApply={handleApplyFilter}
+      />
     </SafeAreaView>
   );
 }
@@ -180,6 +260,23 @@ const s = StyleSheet.create({
     fontSize: FontSize.xs,
     color: "rgba(255,255,255,0.6)",
     marginTop: 1,
+  },
+  filterIconBtn: { padding: 4 },
+  filterBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#E8F5EE",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  filterBarText: {
+    flex: 1,
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+    color: Colors.brand.greenDark,
   },
   listContent: { padding: Spacing.md, paddingBottom: 48 },
   listEmpty: { flexGrow: 1 },

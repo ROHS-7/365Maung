@@ -70,49 +70,49 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="maung"
-        options={{ href: null, tabBarStyle: { display: 'none' } }}
+        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
       <Tabs.Screen
         name="hdp"
-        options={{ href: null, tabBarStyle: { display: 'none' } }}
+        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
       <Tabs.Screen
         name="maung-fh"
-        options={{ href: null, tabBarStyle: { display: 'none' } }}
+        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
       <Tabs.Screen
         name="hdp-fh"
-        options={{ href: null, tabBarStyle: { display: 'none' } }}
+        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
       <Tabs.Screen
         name="sone-ma"
-        options={{ href: null, tabBarStyle: { display: 'none' } }}
+        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
       <Tabs.Screen
         name="one-x-two"
-        options={{ href: null, tabBarStyle: { display: 'none' } }}
+        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
       <Tabs.Screen
         name="correct-score"
-        options={{ href: null, tabBarStyle: { display: 'none' } }}
+        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
       <Tabs.Screen
         name="esports"
-        options={{ href: null, tabBarStyle: { display: 'none' } }}
+        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
       <Tabs.Screen
         name="esports-scores"
-        options={{ href: null, tabBarStyle: { display: 'none' } }}
+        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
-      <Tabs.Screen name="rule"            options={{ href: null }} />
-      <Tabs.Screen name="change-password" options={{ href: null }} />
-      <Tabs.Screen name="auto-deposit"    options={{ href: null }} />
-      <Tabs.Screen name="news"            options={{ href: null }} />
-      <Tabs.Screen name="activities"      options={{ href: null }} />
-      <Tabs.Screen name="coin-transactions" options={{ href: null }} />
-      <Tabs.Screen name="payment-accounts" options={{ href: null }} />
-      <Tabs.Screen name="withdraw"          options={{ href: null }} />
-      <Tabs.Screen name="coin-requests"     options={{ href: null }} />
+      <Tabs.Screen name="rule"            options={{ href: null, freezeOnBlur: true }} />
+      <Tabs.Screen name="change-password" options={{ href: null, freezeOnBlur: true }} />
+      <Tabs.Screen name="auto-deposit"    options={{ href: null, freezeOnBlur: true }} />
+      <Tabs.Screen name="news"            options={{ href: null, freezeOnBlur: true }} />
+      <Tabs.Screen name="activities"      options={{ href: null, freezeOnBlur: true }} />
+      <Tabs.Screen name="coin-transactions" options={{ href: null, freezeOnBlur: true }} />
+      <Tabs.Screen name="payment-accounts" options={{ href: null, freezeOnBlur: true }} />
+      <Tabs.Screen name="withdraw"          options={{ href: null, freezeOnBlur: true }} />
+      <Tabs.Screen name="coin-requests"     options={{ href: null, freezeOnBlur: true }} />
     </Tabs>
   );
 }

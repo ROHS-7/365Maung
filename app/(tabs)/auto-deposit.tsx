@@ -32,6 +32,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -44,14 +45,16 @@ export default function AutoDepositScreen() {
   const [agentAccounts, setAgentAccounts] = useState<PaymentAccount[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [detailAccount, setDetailAccount] = useState<PaymentAccount | null>(null);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { soft?: boolean }) => {
     if (!token) return;
+    if (!opts?.soft) setLoading(true);
     setLoadError(null);
     try {
       const [userAccounts, depositData] = await Promise.all([
@@ -82,11 +85,12 @@ export default function AutoDepositScreen() {
       setLoadError(e instanceof Error ? e.message : tr.depositLoadFailed);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [token, tr.depositNoAgent, tr.depositNoMatchingProvider, tr.depositLoadFailed]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const selected = agentAccounts.find((a) => a.id === selectedId) ?? null;
@@ -116,7 +120,7 @@ export default function AutoDepositScreen() {
                 text: tr.coinRequestViewRequests,
                 onPress: () => router.push('/(tabs)/coin-requests' as never),
               },
-              { text: 'OK' },
+              { text: tr.ok },
             ]);
             setAmount('');
             setNote('');
@@ -158,7 +162,21 @@ export default function AutoDepositScreen() {
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={s.scroll}
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setRefreshing(true);
+                  void load({ soft: true });
+                }}
+                tintColor={Colors.brand.greenButton}
+                colors={[Colors.brand.greenButton]}
+              />
+            }
+          >
             <BoundAccountBanner
               account={bound}
               title={tr.depositSendFrom}

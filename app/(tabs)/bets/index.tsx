@@ -1,5 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -19,10 +28,45 @@ import {
 } from '@/constants/bets';
 import { formatHdpTierLabel } from '@/utils/hdp-settlement';
 import { fetchBetSlips } from '@/services/football';
-import { formatDrawDate, mapBetSlipsToBets } from '@/utils/football-ui';
+import { formatDrawDate, mapBetSlipsToBets, betTypeDisplayLabel, parlayTypeLabel } from '@/utils/football-ui';
 
 type BetTab = 'unfinished' | 'finished';
-type BetType = 'hdpou' | 'parlay';
+type BetTypeFilter =
+  | 'all'
+  | 'maung'
+  | 'maung_fh'
+  | 'body'
+  | 'body_fh'
+  | 'ou'
+  | '1x2'
+  | 'oe'
+  | 'cs'
+  | 'esports';
+
+function matchesBetTypeFilter(bet: Bet, filter: BetTypeFilter): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'maung') {
+    return bet.kind === 'parlay' && bet.period !== 'fh';
+  }
+  if (filter === 'maung_fh') {
+    return bet.kind === 'parlay' && bet.period === 'fh';
+  }
+  if (bet.kind !== 'hdpou') return false;
+  if (filter === 'body') return bet.betType === 'HDP';
+  if (filter === 'body_fh') return bet.betType === 'HDP 1H';
+  if (filter === 'ou') return bet.betType === 'O/U' || bet.betType === 'O/U 1H';
+  if (filter === '1x2') return bet.betType === '1X2';
+  if (filter === 'oe') return bet.betType === 'O/E';
+  if (filter === 'cs') return bet.betType === 'CS';
+  if (filter === 'esports') return bet.betType === 'To Win';
+  return true;
+}
+
+function slipTypeForFilter(filter: BetTypeFilter): 'single' | 'mix' | undefined {
+  if (filter === 'all') return undefined;
+  if (filter === 'maung' || filter === 'maung_fh') return 'mix';
+  return 'single';
+}
 
 const GREEN = '#27A060';
 
@@ -115,7 +159,7 @@ function HdpOuCard({ bet }: { bet: HdpOuBet }) {
       <View style={card.root}>
         <View style={card.header}>
           <View style={card.typePill}>
-            <Text style={card.typePillText}>{bet.betType}</Text>
+            <Text style={card.typePillText}>{betTypeDisplayLabel(bet.betType, tr)}</Text>
           </View>
           <Text style={card.time}>{bet.time}</Text>
           <StatusBadge status={bet.status} />
@@ -175,7 +219,7 @@ function ParlayCard({ bet }: { bet: ParlayBet }) {
       <View style={card.root}>
         <View style={card.header}>
           <View style={[card.typePill, { backgroundColor: '#7C3AED' }]}>
-            <Text style={card.typePillText}>PARLAY</Text>
+            <Text style={card.typePillText}>{parlayTypeLabel(bet.period, tr)}</Text>
           </View>
           <Text style={card.time}>{bet.picks.length} {tr.betListPicks}</Text>
           <StatusBadge status={bet.status} />
@@ -279,37 +323,53 @@ export default function BetsScreen() {
   const { tr, lang } = useLanguage();
   const { isAuthenticated, token } = useAuth();
   const [tab, setTab] = useState<BetTab>('unfinished');
-  const [betType, setBetType] = useState<BetType>('hdpou');
+  const [betType, setBetType] = useState<BetTypeFilter>('all');
   const [date, setDate] = useState(new Date());
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const prev = addDays(date, -1);
   const next = addDays(date, 1);
 
-  const loadBets = useCallback(async () => {
+  const typeFilters = [
+    { key: 'all' as const, label: tr.betListAll },
+    { key: 'maung' as const, label: tr.menuMixParlay },
+    { key: 'maung_fh' as const, label: tr.menuMixParlayFh },
+    { key: 'body' as const, label: tr.menuHDP },
+    { key: 'body_fh' as const, label: tr.menuHdpFh },
+    { key: 'ou' as const, label: tr.maungOU },
+    { key: '1x2' as const, label: tr.menu1x2 },
+    { key: 'oe' as const, label: tr.menuSoneMa },
+    { key: 'cs' as const, label: tr.menuCorrectScore },
+    { key: 'esports' as const, label: tr.menuEsports },
+  ];
+
+  const loadBets = useCallback(async (opts?: { soft?: boolean }) => {
     if (!token) return;
-    setLoading(true);
+    if (!opts?.soft) setLoading(true);
     setError(null);
     try {
       const slips = await fetchBetSlips(token, {
         draw_date: formatDrawDate(date),
-        type: betType === 'hdpou' ? 'single' : 'mix',
+        type: slipTypeForFilter(betType),
         is_settled: tab === 'finished',
       });
       const mapped = mapBetSlipsToBets(slips, tr, lang);
-      // Guard: API may ignore is_settled — keep list matching the active tab
       setBets(
-        mapped.filter((b) =>
-          tab === 'finished' ? b.status !== 'pending' : b.status === 'pending',
-        ),
+        mapped.filter((b) => {
+          const statusOk =
+            tab === 'finished' ? b.status !== 'pending' : b.status === 'pending';
+          return statusOk && matchesBetTypeFilter(b, betType);
+        }),
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : tr.footballBetListFailed);
       setBets([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [token, date, betType, tab, tr, lang]);
 
@@ -368,11 +428,13 @@ export default function BetsScreen() {
 
       <View style={s.typeRow}>
         <Text style={s.typeLabel}>{tr.betListType}</Text>
-        <View style={s.typePills}>
-          {([
-            { key: 'hdpou' as BetType, label: tr.betListHdpOu },
-            { key: 'parlay' as BetType, label: tr.menuMixParlay },
-          ]).map(({ key, label }) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={s.typePills}
+          style={s.typeScroll}
+        >
+          {typeFilters.map(({ key, label }) => (
             <TouchableOpacity
               key={key}
               style={[s.pill, betType === key && s.pillActive]}
@@ -383,10 +445,25 @@ export default function BetsScreen() {
               <Text style={[s.pillText, betType === key && s.pillTextActive]}>{label}</Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
       </View>
 
-      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void loadBets({ soft: true });
+            }}
+            tintColor={GREEN}
+            colors={[GREEN]}
+          />
+        }
+      >
         {loading ? (
           <View style={s.loadWrap}>
             <ActivityIndicator color={GREEN} />
@@ -395,7 +472,7 @@ export default function BetsScreen() {
         ) : error ? (
           <View style={s.loadWrap}>
             <Text style={s.errorText}>{error}</Text>
-            <TouchableOpacity onPress={loadBets} style={s.retryBtn} activeOpacity={0.8}>
+            <TouchableOpacity onPress={() => void loadBets()} style={s.retryBtn} activeOpacity={0.8}>
               <Text style={s.retryText}>{tr.footballRetry}</Text>
             </TouchableOpacity>
           </View>
@@ -427,9 +504,10 @@ const s = StyleSheet.create({
   dateSide: { fontSize: FontSize.sm, color: '#6B7280' },
   dateCenterWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#E5E7EB', paddingVertical: 12 },
   dateCenterText: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: '#111827' },
-  typeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', gap: 14 },
+  typeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingLeft: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', gap: 10 },
   typeLabel: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: '#374151' },
-  typePills: { flexDirection: 'row', gap: 10 },
+  typeScroll: { flex: 1 },
+  typePills: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 14 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 12, borderRadius: BorderRadius.full, borderWidth: 1.5, borderColor: '#D1D5DB', backgroundColor: '#F9FAFB' },
   pillActive: { borderColor: GREEN, backgroundColor: '#E8F5EE' },
   pillDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 2, borderColor: '#D1D5DB', backgroundColor: '#fff' },

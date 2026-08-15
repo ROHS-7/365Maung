@@ -1,4 +1,12 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,7 +16,7 @@ import type { Translations } from '@/constants/i18n';
 import { useHideParentTabBar } from '@/hooks/use-hide-parent-tab-bar';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { useAuth } from '@/contexts/auth';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   formatBetOdds,
   formatHdpOuOddsLine,
@@ -20,7 +28,7 @@ import {
 } from '@/constants/bets';
 import { formatHdpTierLabel } from '@/utils/hdp-settlement';
 import { fetchBetSlips, getCachedBetSlip } from '@/services/football';
-import { mapBetSlipToBet } from '@/utils/football-ui';
+import { mapBetSlipToBet, betTypeDisplayLabel, parlayTypeLabel } from '@/utils/football-ui';
 
 const GREEN = '#27A060';
 
@@ -88,7 +96,7 @@ function HdpOuDetail({ bet }: { bet: HdpOuBet }) {
       <View style={d.card}>
         <View style={d.cardHeader}>
           <View style={d.typePill}>
-            <Text style={d.typePillText}>{bet.betType}</Text>
+            <Text style={d.typePillText}>{betTypeDisplayLabel(bet.betType, tr)}</Text>
           </View>
           <Text style={d.cardMeta}>{tr.betDetailPlacedAt} · {bet.time}</Text>
         </View>
@@ -148,7 +156,7 @@ function ParlayDetail({ bet }: { bet: ParlayBet }) {
       <View style={d.card}>
         <View style={d.cardHeader}>
           <View style={[d.typePill, { backgroundColor: '#7C3AED' }]}>
-            <Text style={d.typePillText}>PARLAY</Text>
+            <Text style={d.typePillText}>{parlayTypeLabel(bet.period, tr)}</Text>
           </View>
           <Text style={d.cardMeta}>{tr.betDetailPlacedAt} · {bet.time}</Text>
         </View>
@@ -203,44 +211,50 @@ export default function BetDetailScreen() {
   useHideParentTabBar();
   const [bet, setBet] = useState<Bet | undefined>();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (!id) {
-      setBet(undefined);
-      setLoading(false);
-      return;
-    }
+  const loadBet = useCallback(
+    async (opts?: { soft?: boolean; preferCache?: boolean }) => {
+      if (!id) {
+        setBet(undefined);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
 
-    const cached = getCachedBetSlip(id);
-    if (cached) {
-      setBet(mapBetSlipToBet(cached, tr, lang));
-      setLoading(false);
-      return;
-    }
+      if (opts?.preferCache) {
+        const cached = getCachedBetSlip(id);
+        if (cached) {
+          setBet(mapBetSlipToBet(cached, tr, lang));
+          setLoading(false);
+          return;
+        }
+      }
 
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+      if (!token) {
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
 
-    let cancelled = false;
-    (async () => {
+      if (!opts?.soft) setLoading(true);
       try {
         const slips = await fetchBetSlips(token, {});
-        if (cancelled) return;
         const slip = slips.find((s) => String(s.id) === id);
         setBet(slip ? mapBetSlipToBet(slip, tr, lang) : undefined);
       } catch {
-        if (!cancelled) setBet(undefined);
+        if (!opts?.soft) setBet(undefined);
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
+        setRefreshing(false);
       }
-    })();
+    },
+    [id, token, tr, lang],
+  );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [id, token, tr, lang]);
+  useEffect(() => {
+    void loadBet({ preferCache: true });
+  }, [loadBet]);
 
   if (loading) {
     return (
@@ -276,6 +290,17 @@ export default function BetDetailScreen() {
         style={d.scroll}
         contentContainerStyle={[d.scrollContent, { paddingBottom: insets.bottom + Spacing.lg }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void loadBet({ soft: true });
+            }}
+            tintColor={GREEN}
+            colors={[GREEN]}
+          />
+        }
       >
         {bet.kind === 'hdpou' ? <HdpOuDetail bet={bet} /> : <ParlayDetail bet={bet} />}
       </ScrollView>

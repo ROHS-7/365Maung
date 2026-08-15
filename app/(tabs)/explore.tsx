@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/auth';
 import { useAuthGate } from '@/hooks/use-auth-gate';
 import { LoginPromptCard } from '@/components/login-prompt-card';
 import { formatBalance } from '@/utils/format-balance';
+import { useCallback, useState } from 'react';
 
 const ROW_ROUTES: Record<string, string> = {
   rule: '/rule',
@@ -21,8 +22,19 @@ const ROW_ROUTES: Record<string, string> = {
 
 export default function AccountScreen() {
   const { tr, lang, setLang } = useLanguage();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, refreshUser, isRefreshing } = useAuth();
   const { navigate } = useAuthGate();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setRefreshing(true);
+    try {
+      await refreshUser();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [isAuthenticated, refreshUser]);
 
   const ACCOUNT_ITEMS = [
     { id: 'deposit',  label: tr.accountDeposit,   sublabel: tr.accountDepositSub,   icon: 'arrow-down-circle', color: '#E67E22' },
@@ -31,7 +43,6 @@ export default function AccountScreen() {
     { id: 'requests', label: tr.accountCoinRequests, sublabel: tr.accountCoinRequestsSub, icon: 'swap-horizontal', color: '#16A085' },
     { id: 'pw',       label: tr.accountChangePw,   sublabel: tr.accountChangePwSub,  icon: 'lock-closed',       color: '#9B59B6' },
     { id: 'rule',     label: tr.accountRule,        sublabel: tr.accountRuleSub,      icon: 'book-outline',      color: '#1ABC9C' },
-    { id: 'ucenter',  label: tr.accountUcenter,    sublabel: tr.accountUcenterSub,   icon: 'settings-outline',  color: '#7F8C8D' },
   ] as const;
 
   function handleLogout() {
@@ -76,9 +87,9 @@ export default function AccountScreen() {
                 </Text>
               </View>
               <View style={s.bannerChip}>
-                <Ionicons name="key-outline" size={14} color="rgba(255,255,255,0.7)" />
-                <Text style={s.bannerChipLabel}>{tr.accountCashCode}</Text>
-                <Text style={s.bannerChipValue}>{user.cash_code ?? '—'}</Text>
+                <Ionicons name="cash-outline" size={14} color="rgba(255,255,255,0.7)" />
+                <Text style={s.bannerChipLabel}>{tr.profileCashOut}</Text>
+                <Text style={s.bannerChipValue}>{user.cash_out ?? '—'}</Text>
               </View>
             </View>
           </View>
@@ -89,7 +100,20 @@ export default function AccountScreen() {
         )}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={s.scrollContent}
+        refreshControl={
+          isAuthenticated ? (
+            <RefreshControl
+              refreshing={refreshing || isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.brand.greenButton}
+              colors={[Colors.brand.greenButton]}
+            />
+          ) : undefined
+        }
+      >
         {/* Account rows */}
         <View style={s.section}>
           {ACCOUNT_ITEMS.map((item, i) => {

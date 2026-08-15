@@ -19,6 +19,7 @@ import {
   ALL_MARKETS,
   buildMatchMap,
   buildSubmitPayload,
+  findOddsChangedMatchIds,
   formatDecimalOdds,
   makeSelectKey,
   parseSelectKey,
@@ -29,15 +30,28 @@ import {
   type UiLeagueData,
   type UiMatchData,
 } from "@/utils/football-ui";
+import { safeBack } from "@/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useIsFocused } from "@react-navigation/native";
+import { router, useFocusEffect } from "expo-router";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Alert,
+  Animated,
+  InteractionManager,
   KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -52,9 +66,10 @@ import {
 type LeagueFilterModalProps = {
   visible: boolean;
   leagues: UiLeagueData[];
-  selected: string[];
+  /** `null` = all leagues. `[]` = none. Otherwise explicit names. */
+  selected: string[] | null;
   onClose: () => void;
-  onApply: (names: string[]) => void;
+  onApply: (names: string[] | null) => void;
   title: string;
   allLabel: string;
   applyLabel: string;
@@ -85,33 +100,39 @@ function LeagueFilterModal({
   const [draft, setDraft] = useState<string[]>([]);
 
   useEffect(() => {
-    if (visible) setDraft(selected);
-  }, [visible, selected]);
+    if (!visible) return;
+    // Show explicit checks: null (all) → every league checked.
+    setDraft(
+      selected == null ? leagues.map((l) => l.name) : [...selected],
+    );
+  }, [visible, selected, leagues]);
 
+  const allNames = useMemo(() => leagues.map((l) => l.name), [leagues]);
   const allSelected =
-    draft.length === 0 ||
-    (leagues.length > 0 && draft.length === leagues.length);
+    leagues.length > 0 && draft.length === leagues.length;
 
   function toggleAll() {
-    setDraft([]);
+    setDraft(allSelected ? [] : allNames);
   }
 
   function toggleLeague(name: string) {
-    setDraft((prev) => {
-      // Empty draft means "all" — start from full list then toggle off
-      const base =
-        prev.length === 0 ? leagues.map((l) => l.name) : [...prev];
-      if (base.includes(name)) {
-        const next = base.filter((n) => n !== name);
-        return next.length === leagues.length ? [] : next;
-      }
-      const next = [...base, name];
-      return next.length === leagues.length ? [] : next;
-    });
+    setDraft((prev) =>
+      prev.includes(name)
+        ? prev.filter((n) => n !== name)
+        : [...prev, name],
+    );
   }
 
-  function isChecked(name: string) {
-    return draft.length === 0 || draft.includes(name);
+  function handleApply() {
+    if (draft.length === 0) {
+      onApply([]);
+      return;
+    }
+    if (draft.length === leagues.length) {
+      onApply(null);
+      return;
+    }
+    onApply(draft);
   }
 
   return (
@@ -162,7 +183,7 @@ function LeagueFilterModal({
             </Pressable>
 
             {leagues.map((league) => {
-              const checked = isChecked(league.name);
+              const checked = draft.includes(league.name);
               return (
                 <Pressable
                   key={league.name}
@@ -191,7 +212,7 @@ function LeagueFilterModal({
 
           <TouchableOpacity
             style={styles.filterApplyBtn}
-            onPress={() => onApply(draft)}
+            onPress={handleApply}
             activeOpacity={0.85}
           >
             <Text style={styles.filterApplyText}>{applyLabel}</Text>
@@ -202,7 +223,7 @@ function LeagueFilterModal({
   );
 }
 
-function OddsChip({
+const OddsChip = memo(function OddsChip({
   label,
   odds,
   selected,
@@ -247,10 +268,10 @@ function OddsChip({
       ) : null}
     </Pressable>
   );
-}
+});
 
 /** Left | green center line | Right — like Over | 2.5 | Under */
-function TriLineRow({
+const TriLineRow = memo(function TriLineRow({
   leftLabel,
   rightLabel,
   centerLine,
@@ -306,7 +327,7 @@ function TriLineRow({
       </Pressable>
     </View>
   );
-}
+});
 
 function MarketSection({
   title,
@@ -331,33 +352,99 @@ function MarketSection({
   );
 }
 
-function MatchMarkets({
+const MatchMarkets = memo(function MatchMarkets({
   match,
   markets,
   selectedKey,
   onPick,
+  flash,
+  exiting,
+  onExited,
 }: {
   match: UiMatchData;
   markets: FootballMarket[];
   selectedKey: string | null;
-  onPick: (market: FootballMarket, pick: string) => void;
+  onPick: (matchId: string, market: FootballMarket, pick: string) => void;
+  flash?: boolean;
+  exiting?: boolean;
+  onExited?: (matchId: string) => void;
 }) {
   const { tr } = useLanguage();
-  const giving = match.hdpGiving === "home" ? match.home : match.away;
-  const receiving = match.hdpGiving === "home" ? match.away : match.home;
+  // Always home left / away right (match header order). Odds line stays on giving team.
+  const homeIsGiving = match.hdpGiving === "home";
+  const homePick = homeIsGiving ? "giving" : "receiving";
+  const awayPick = homeIsGiving ? "receiving" : "giving";
   const hasSelection = selectedKey != null;
   const hideMarketTitle = true;
   const hdpMarket = hdpMarketFromList(markets);
   const ouMarket = ouMarketFromList(markets);
+  const flashAnim = useRef(new Animated.Value(0)).current;
+  const exitOpacity = useRef(new Animated.Value(1)).current;
+  const exitTranslate = useRef(new Animated.Value(0)).current;
+  const exitScale = useRef(new Animated.Value(1)).current;
+  const exitedRef = useRef(false);
 
-  return (
-    <View
-      style={[
-        styles.matchCard,
-        match.isMajor && styles.matchCardMajor,
-        hasSelection && styles.matchCardSelected,
-      ]}
-    >
+  useEffect(() => {
+    if (!flash || exiting) {
+      flashAnim.setValue(0);
+      return;
+    }
+    flashAnim.setValue(0);
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(flashAnim, {
+          toValue: 1,
+          duration: 280,
+          useNativeDriver: true,
+        }),
+        Animated.timing(flashAnim, {
+          toValue: 0,
+          duration: 280,
+          useNativeDriver: true,
+        }),
+      ]),
+      { iterations: 5 },
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [flash, exiting, flashAnim]);
+
+  useEffect(() => {
+    if (!exiting || exitedRef.current) return;
+    Animated.parallel([
+      Animated.timing(exitOpacity, {
+        toValue: 0,
+        duration: 380,
+        useNativeDriver: true,
+      }),
+      Animated.timing(exitTranslate, {
+        toValue: -16,
+        duration: 380,
+        useNativeDriver: true,
+      }),
+      Animated.timing(exitScale, {
+        toValue: 0.96,
+        duration: 380,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished && !exitedRef.current) {
+        exitedRef.current = true;
+        onExited?.(match.id);
+      }
+    });
+  }, [exiting, exitOpacity, exitTranslate, exitScale, match.id, onExited]);
+
+  const showFlash = Boolean(flash && !exiting);
+
+  const staticCardStyle = [
+    styles.matchCard,
+    match.isMajor && styles.matchCardMajor,
+    hasSelection && styles.matchCardSelected,
+  ];
+
+  const cardInner = (
+    <>
       <View
         style={[styles.matchHeader, match.isMajor && styles.matchHeaderMajor]}
       >
@@ -415,21 +502,22 @@ function MatchMarkets({
           <MarketSection title={tr.maungHDP} hideTitle={hideMarketTitle}>
             <View style={styles.chipRow}>
               <OddsChip
-                label={giving}
-                odds={match.hdpLine}
+                label={match.home}
+                odds={homeIsGiving ? match.hdpLine : undefined}
                 selected={
                   selectedKey ===
-                  makeSelectKey(match.id, hdpMarket, "giving")
+                  makeSelectKey(match.id, hdpMarket, homePick)
                 }
-                onPress={() => onPick(hdpMarket, "giving")}
+                onPress={() => onPick(match.id, hdpMarket, homePick)}
               />
               <OddsChip
-                label={receiving}
+                label={match.away}
+                odds={homeIsGiving ? undefined : match.hdpLine}
                 selected={
                   selectedKey ===
-                  makeSelectKey(match.id, hdpMarket, "receiving")
+                  makeSelectKey(match.id, hdpMarket, awayPick)
                 }
-                onPress={() => onPick(hdpMarket, "receiving")}
+                onPress={() => onPick(match.id, hdpMarket, awayPick)}
               />
             </View>
           </MarketSection>
@@ -448,8 +536,8 @@ function MatchMarkets({
               rightSelected={
                 selectedKey === makeSelectKey(match.id, ouMarket, "down")
               }
-              onLeft={() => onPick(ouMarket, "up")}
-              onRight={() => onPick(ouMarket, "down")}
+              onLeft={() => onPick(match.id, ouMarket, "up")}
+              onRight={() => onPick(match.id, ouMarket, "down")}
             />
           </MarketSection>
         )}
@@ -464,7 +552,7 @@ function MatchMarkets({
                 selected={
                   selectedKey === makeSelectKey(match.id, "sone_ma", "sone")
                 }
-                onPress={() => onPick("sone_ma", "sone")}
+                onPress={() => onPick(match.id, "sone_ma", "sone")}
               />
               <OddsChip
                 label={tr.maungEven}
@@ -472,7 +560,7 @@ function MatchMarkets({
                 selected={
                   selectedKey === makeSelectKey(match.id, "sone_ma", "ma")
                 }
-                onPress={() => onPick("sone_ma", "ma")}
+                onPress={() => onPick(match.id, "sone_ma", "ma")}
               />
             </View>
           </MarketSection>
@@ -490,7 +578,7 @@ function MatchMarkets({
                   selectedKey ===
                   makeSelectKey(match.id, "match_winner_1x2", "home")
                 }
-                onPress={() => onPick("match_winner_1x2", "home")}
+                onPress={() => onPick(match.id, "match_winner_1x2", "home")}
               />
               <OddsChip
                 label={tr.footballDraw}
@@ -499,7 +587,7 @@ function MatchMarkets({
                   selectedKey ===
                   makeSelectKey(match.id, "match_winner_1x2", "draw")
                 }
-                onPress={() => onPick("match_winner_1x2", "draw")}
+                onPress={() => onPick(match.id, "match_winner_1x2", "draw")}
               />
               <OddsChip
                 label={match.away}
@@ -508,7 +596,7 @@ function MatchMarkets({
                   selectedKey ===
                   makeSelectKey(match.id, "match_winner_1x2", "away")
                 }
-                onPress={() => onPick("match_winner_1x2", "away")}
+                onPress={() => onPick(match.id, "match_winner_1x2", "away")}
               />
             </View>
           </MarketSection>
@@ -525,7 +613,7 @@ function MatchMarkets({
                 selected={
                   selectedKey === makeSelectKey(match.id, "to_win", "home")
                 }
-                onPress={() => onPick("to_win", "home")}
+                onPress={() => onPick(match.id, "to_win", "home")}
               />
               <OddsChip
                 label={match.away}
@@ -533,7 +621,7 @@ function MatchMarkets({
                 selected={
                   selectedKey === makeSelectKey(match.id, "to_win", "away")
                 }
-                onPress={() => onPick("to_win", "away")}
+                onPress={() => onPick(match.id, "to_win", "away")}
               />
             </View>
           </MarketSection>
@@ -557,7 +645,7 @@ function MatchMarkets({
                       selectedKey ===
                       makeSelectKey(match.id, "correct_score", item.key)
                     }
-                    onPress={() => onPick("correct_score", item.key)}
+                    onPress={() => onPick(match.id, "correct_score", item.key)}
                     compact
                   />
                 ))}
@@ -565,23 +653,102 @@ function MatchMarkets({
             </MarketSection>
           )}
       </View>
+    </>
+  );
+
+  const card = (
+    <View style={staticCardStyle}>
+      {cardInner}
+      {showFlash ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.flashOverlay, { opacity: flashAnim }]}
+        />
+      ) : null}
     </View>
   );
-}
 
-function LeagueBlock({
-  league,
-  markets,
-  selections,
-  onPick,
-  source = "football",
-}: {
+  if (exiting) {
+    return (
+      <Animated.View
+        style={{
+          opacity: exitOpacity,
+          transform: [{ translateY: exitTranslate }, { scale: exitScale }],
+        }}
+      >
+        {card}
+      </Animated.View>
+    );
+  }
+
+  return card;
+});
+
+type LeagueBlockProps = {
   league: UiLeagueData;
   markets: FootballMarket[];
-  selections: Record<string, true>;
+  selectedByMatch: Record<string, string>;
   onPick: (matchId: string, market: FootballMarket, pick: string) => void;
   source?: "football" | "esports";
-}) {
+  flashIds: Set<string>;
+  exitingIds: Set<string>;
+  onMatchExited: (matchId: string) => void;
+};
+
+function leagueHasId(league: UiLeagueData, ids: Set<string>): boolean {
+  for (const match of league.matches) {
+    if (ids.has(match.id)) return true;
+  }
+  return false;
+}
+
+function areLeagueBlocksEqual(
+  prev: LeagueBlockProps,
+  next: LeagueBlockProps,
+): boolean {
+  if (
+    prev.league !== next.league ||
+    prev.markets !== next.markets ||
+    prev.onPick !== next.onPick ||
+    prev.source !== next.source ||
+    prev.onMatchExited !== next.onMatchExited
+  ) {
+    return false;
+  }
+  if (prev.flashIds !== next.flashIds) {
+    if (
+      leagueHasId(prev.league, prev.flashIds) ||
+      leagueHasId(next.league, next.flashIds)
+    ) {
+      return false;
+    }
+  }
+  if (prev.exitingIds !== next.exitingIds) {
+    if (
+      leagueHasId(prev.league, prev.exitingIds) ||
+      leagueHasId(next.league, next.exitingIds)
+    ) {
+      return false;
+    }
+  }
+  for (const match of next.league.matches) {
+    if (prev.selectedByMatch[match.id] !== next.selectedByMatch[match.id]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+const LeagueBlock = memo(function LeagueBlock({
+  league,
+  markets,
+  selectedByMatch,
+  onPick,
+  source = "football",
+  flashIds,
+  exitingIds,
+  onMatchExited,
+}: LeagueBlockProps) {
   return (
     <View style={styles.leagueBlock}>
       <View style={styles.leagueHeader}>
@@ -601,24 +768,22 @@ function LeagueBlock({
         </View>
       </View>
       <View style={styles.leagueMatches}>
-        {league.matches.map((match) => {
-          const selectedKey =
-            Object.keys(selections).find((k) => k.startsWith(`${match.id}:`)) ??
-            null;
-          return (
-            <MatchMarkets
-              key={match.id}
-              match={match}
-              markets={markets}
-              selectedKey={selectedKey}
-              onPick={(market, pick) => onPick(match.id, market, pick)}
-            />
-          );
-        })}
+        {league.matches.map((match) => (
+          <MatchMarkets
+            key={match.id}
+            match={match}
+            markets={markets}
+            selectedKey={selectedByMatch[match.id] ?? null}
+            onPick={onPick}
+            flash={flashIds.has(match.id)}
+            exiting={exitingIds.has(match.id)}
+            onExited={onMatchExited}
+          />
+        ))}
       </View>
     </View>
   );
-}
+}, areLeagueBlocksEqual);
 
 export function FootballBetScreen({
   title,
@@ -634,45 +799,254 @@ export function FootballBetScreen({
   useHideParentTabBar();
   const { tr } = useLanguage();
   const { token, refreshUser } = useAuth();
+  const isFocused = useIsFocused();
   const football = useFootballMatches(mode, {
     markets: source === "football" ? markets : undefined,
-    enabled: source === "football",
+    enabled: source === "football" && isFocused,
   });
-  const esports = useEsportsMatches({ enabled: source === "esports" });
+  const esports = useEsportsMatches({
+    enabled: source === "esports" && isFocused,
+  });
   const { leagues, loading, error, reload } =
     source === "esports" ? esports : football;
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
   const matchMap = useMemo(() => buildMatchMap(leagues), [leagues]);
   const insets = useSafeAreaInsets();
   const [selections, setSelections] = useState<Record<string, true>>({});
   const [stake, setStake] = useState(stakePlaceholder);
-  const [drawerExpanded, setDrawerExpanded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  /** Empty = show all leagues (default). */
-  const [selectedLeagues, setSelectedLeagues] = useState<string[]>([]);
+  /** `null` = all leagues. `[]` = none. Otherwise explicit names. */
+  const [selectedLeagues, setSelectedLeagues] = useState<string[] | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [flashIds, setFlashIds] = useState<Set<string>>(() => new Set());
+  const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
+  const [removedIds, setRemovedIds] = useState<Set<string>>(() => new Set());
+  const prevLeaguesRef = useRef<UiLeagueData[] | null>(null);
+  const filteredLeaguesRef = useRef<UiLeagueData[]>([]);
+  const removedIdsRef = useRef(removedIds);
+  const exitingIdsRef = useRef(exitingIds);
+  const interactingRef = useRef(false);
+  const pendingPollRef = useRef(false);
+  const interactTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const marketsKey = markets.join(",");
+  const stableMarkets = useMemo(
+    () => markets,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [marketsKey],
+  );
 
   const filteredLeagues = useMemo(() => {
-    if (selectedLeagues.length === 0) return leagues;
+    if (selectedLeagues == null) return leagues;
+    if (selectedLeagues.length === 0) return [];
     const set = new Set(selectedLeagues);
     return leagues.filter((l) => set.has(l.name));
   }, [leagues, selectedLeagues]);
 
+  filteredLeaguesRef.current = filteredLeagues;
+  removedIdsRef.current = removedIds;
+  exitingIdsRef.current = exitingIds;
+
+  const markDueMatches = useCallback(() => {
+    const now = Date.now();
+    const removed = removedIdsRef.current;
+    const exiting = exitingIdsRef.current;
+    const due: string[] = [];
+    for (const league of filteredLeaguesRef.current) {
+      for (const match of league.matches) {
+        if (
+          match.matchTimeMs <= now &&
+          !removed.has(match.id) &&
+          !exiting.has(match.id)
+        ) {
+          due.push(match.id);
+        }
+      }
+    }
+    if (due.length === 0) return;
+
+    setExitingIds((prev) => {
+      const next = new Set(prev);
+      for (const id of due) next.add(id);
+      return next;
+    });
+    setSelections((prev) => {
+      const keys = Object.keys(prev);
+      if (keys.length === 0) return prev;
+      let changed = false;
+      const next: Record<string, true> = { ...prev };
+      for (const key of keys) {
+        const { matchId } = parseSelectKey(key);
+        if (due.includes(matchId)) {
+          delete next[key];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, []);
+
+  // Kickoff clock + odds poll only while focused. Skip polls while the
+  // user is tapping/scrolling so selection stays instant.
+  useFocusEffect(
+    useCallback(() => {
+      markDueMatches();
+      const tickId = setInterval(markDueMatches, 1000);
+      const pollId = setInterval(() => {
+        if (interactingRef.current) {
+          pendingPollRef.current = true;
+          return;
+        }
+        void reloadRef.current();
+      }, 5000);
+      return () => {
+        clearInterval(tickId);
+        clearInterval(pollId);
+        if (interactTimerRef.current) {
+          clearTimeout(interactTimerRef.current);
+          interactTimerRef.current = null;
+        }
+      };
+    }, [markDueMatches]),
+  );
+
+  const beginInteract = useCallback(() => {
+    interactingRef.current = true;
+    if (interactTimerRef.current) clearTimeout(interactTimerRef.current);
+    interactTimerRef.current = setTimeout(() => {
+      interactingRef.current = false;
+      interactTimerRef.current = null;
+      if (!pendingPollRef.current) return;
+      pendingPollRef.current = false;
+      void reloadRef.current();
+    }, 2000);
+  }, []);
+
+  const endInteract = useCallback(() => {
+    if (interactTimerRef.current) {
+      clearTimeout(interactTimerRef.current);
+      interactTimerRef.current = null;
+    }
+    interactingRef.current = false;
+    if (!pendingPollRef.current) return;
+    pendingPollRef.current = false;
+    InteractionManager.runAfterInteractions(() => {
+      void reloadRef.current();
+    });
+  }, []);
+
+  const displayLeagues = useMemo(() => {
+    const now = Date.now();
+    let changed = false;
+    const out: UiLeagueData[] = [];
+    for (const league of filteredLeagues) {
+      const matches = league.matches.filter(
+        (m) =>
+          !removedIds.has(m.id) &&
+          (m.matchTimeMs > now || exitingIds.has(m.id)),
+      );
+      if (matches.length === 0) {
+        changed = true;
+        continue;
+      }
+      if (matches.length === league.matches.length) {
+        out.push(league);
+      } else {
+        changed = true;
+        out.push({ ...league, matches });
+      }
+    }
+    if (!changed && out.length === filteredLeagues.length) return filteredLeagues;
+    return out;
+  }, [filteredLeagues, exitingIds, removedIds]);
+
+  const handleMatchExited = useCallback((matchId: string) => {
+    setExitingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(matchId);
+      return next;
+    });
+    setRemovedIds((prev) => {
+      const next = new Set(prev);
+      next.add(matchId);
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
-    if (selectedLeagues.length === 0 || leagues.length === 0) return;
+    if (selectedLeagues == null || leagues.length === 0) return;
     const names = new Set(leagues.map((l) => l.name));
     const next = selectedLeagues.filter((n) => names.has(n));
     if (next.length !== selectedLeagues.length) {
-      setSelectedLeagues(next.length === leagues.length ? [] : next);
+      setSelectedLeagues(next.length === leagues.length ? null : next);
+    } else if (next.length === leagues.length) {
+      setSelectedLeagues(null);
     }
   }, [leagues, selectedLeagues]);
 
-  const filterActive = selectedLeagues.length > 0;
+  // Detect odds changes after poll/refresh and flash those match cards.
+  useEffect(() => {
+    const prev = prevLeaguesRef.current;
+    prevLeaguesRef.current = leagues;
+    if (!prev || prev.length === 0 || leagues.length === 0) return;
+
+    const changed = findOddsChangedMatchIds(prev, leagues);
+    if (changed.length === 0) return;
+
+    setFlashIds((old) => {
+      const next = new Set(old);
+      for (const id of changed) next.add(id);
+      return next;
+    });
+
+    const timer = setTimeout(() => {
+      setFlashIds((old) => {
+        const next = new Set(old);
+        for (const id of changed) next.delete(id);
+        return next;
+      });
+    }, 2800);
+
+    return () => clearTimeout(timer);
+  }, [leagues]);
+
+  // Drop slip picks when a match disappears or its market odds become invalid after API refresh.
+  useEffect(() => {
+    setSelections((prev) => {
+      const keys = Object.keys(prev);
+      if (keys.length === 0) return prev;
+      let changed = false;
+      const next: Record<string, true> = {};
+      for (const key of keys) {
+        const { matchId, market } = parseSelectKey(key);
+        const match = matchMap.get(matchId);
+        if (match && uiMatchHasValidMarket(match, market)) {
+          next[key] = true;
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [matchMap]);
+
+  const filterActive = selectedLeagues != null;
   const filterSummary = filterActive
     ? String(selectedLeagues.length)
     : tr.footballAllLeagues;
 
   const count = Object.keys(selections).length;
   const canBet = count >= minPicks;
+
+  const selectedByMatch = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const key of Object.keys(selections)) {
+      map[parseSelectKey(key).matchId] = key;
+    }
+    return map;
+  }, [selections]);
 
   const slipItems = useMemo(() => {
     return Object.keys(selections).map((key) => {
@@ -699,40 +1073,52 @@ export function FootballBetScreen({
     [tr, hint],
   );
 
-  function handlePick(matchId: string, market: FootballMarket, pick: string) {
-    const key = makeSelectKey(matchId, market, pick);
-    setSelections((prev) => {
-      if (prev[key]) {
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await reload({ immediate: true });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [reload]);
+
+  const handlePick = useCallback(
+    (matchId: string, market: FootballMarket, pick: string) => {
+      const key = makeSelectKey(matchId, market, pick);
+      setSelections((prev) => {
+        if (prev[key]) {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        }
+
+        if (mode === "single") {
+          return { [key]: true };
+        }
+
         const next = { ...prev };
-        delete next[key];
+        for (const k of Object.keys(next)) {
+          if (k.startsWith(`${matchId}:`)) delete next[k];
+        }
+        next[key] = true;
         return next;
-      }
+      });
+    },
+    [mode],
+  );
 
-      if (mode === "single") {
-        return { [key]: true };
-      }
-
-      const next = { ...prev };
-      for (const k of Object.keys(next)) {
-        if (k.startsWith(`${matchId}:`)) delete next[k];
-      }
-      next[key] = true;
-      return next;
-    });
-  }
-
-  function handleRemove(key: string) {
+  const handleRemove = useCallback((key: string) => {
     setSelections((prev) => {
       const next = { ...prev };
       delete next[key];
       return next;
     });
-  }
+  }, []);
 
-  function handleReset() {
+  const handleReset = useCallback(() => {
     setSelections({});
     setStake(stakePlaceholder);
-  }
+  }, [stakePlaceholder]);
 
   async function handleOK() {
     if (!canBet || !token) {
@@ -755,7 +1141,7 @@ export function FootballBetScreen({
           text: tr.footballViewBets,
           onPress: () => router.push("/(tabs)/bets" as never),
         },
-        { text: "OK" },
+        { text: tr.ok },
       ]);
     } catch (e) {
       Alert.alert("", e instanceof Error ? e.message : tr.footballBetFailed);
@@ -765,8 +1151,8 @@ export function FootballBetScreen({
   }
 
   const safeBottom = Math.max(insets.bottom, 8);
-  const scrollBottomPad =
-    safeBottom + (drawerExpanded ? 320 : count > 0 ? 132 : 96);
+  // Stable pad so opening the slip does not relayout the match list.
+  const scrollBottomPad = safeBottom + 320;
 
   return (
     <KeyboardAvoidingView
@@ -777,7 +1163,7 @@ export function FootballBetScreen({
       <SafeAreaView style={styles.root} edges={["top"]}>
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => safeBack()}
             style={styles.backBtn}
             activeOpacity={0.7}
           >
@@ -865,6 +1251,19 @@ export function FootballBetScreen({
           ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          removeClippedSubviews={Platform.OS === "android"}
+          onScrollBeginDrag={beginInteract}
+          onScrollEndDrag={endInteract}
+          onMomentumScrollEnd={endInteract}
+          onTouchStart={beginInteract}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.brand.greenButton}
+              colors={[Colors.brand.greenButton]}
+            />
+          }
         >
           {loading ? (
             <View style={styles.loadWrap}>
@@ -873,23 +1272,29 @@ export function FootballBetScreen({
           ) : error ? (
             <View style={styles.loadWrap}>
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity onPress={reload} style={styles.retryBtn}>
+              <TouchableOpacity
+                onPress={() => void reload({ immediate: true })}
+                style={styles.retryBtn}
+              >
                 <Text style={styles.retryText}>{tr.footballRetry}</Text>
               </TouchableOpacity>
             </View>
-          ) : filteredLeagues.length === 0 ? (
+          ) : displayLeagues.length === 0 ? (
             <View style={styles.loadWrap}>
               <Text style={styles.loadText}>{tr.footballNoMatches}</Text>
             </View>
           ) : (
-            filteredLeagues.map((league) => (
+            displayLeagues.map((league) => (
               <LeagueBlock
                 key={league.name}
                 league={league}
-                markets={markets}
-                selections={selections}
+                markets={stableMarkets}
+                selectedByMatch={selectedByMatch}
                 onPick={handlePick}
                 source={source}
+                flashIds={flashIds}
+                exitingIds={exitingIds}
+                onMatchExited={handleMatchExited}
               />
             ))
           )}
@@ -908,9 +1313,7 @@ export function FootballBetScreen({
           tabBarOffset={0}
           copy={slipCopy}
           minPicks={minPicks}
-          autoExpandAt={minPicks}
           stakePlaceholder={stakePlaceholder}
-          onExpandedChange={setDrawerExpanded}
         />
       </SafeAreaView>
     </KeyboardAvoidingView>
@@ -1156,6 +1559,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.light.border,
     ...Shadow.sm,
+  },
+  flashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(46, 160, 90, 0.18)",
+    borderRadius: BorderRadius.md,
   },
   matchCardMajor: {
     borderColor: Colors.brand.gold,

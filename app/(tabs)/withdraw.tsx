@@ -29,6 +29,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -38,22 +39,26 @@ export default function WithdrawScreen() {
   const { token, user, refreshUser } = useAuth();
   const [bound, setBound] = useState<PaymentAccount | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { soft?: boolean }) => {
     if (!token) return;
+    if (!opts?.soft) setLoading(true);
     try {
       const accounts = await fetchPaymentAccounts(token);
       setBound(getBoundAccount(accounts));
+      if (opts?.soft) await refreshUser();
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, [token]);
+  }, [token, refreshUser]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   async function handleSubmit() {
@@ -86,7 +91,7 @@ export default function WithdrawScreen() {
                 text: tr.coinRequestViewRequests,
                 onPress: () => router.push('/(tabs)/coin-requests' as never),
               },
-              { text: 'OK' },
+              { text: tr.ok },
             ]);
             setAmount('');
             setNote('');
@@ -128,7 +133,21 @@ export default function WithdrawScreen() {
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={s.scroll}
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setRefreshing(true);
+                  void load({ soft: true });
+                }}
+                tintColor={Colors.brand.greenButton}
+                colors={[Colors.brand.greenButton]}
+              />
+            }
+          >
             <View style={s.balanceCard}>
               <Text style={s.balanceLabel}>{tr.withdrawAvailable}</Text>
               <Text style={s.balanceValue}>

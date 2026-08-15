@@ -8,6 +8,7 @@ import {
   Animated,
   Share,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -55,6 +56,7 @@ export default function NewsDetailScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const [article, setArticle] = useState<FootballNewsArticle | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [liking, setLiking] = useState(false);
 
@@ -69,33 +71,38 @@ export default function NewsDetailScreen() {
       .slice(0, 4);
   }, [article]);
 
-  useEffect(() => {
-    if (!token || !Number.isFinite(newsId)) {
-      setLoading(false);
-      return;
-    }
+  const loadArticle = useCallback(
+    async (opts?: { soft?: boolean }) => {
+      if (!token || !Number.isFinite(newsId)) {
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
 
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
+      if (!opts?.soft) {
+        setLoading(true);
+        setError(null);
+      }
       try {
         const data = await fetchFootballNewsDetail(token, newsId);
-        if (!cancelled) setArticle(data);
+        setArticle(data);
+        setError(null);
       } catch (e) {
-        if (!cancelled) {
+        if (!opts?.soft) {
           setError(e instanceof Error ? e.message : tr.newsNotFound);
           setArticle(null);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
+        setRefreshing(false);
       }
-    })();
+    },
+    [token, newsId, tr.newsNotFound],
+  );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [token, newsId, tr.newsNotFound]);
+  useEffect(() => {
+    void loadArticle();
+  }, [loadArticle]);
 
   const handleLike = useCallback(async () => {
     if (!token || !article || liking) return;
@@ -191,6 +198,17 @@ export default function NewsDetailScreen() {
           { useNativeDriver: true },
         )}
         contentContainerStyle={{ paddingBottom: scrollBottomPad }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void loadArticle({ soft: true });
+            }}
+            tintColor={NewsTheme.accent}
+            colors={[NewsTheme.accent]}
+          />
+        }
       >
         <View style={s.hero}>
           {imageUri ? (

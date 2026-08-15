@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   Switch, StyleSheet, KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator, Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -28,7 +29,7 @@ export default function LoginScreen() {
       await login(account.trim(), password);
       router.replace('/');
     } catch (e) {
-      Alert.alert('', e instanceof Error ? e.message : 'Login failed');
+      Alert.alert('', e instanceof Error ? e.message : tr.loginFailed);
     } finally {
       setSubmitting(false);
     }
@@ -42,11 +43,11 @@ export default function LoginScreen() {
 
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={s.logoSection}>
-          <View style={s.logoRow}>
-            <Text style={s.logoBet}>bet</Text>
-            <Text style={s.logo365}>365</Text>
-          </View>
-          <Text style={s.logoSubtitle}>မောင်း</Text>
+          <Image
+            source={require('@/assets/images/burma90.png')}
+            style={s.logoImg}
+            resizeMode="contain"
+          />
           <Text style={s.logoTagline}>{tr.loginSubtitle}</Text>
         </View>
 
@@ -146,11 +147,8 @@ const s = StyleSheet.create({
     backgroundColor: Colors.brand.greenLight, opacity: 0.2, bottom: 80, left: -60,
   },
   logoSection: { alignItems: 'center', paddingBottom: Spacing.lg },
-  logoRow: { flexDirection: 'row', alignItems: 'baseline' },
-  logoBet: { fontSize: FontSize.xxxl, fontWeight: FontWeight.extrabold, color: Colors.brand.white, letterSpacing: -1 },
-  logo365: { fontSize: FontSize.xxxl, fontWeight: FontWeight.extrabold, color: Colors.brand.gold, letterSpacing: -1 },
-  logoSubtitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.brand.gold, marginTop: 2, letterSpacing: 2 },
-  logoTagline: { fontSize: FontSize.sm, color: 'rgba(255,255,255,0.6)', marginTop: 4, letterSpacing: 1 },
+  logoImg: { width: 220, height: 120 },
+  logoTagline: { fontSize: FontSize.sm, color: 'rgba(255,255,255,0.6)', marginTop: 8, letterSpacing: 1 },
   card: {
     backgroundColor: Colors.brand.white, borderRadius: BorderRadius.xxl,
     paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: Spacing.md,

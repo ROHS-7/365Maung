@@ -19,10 +19,10 @@ export function getActivityAmount(activity: Activity): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-export function formatActivityDate(iso: string, lang: Lang): string {
+export function formatActivityDate(iso: string, _lang?: Lang): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(lang === 'my' ? 'my-MM' : 'en-GB', {
+  return d.toLocaleString('en-GB', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',

@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -76,11 +77,11 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={s.logoSection}>
-            <View style={s.logoRow}>
-              <Text style={s.logoBet}>bet</Text>
-              <Text style={s.logo365}>365</Text>
-            </View>
-            <Text style={s.logoSubtitle}>မောင်း</Text>
+            <Image
+              source={require('@/assets/images/burma90.png')}
+              style={s.logoImg}
+              resizeMode="contain"
+            />
             <Text style={s.logoTagline}>{tr.registerSubtitle}</Text>
           </View>
 
@@ -252,26 +253,7 @@ const s = StyleSheet.create({
     left: -60,
   },
   logoSection: { alignItems: 'center', paddingBottom: Spacing.lg },
-  logoRow: { flexDirection: 'row', alignItems: 'baseline' },
-  logoBet: {
-    fontSize: FontSize.xxxl,
-    fontWeight: FontWeight.extrabold,
-    color: Colors.brand.white,
-    letterSpacing: -1,
-  },
-  logo365: {
-    fontSize: FontSize.xxxl,
-    fontWeight: FontWeight.extrabold,
-    color: Colors.brand.gold,
-    letterSpacing: -1,
-  },
-  logoSubtitle: {
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: Colors.brand.gold,
-    marginTop: 2,
-    letterSpacing: 2,
-  },
+  logoImg: { width: 220, height: 120 },
   logoTagline: {
     fontSize: FontSize.sm,
     color: 'rgba(255,255,255,0.6)',

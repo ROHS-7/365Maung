@@ -1,5 +1,6 @@
 import axios, { isAxiosError } from 'axios';
 import { API_BASE_URL } from '@/constants/config';
+import { unwrapApiPayload } from '@/lib/payload-crypto';
 
 export class ApiError extends Error {
   constructor(
@@ -43,13 +44,19 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const { method = 'GET', token, body } = options;
 
   try {
-    const { data } = await axiosClient.request<T>({
+    const { data } = await axiosClient.request<unknown>({
       url: path,
       method,
       data: body,
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
-    return data;
+    try {
+      return unwrapApiPayload<T>(data);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to decrypt API payload';
+      throw new ApiError(message, 0);
+    }
   } catch (error) {
     if (isAxiosError(error)) {
       const status = error.response?.status ?? 0;

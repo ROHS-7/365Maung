@@ -4,11 +4,11 @@ import type { CoinRequest } from '@/types/api';
 import { getProviderMeta } from '@/constants/payment-providers';
 import { maskAccountNumber } from '@/utils/payment-accounts';
 
-export function formatCoinRequestDate(iso: string | null | undefined, lang: Lang): string {
+export function formatCoinRequestDate(iso: string | null | undefined, _lang?: Lang): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(lang === 'my' ? 'my-MM' : 'en-GB', {
+  return d.toLocaleString('en-GB', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
