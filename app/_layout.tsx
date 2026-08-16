@@ -12,6 +12,12 @@ import { AppConfigProvider } from '@/contexts/app-config';
 if (Platform.OS !== 'web' && typeof Appearance.setColorScheme === 'function') {
   Appearance.setColorScheme('light');
 }
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  document.documentElement.style.colorScheme = 'light';
+  document.documentElement.style.backgroundColor = '#ffffff';
+  document.body.style.backgroundColor = '#ffffff';
+  document.body.style.color = '#1A2E22';
+}
 void SystemUI.setBackgroundColorAsync('#ffffff');
 
 const LightTheme = {

@@ -23,6 +23,7 @@ import {
   Easing,
   Image,
   type ImageSourcePropType,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -75,41 +76,48 @@ const MENU_ROUTES: Record<string, string> = {
 
 function AnnouncementBanner({ text }: { text: string }) {
   const x = useRef(new Animated.Value(0)).current;
-  const [cw, setCw] = useState(0);
   const [tw, setTw] = useState(0);
+  const loopText = `${text.trim()}   ✦   `;
 
   useEffect(() => {
-    if (!cw || !tw) return;
-    x.setValue(cw);
-    Animated.loop(
+    if (!tw) return;
+    x.setValue(0);
+    const anim = Animated.loop(
       Animated.timing(x, {
         toValue: -tw,
-        duration: (cw + tw) * 24,
+        duration: Math.max(tw, 80) * 22,
         easing: Easing.linear,
         useNativeDriver: true,
       }),
-    ).start();
-  }, [cw, tw]);
+    );
+    anim.start();
+    return () => {
+      anim.stop();
+    };
+  }, [tw, loopText, x]);
 
   return (
     <View style={s.announce}>
       <View style={s.announceIcon}>
         <Ionicons name="megaphone" size={14} color={Colors.brand.greenDark} />
       </View>
-      <View
-        style={s.announceTrack}
-        onLayout={(e) => setCw(e.nativeEvent.layout.width)}
-      >
-        <Animated.Text
-          style={[
-            s.announceText,
-            { transform: [{ translateX: x }], position: "absolute" },
-          ]}
-          onLayout={(e) => setTw(e.nativeEvent.layout.width)}
-          numberOfLines={1}
-        >
-          {text}
-        </Animated.Text>
+      <View style={s.announceTrack}>
+        <Animated.View style={[s.announceRow, { transform: [{ translateX: x }] }]}>
+          <View
+            collapsable={false}
+            onLayout={(e) => {
+              const w = e.nativeEvent.layout.width;
+              if (w > 0 && Math.abs(w - tw) > 1) setTw(w);
+            }}
+          >
+            <Text style={s.announceText} numberOfLines={1}>
+              {loopText}
+            </Text>
+          </View>
+          <Text style={s.announceText} numberOfLines={1}>
+            {loopText}
+          </Text>
+        </Animated.View>
       </View>
     </View>
   );
@@ -640,12 +648,26 @@ const s = StyleSheet.create({
     flex: 1,
     overflow: "hidden",
     height: 18,
-    justifyContent: "center",
+    position: "relative",
+  },
+  announceRow: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    height: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "nowrap",
   },
   announceText: {
     fontSize: FontSize.sm,
     fontWeight: FontWeight.medium,
     color: Colors.light.text,
+    flexShrink: 0,
+    ...Platform.select({
+      web: { whiteSpace: "nowrap" as const },
+      default: {},
+    }),
   },
   sectionTitle: {
     fontSize: FontSize.md,

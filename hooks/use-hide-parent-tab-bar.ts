@@ -1,18 +1,22 @@
 import { useCallback } from 'react';
+import { Platform } from 'react-native';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 
 const HIDDEN_TAB_BAR = { display: 'none' as const };
+const TAB_BAR_BODY = 84;
+const WEB_EXTRA = Platform.OS === 'web' ? 8 : 0;
 
-function visibleTabBarStyle(insetsBottom: number) {
+export function visibleTabBarStyle(insetsBottom: number) {
   return {
     backgroundColor: '#fff',
     borderTopColor: Colors.light.border,
     borderTopWidth: 1,
-    paddingTop: 6,
-    height: 62 + insetsBottom,
-    paddingBottom: 8 + insetsBottom,
+    paddingTop: 8,
+    height: TAB_BAR_BODY + insetsBottom + WEB_EXTRA,
+    paddingBottom: 14 + insetsBottom + WEB_EXTRA,
+    overflow: 'visible' as const,
   };
 }
 

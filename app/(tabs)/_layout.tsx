@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, FontWeight } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
+import { visibleTabBarStyle } from '@/hooks/use-hide-parent-tab-bar';
 
 function LiveTabButton({ onPress }: { onPress?: () => void }) {
   const { tr } = useLanguage();
@@ -19,6 +20,14 @@ function LiveTabButton({ onPress }: { onPress?: () => void }) {
   );
 }
 
+function TabLabel({ children, color }: { children: string; color: string }) {
+  return (
+    <Text style={[s.tabLabel, { color }]} numberOfLines={1}>
+      {children}
+    </Text>
+  );
+}
+
 export default function TabLayout() {
   const { tr } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -27,10 +36,14 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.brand.greenButton,
-        tabBarInactiveTintColor: '#A0ADB5',
-        tabBarStyle: [s.tabBar, { height: 62 + insets.bottom, paddingBottom: 8 + insets.bottom }],
+        tabBarActiveTintColor: Colors.light.tabIconSelected,
+        tabBarInactiveTintColor: Colors.light.icon,
+        tabBarStyle: visibleTabBarStyle(insets.bottom),
+        tabBarItemStyle: s.tabItem,
         tabBarLabelStyle: s.tabLabel,
+        tabBarLabel: ({ children, color }) => (
+          <TabLabel color={color}>{children}</TabLabel>
+        ),
       }}
     >
       <Tabs.Screen
@@ -119,12 +132,25 @@ export default function TabLayout() {
 }
 
 const s = StyleSheet.create({
-  tabBar: {
-    backgroundColor: '#fff', borderTopColor: Colors.light.border,
-    borderTopWidth: 1, paddingTop: 6,
+  tabItem: {
+    paddingTop: 4,
+    height: '100%',
+    overflow: 'visible',
   },
-  tabLabel: { fontSize: 11, fontWeight: FontWeight.semibold },
-  liveWrap: { alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 8, flex: 1 },
+  tabLabel: {
+    fontSize: 11,
+    lineHeight: 18,
+    fontWeight: FontWeight.semibold,
+    color: Colors.light.icon,
+    marginTop: 2,
+    includeFontPadding: true,
+  },
+  liveWrap: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: 12,
+    flex: 1,
+  },
   liveDiamond: {
     width: 52, height: 52, borderRadius: 14,
     backgroundColor: Colors.brand.greenButton, transform: [{ rotate: '45deg' }],
@@ -134,5 +160,10 @@ const s = StyleSheet.create({
     shadowOpacity: 0.45, shadowRadius: 8, elevation: 8,
   },
   liveDiamondInner: { transform: [{ rotate: '-45deg' }], alignItems: 'center', justifyContent: 'center' },
-  liveLabel: { fontSize: 11, fontWeight: FontWeight.semibold, color: Colors.brand.greenButton },
+  liveLabel: {
+    fontSize: 11,
+    lineHeight: 18,
+    fontWeight: FontWeight.semibold,
+    color: Colors.brand.greenButton,
+  },
 });
