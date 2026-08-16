@@ -3,8 +3,8 @@ import { Stack } from 'expo-router';
 export default function LiveLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="[id]" />
+      <Stack.Screen name="index" options={{ freezeOnBlur: true }} />
+      <Stack.Screen name="[id]" options={{ freezeOnBlur: true }} />
     </Stack>
   );
 }

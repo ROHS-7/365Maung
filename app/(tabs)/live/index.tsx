@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   RefreshControl,
   ActivityIndicator,
-  Image,
+  FlatList,
+  type ListRenderItem,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -17,7 +18,6 @@ import {
   Colors,
   FontSize,
   FontWeight,
-  Shadow,
   Spacing,
 } from '@/constants/theme';
 import { LoginPromptCard } from '@/components/login-prompt-card';
@@ -29,35 +29,59 @@ import {
 } from '@/services/live-matches';
 import type { UiLiveMatch } from '@/types/live-matches';
 
-function MatchCard({ match }: { match: UiLiveMatch }) {
+type ListRow =
+  | { type: 'header'; key: string; title: string }
+  | { type: 'match'; key: string; match: UiLiveMatch };
+
+function CachedLogo({
+  uri,
+  style,
+  fallback,
+}: {
+  uri?: string;
+  style: { width: number; height: number; borderRadius: number };
+  fallback: ReactNode;
+}) {
+  if (!uri) return <>{fallback}</>;
+  return (
+    <Image
+      source={{ uri }}
+      style={style}
+      contentFit="cover"
+      cachePolicy="memory-disk"
+      recyclingKey={uri}
+      transition={0}
+    />
+  );
+}
+
+const MatchCard = memo(function MatchCard({ match }: { match: UiLiveMatch }) {
   const { tr } = useLanguage();
   const canWatch = match.hasStream;
 
-  function open() {
-    if (!canWatch) return;
+  const open = useCallback(() => {
+    if (!match.hasStream) return;
     router.push(`/(tabs)/live/${match.id}` as never);
-  }
+  }, [match.hasStream, match.id]);
 
   return (
     <Pressable
       onPress={open}
       disabled={!canWatch}
-      style={({ pressed }) => [
-        s.card,
-        match.isLive && s.cardLive,
-        pressed && canWatch && s.cardPressed,
-        !canWatch && s.cardDisabled,
-      ]}
+      android_ripple={canWatch ? { color: '#00000014' } : undefined}
+      style={[s.card, match.isLive && s.cardLive, !canWatch && s.cardDisabled]}
     >
       <View style={s.cardTop}>
         <View style={s.leagueRow}>
-          {match.league_logo ? (
-            <Image source={{ uri: match.league_logo }} style={s.leagueLogo} />
-          ) : (
-            <View style={s.leagueLogoPlaceholder}>
-              <Ionicons name="trophy-outline" size={12} color={Colors.brand.greenMid} />
-            </View>
-          )}
+          <CachedLogo
+            uri={match.league_logo}
+            style={s.leagueLogo}
+            fallback={
+              <View style={s.leagueLogoPlaceholder}>
+                <Ionicons name="trophy-outline" size={12} color={Colors.brand.greenMid} />
+              </View>
+            }
+          />
           <Text style={s.leagueName} numberOfLines={1}>
             {match.league_name}
           </Text>
@@ -76,7 +100,11 @@ function MatchCard({ match }: { match: UiLiveMatch }) {
 
       <View style={s.teamsRow}>
         <View style={s.teamCol}>
-          <Image source={{ uri: match.home_team_logo }} style={s.teamLogo} />
+          <CachedLogo
+            uri={match.home_team_logo}
+            style={s.teamLogo}
+            fallback={<View style={s.teamLogo} />}
+          />
           <Text style={s.teamName} numberOfLines={2}>
             {match.home_team_name}
           </Text>
@@ -85,8 +113,12 @@ function MatchCard({ match }: { match: UiLiveMatch }) {
           <Text style={s.vsText}>VS</Text>
           <Text style={s.timeText}>{formatLiveMatchTime(match.match_time)}</Text>
         </View>
-        <View style={[s.teamCol, s.teamColAway]}>
-          <Image source={{ uri: match.away_team_logo }} style={s.teamLogo} />
+        <View style={s.teamCol}>
+          <CachedLogo
+            uri={match.away_team_logo}
+            style={s.teamLogo}
+            fallback={<View style={s.teamLogo} />}
+          />
           <Text style={[s.teamName, s.teamNameAway]} numberOfLines={2}>
             {match.away_team_name}
           </Text>
@@ -109,7 +141,7 @@ function MatchCard({ match }: { match: UiLiveMatch }) {
       )}
     </Pressable>
   );
-}
+});
 
 export default function LiveScreen() {
   const { tr } = useLanguage();
@@ -118,18 +150,20 @@ export default function LiveScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasDataRef = useRef(false);
 
   const load = useCallback(async (isRefresh = false) => {
     if (!token) return;
     if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+    else if (!hasDataRef.current) setLoading(true);
     setError(null);
     try {
       const data = await fetchLiveMatches(token);
       setMatches(data);
+      hasDataRef.current = data.length > 0;
     } catch (e) {
       setError(e instanceof Error ? e.message : tr.liveLoadFailed);
-      if (!isRefresh) setMatches([]);
+      if (!hasDataRef.current) setMatches([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -142,6 +176,36 @@ export default function LiveScreen() {
 
   const liveMatches = useMemo(() => matches.filter((m) => m.isLive), [matches]);
   const upcomingMatches = useMemo(() => matches.filter((m) => !m.isLive), [matches]);
+
+  const rows = useMemo<ListRow[]>(() => {
+    const out: ListRow[] = [];
+    if (liveMatches.length > 0) {
+      out.push({
+        type: 'header',
+        key: 'h-live',
+        title: `${tr.liveNow} · ${liveMatches.length}`,
+      });
+      for (const m of liveMatches) out.push({ type: 'match', key: m.id, match: m });
+    }
+    if (upcomingMatches.length > 0) {
+      out.push({
+        type: 'header',
+        key: 'h-up',
+        title: `${tr.liveUpcoming} · ${upcomingMatches.length}`,
+      });
+      for (const m of upcomingMatches) out.push({ type: 'match', key: m.id, match: m });
+    }
+    return out;
+  }, [liveMatches, upcomingMatches, tr.liveNow, tr.liveUpcoming]);
+
+  const renderItem = useCallback<ListRenderItem<ListRow>>(({ item }) => {
+    if (item.type === 'header') {
+      return <Text style={s.sectionTitle}>{item.title}</Text>;
+    }
+    return <MatchCard match={item.match} />;
+  }, []);
+
+  const keyExtractor = useCallback((item: ListRow) => item.key, []);
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
@@ -165,7 +229,7 @@ export default function LiveScreen() {
           <ActivityIndicator color={Colors.brand.greenButton} />
           <Text style={s.centerText}>{tr.liveLoading}</Text>
         </View>
-      ) : error ? (
+      ) : error && matches.length === 0 ? (
         <View style={s.center}>
           <Text style={s.errorText}>{error}</Text>
           <Pressable onPress={() => load()} style={s.retryBtn}>
@@ -173,10 +237,19 @@ export default function LiveScreen() {
           </Pressable>
         </View>
       ) : (
-        <ScrollView
+        <FlatList
           style={s.scroll}
-          contentContainerStyle={s.scrollContent}
+          data={rows}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          getItemType={(item) => item.type}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.scrollContent}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -184,37 +257,13 @@ export default function LiveScreen() {
               tintColor={Colors.brand.greenButton}
             />
           }
-        >
-          {matches.length === 0 ? (
+          ListEmptyComponent={
             <View style={s.center}>
               <Ionicons name="radio-outline" size={56} color={Colors.light.border} />
               <Text style={s.centerText}>{tr.liveEmpty}</Text>
             </View>
-          ) : (
-            <>
-              {liveMatches.length > 0 && (
-                <View style={s.section}>
-                  <Text style={s.sectionTitle}>
-                    {tr.liveNow} · {liveMatches.length}
-                  </Text>
-                  {liveMatches.map((m) => (
-                    <MatchCard key={m.id} match={m} />
-                  ))}
-                </View>
-              )}
-              {upcomingMatches.length > 0 && (
-                <View style={s.section}>
-                  <Text style={s.sectionTitle}>
-                    {tr.liveUpcoming} · {upcomingMatches.length}
-                  </Text>
-                  {upcomingMatches.map((m) => (
-                    <MatchCard key={m.id} match={m} />
-                  ))}
-                </View>
-              )}
-            </>
-          )}
-        </ScrollView>
+          }
+        />
       )}
     </SafeAreaView>
   );
@@ -243,13 +292,14 @@ const s = StyleSheet.create({
     padding: 24,
   },
   scroll: { flex: 1 },
-  scrollContent: { padding: Spacing.md, gap: Spacing.lg, paddingBottom: 32 },
-  section: { gap: Spacing.sm },
+  scrollContent: { padding: Spacing.md, paddingBottom: 32 },
   sectionTitle: {
     fontSize: FontSize.sm,
     fontWeight: FontWeight.bold,
     color: Colors.brand.greenDark,
     letterSpacing: 0.3,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   center: {
     flex: 1,
@@ -280,13 +330,12 @@ const s = StyleSheet.create({
     gap: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.light.border,
-    ...Shadow.sm,
+    marginBottom: Spacing.sm,
   },
   cardLive: {
     borderColor: '#F87171',
     borderWidth: 1.5,
   },
-  cardPressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
   cardDisabled: { opacity: 0.92 },
   cardTop: {
     flexDirection: 'row',
@@ -350,7 +399,6 @@ const s = StyleSheet.create({
     paddingVertical: 4,
   },
   teamCol: { flex: 1, alignItems: 'center', gap: 6, minWidth: 0 },
-  teamColAway: {},
   teamLogo: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F3F4F6' },
   teamName: {
     fontSize: 12,

@@ -51,6 +51,7 @@ export default function TabLayout() {
         name="live"
         options={{
           title: '',
+          freezeOnBlur: true,
           tabBarButton: (props) => <LiveTabButton onPress={props.onPress ?? undefined} />,
         }}
       />

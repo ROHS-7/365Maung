@@ -109,6 +109,29 @@ export function getCachedLiveMatch(id: string): UiLiveMatch | undefined {
   return matchCache.get(id);
 }
 
+function streamWeight(name: string): number {
+  const n = name.toLowerCase();
+  if (/4k|uhd|2160/.test(n)) return 4;
+  if (/fhd|1080/.test(n)) return 3;
+  if (/\bhd\b|720/.test(n)) return 2;
+  if (/sd|480|360|low/.test(n)) return 0;
+  return 1;
+}
+
+/** Lowest labeled quality first so playback starts with less decode/buffer work. */
+export function preferPlayableServer(servers: LiveStreamServer[]): LiveStreamServer {
+  let best = servers[0];
+  let bestWeight = streamWeight(best.name);
+  for (let i = 1; i < servers.length; i++) {
+    const w = streamWeight(servers[i].name);
+    if (w < bestWeight) {
+      best = servers[i];
+      bestWeight = w;
+    }
+  }
+  return best;
+}
+
 export function preferHdServer(servers: LiveStreamServer[]): LiveStreamServer {
   return servers.find((s) => /hd/i.test(s.name)) ?? servers[0];
 }

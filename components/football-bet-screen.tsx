@@ -636,19 +636,42 @@ const MatchMarkets = memo(function MatchMarkets({
               last
             >
               <View style={styles.csWrap}>
-                {match.correctScores.map((item) => (
-                  <OddsChip
-                    key={item.key}
-                    label={item.key}
-                    odds={formatDecimalOdds(item.odds)}
-                    selected={
-                      selectedKey ===
-                      makeSelectKey(match.id, "correct_score", item.key)
-                    }
-                    onPress={() => onPick(match.id, "correct_score", item.key)}
-                    compact
-                  />
-                ))}
+                {Array.from(
+                  { length: Math.ceil(match.correctScores.length / 4) },
+                  (_, rowIndex) => {
+                    const row = match.correctScores.slice(
+                      rowIndex * 4,
+                      rowIndex * 4 + 4,
+                    );
+                    return (
+                      <View key={rowIndex} style={styles.csRow}>
+                        {row.map((item) => (
+                          <OddsChip
+                            key={item.key}
+                            label={item.key}
+                            odds={formatDecimalOdds(item.odds)}
+                            selected={
+                              selectedKey ===
+                              makeSelectKey(match.id, "correct_score", item.key)
+                            }
+                            onPress={() =>
+                              onPick(match.id, "correct_score", item.key)
+                            }
+                            compact
+                          />
+                        ))}
+                        {row.length < 4
+                          ? Array.from(
+                              { length: 4 - row.length },
+                              (_, pad) => (
+                                <View key={`pad-${pad}`} style={styles.csCellPad} />
+                              ),
+                            )
+                          : null}
+                      </View>
+                    );
+                  },
+                )}
               </View>
             </MarketSection>
           )}
@@ -1730,9 +1753,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   csWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: 6,
+  },
+  csRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  csCellPad: {
+    flex: 1,
+    minWidth: 0,
   },
   chip: {
     flex: 1,
@@ -1749,9 +1778,8 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   chipCompact: {
-    flexGrow: 0,
-    flexBasis: "22%",
-    minWidth: "22%",
+    flex: 1,
+    minWidth: 0,
     paddingVertical: 5,
   },
   chipPressed: {

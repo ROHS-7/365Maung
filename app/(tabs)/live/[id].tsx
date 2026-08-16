@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,19 +6,18 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
-  Image,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView, type VideoSource } from 'expo-video';
 import {
   BorderRadius,
   Colors,
   FontSize,
   FontWeight,
-  Shadow,
   Spacing,
 } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
@@ -26,9 +25,15 @@ import { useHideParentTabBar } from '@/hooks/use-hide-parent-tab-bar';
 import {
   formatLiveMatchTime,
   getCachedLiveMatch,
-  preferHdServer,
+  preferPlayableServer,
 } from '@/services/live-matches';
 import type { LiveStreamServer } from '@/types/live-matches';
+
+const LIVE_BUFFER_OPTIONS = {
+  preferredForwardBufferDuration: 8,
+  minBufferForPlayback: 1.5,
+  prioritizeTimeOverSizeThreshold: true,
+};
 
 function toVideoSource(server: LiveStreamServer): VideoSource {
   // Browsers cannot set arbitrary Referer headers on media requests.
@@ -56,22 +61,44 @@ export default function LivePlayerScreen() {
   const match = id ? getCachedLiveMatch(id) : undefined;
   const servers = match?.servers ?? [];
   const [activeUrl, setActiveUrl] = useState(() =>
-    servers.length ? preferHdServer(servers).stream_url : '',
+    servers.length ? preferPlayableServer(servers).stream_url : '',
   );
 
   const activeServer =
     servers.find((s) => s.stream_url === activeUrl) ??
-    (servers.length ? preferHdServer(servers) : null);
+    (servers.length ? preferPlayableServer(servers) : null);
 
-  const player = useVideoPlayer(null, (p) => {
+  const initialSource = useMemo(
+    () => (activeServer ? toVideoSource(activeServer) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seed player once; later switches use replace()
+    [],
+  );
+
+  const player = useVideoPlayer(initialSource, (p) => {
     p.staysActiveInBackground = false;
+    p.bufferOptions = { ...LIVE_BUFFER_OPTIONS };
+    if (initialSource) p.play();
   });
+
+  const lastUrlRef = useRef(activeServer?.stream_url ?? '');
 
   useEffect(() => {
     if (!activeServer) return;
+    if (lastUrlRef.current === activeServer.stream_url) return;
+    lastUrlRef.current = activeServer.stream_url;
     player.replace(toVideoSource(activeServer));
+    player.bufferOptions = { ...LIVE_BUFFER_OPTIONS };
     player.play();
-  }, [activeServer?.stream_url, player]);
+  }, [activeServer, player]);
+
+  useFocusEffect(
+    useCallback(() => {
+      player.play();
+      return () => {
+        player.pause();
+      };
+    }, [player]),
+  );
 
   if (!match || !activeServer) {
     return (
@@ -110,6 +137,7 @@ export default function LivePlayerScreen() {
           style={p.video}
           player={player}
           allowsFullscreen
+          allowsPictureInPicture={false}
           nativeControls
           contentFit="contain"
           {...(Platform.OS === 'web'
@@ -145,14 +173,34 @@ export default function LivePlayerScreen() {
 
           <View style={p.teamsRow}>
             <View style={p.teamCol}>
-              <Image source={{ uri: match.home_team_logo }} style={p.teamLogo} />
+              {match.home_team_logo ? (
+                <Image
+                  source={{ uri: match.home_team_logo }}
+                  style={p.teamLogo}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={0}
+                />
+              ) : (
+                <View style={p.teamLogo} />
+              )}
               <Text style={p.teamName} numberOfLines={2}>
                 {match.home_team_name}
               </Text>
             </View>
             <Text style={p.vs}>VS</Text>
             <View style={p.teamCol}>
-              <Image source={{ uri: match.away_team_logo }} style={p.teamLogo} />
+              {match.away_team_logo ? (
+                <Image
+                  source={{ uri: match.away_team_logo }}
+                  style={p.teamLogo}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={0}
+                />
+              ) : (
+                <View style={p.teamLogo} />
+              )}
               <Text style={p.teamName} numberOfLines={2}>
                 {match.away_team_name}
               </Text>
@@ -226,7 +274,6 @@ const p = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     gap: Spacing.sm,
-    ...Shadow.sm,
   },
   metaRow: {
     flexDirection: 'row',

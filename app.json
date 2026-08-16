@@ -8,20 +8,37 @@
     "scheme": "burma90",
     "userInterfaceStyle": "light",
     "backgroundColor": "#ffffff",
+    "androidNavigationBar": {
+      "backgroundColor": "#ffffff",
+      "barStyle": "dark-content"
+    },
+    "androidStatusBar": {
+      "backgroundColor": "#ffffff",
+      "barStyle": "dark-content"
+    },
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ffffff",
+      "dark": {
+        "image": "./assets/images/splash-icon.png",
+        "backgroundColor": "#ffffff"
+      }
     },
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "icon": "./assets/images/burma90-app-icon.png",
       "backgroundColor": "#ffffff",
+      "userInterfaceStyle": "light",
       "splash": {
         "image": "./assets/images/splash-icon.png",
         "resizeMode": "contain",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffffff",
+        "dark": {
+          "image": "./assets/images/splash-icon.png",
+          "backgroundColor": "#ffffff"
+        }
       }
     },
     "android": {
@@ -37,10 +54,15 @@
       "splash": {
         "image": "./assets/images/splash-icon.png",
         "resizeMode": "contain",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffffff",
+        "dark": {
+          "image": "./assets/images/splash-icon.png",
+          "backgroundColor": "#ffffff"
+        }
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "userInterfaceStyle": "light"
     },
     "web": {
       "output": "static",
@@ -56,12 +78,33 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
+            "image": "./assets/images/splash-icon.png",
             "backgroundColor": "#ffffff"
+          },
+          "android": {
+            "backgroundColor": "#ffffff",
+            "image": "./assets/images/splash-icon.png",
+            "imageWidth": 200,
+            "resizeMode": "contain",
+            "dark": {
+              "image": "./assets/images/splash-icon.png",
+              "backgroundColor": "#ffffff"
+            }
+          },
+          "ios": {
+            "backgroundColor": "#ffffff",
+            "image": "./assets/images/splash-icon.png",
+            "resizeMode": "contain",
+            "dark": {
+              "image": "./assets/images/splash-icon.png",
+              "backgroundColor": "#ffffff"
+            }
           }
         }
       ],
       "expo-secure-store",
       "expo-video",
+      "expo-system-ui",
       [
         "expo-build-properties",
         {
@@ -77,7 +120,8 @@
             "extraProguardRules": "-keep class com.swmansion.reanimated.** { *; }\n-keep class com.facebook.react.turbomodule.** { *; }\n-keep class com.swmansion.gesturehandler.** { *; }\n-keep class expo.modules.** { *; }"
           }
         }
-      ]
+      ],
+      "./plugins/with-light-splash.js"
     ],
     "experiments": {
       "typedRoutes": true,
