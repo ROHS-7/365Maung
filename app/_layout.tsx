@@ -2,14 +2,16 @@ import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
-import { Appearance, View } from 'react-native';
+import { Appearance, Platform, View } from 'react-native';
 import 'react-native-reanimated';
 
 import { LanguageProvider } from '@/contexts/language';
 import { AuthProvider } from '@/contexts/auth';
 import { AppConfigProvider } from '@/contexts/app-config';
 
-Appearance.setColorScheme('light');
+if (Platform.OS !== 'web' && typeof Appearance.setColorScheme === 'function') {
+  Appearance.setColorScheme('light');
+}
 void SystemUI.setBackgroundColorAsync('#ffffff');
 
 const LightTheme = {
