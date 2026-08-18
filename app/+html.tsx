@@ -15,7 +15,11 @@ export default function Root({ children }: PropsWithChildren) {
         <style
           dangerouslySetInnerHTML={{
             __html:
-              'html,body{background:#ffffff;color:#1A2E22;color-scheme:light!important}',
+              'html,body{background:#ffffff;color:#1A2E22;color-scheme:light!important}' +
+              '.burma-announce-track{flex:1;min-width:0;overflow:hidden;height:18px}' +
+              '@keyframes burma-announce-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}' +
+              '.burma-announce-row{display:flex;flex-direction:row;flex-wrap:nowrap;width:max-content;animation-name:burma-announce-marquee;animation-timing-function:linear;animation-iteration-count:infinite}' +
+              '.burma-announce-text{flex-shrink:0;white-space:nowrap;padding-right:48px;font-size:14px;font-weight:500;line-height:18px;color:#1A2E22}',
           }}
         />
       </head>

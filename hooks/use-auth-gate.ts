@@ -8,6 +8,8 @@ const AUTH_ROUTES = new Set([
   'hdp-fh',
   'esports',
   'esports-score',
+  'fight',
+  'fight-score',
   'betlist',
   'deposit',
   'withdraw',

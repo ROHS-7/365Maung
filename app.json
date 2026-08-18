@@ -19,10 +19,10 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff",
+      "backgroundColor": "#27A060",
       "dark": {
         "image": "./assets/images/splash-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#27A060"
       }
     },
     "newArchEnabled": true,
@@ -34,10 +34,10 @@
       "splash": {
         "image": "./assets/images/splash-icon.png",
         "resizeMode": "contain",
-        "backgroundColor": "#ffffff",
+        "backgroundColor": "#27A060",
         "dark": {
           "image": "./assets/images/splash-icon.png",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#27A060"
         }
       }
     },
@@ -47,17 +47,18 @@
       "backgroundColor": "#ffffff",
       "icon": "./assets/images/android-icon-foreground.png",
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#002313",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-foreground.png"
       },
       "splash": {
         "image": "./assets/images/splash-icon.png",
         "resizeMode": "contain",
-        "backgroundColor": "#ffffff",
+        "backgroundColor": "#27A060",
         "dark": {
           "image": "./assets/images/splash-icon.png",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#27A060"
         }
       },
       "edgeToEdgeEnabled": true,
@@ -76,28 +77,28 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#27A060",
           "dark": {
             "image": "./assets/images/splash-icon.png",
-            "backgroundColor": "#ffffff"
+            "backgroundColor": "#27A060"
           },
           "android": {
-            "backgroundColor": "#ffffff",
+            "backgroundColor": "#27A060",
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 200,
             "resizeMode": "contain",
             "dark": {
               "image": "./assets/images/splash-icon.png",
-              "backgroundColor": "#ffffff"
+              "backgroundColor": "#27A060"
             }
           },
           "ios": {
-            "backgroundColor": "#ffffff",
+            "backgroundColor": "#27A060",
             "image": "./assets/images/splash-icon.png",
             "resizeMode": "contain",
             "dark": {
               "image": "./assets/images/splash-icon.png",
-              "backgroundColor": "#ffffff"
+              "backgroundColor": "#27A060"
             }
           }
         }

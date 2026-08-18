@@ -8,6 +8,7 @@ const MOCK_APPLICATION: Application = {
   football_rules: "",
   interface_content: "Minimum bet 500 Kyat, Maximum 20,000 Kyat ✦ ",
   is_esports_open: true,
+  is_fight_open: true,
   updated_at: new Date().toISOString(),
 };
 

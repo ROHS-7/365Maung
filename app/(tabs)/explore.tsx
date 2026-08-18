@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -8,7 +8,8 @@ import type { Lang } from '@/constants/i18n';
 import { useAuth } from '@/contexts/auth';
 import { useAuthGate } from '@/hooks/use-auth-gate';
 import { LoginPromptCard } from '@/components/login-prompt-card';
-import { formatBalance } from '@/utils/format-balance';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { formatBalance, formatCashOut } from '@/utils/format-balance';
 import { useCallback, useState } from 'react';
 
 const ROW_ROUTES: Record<string, string> = {
@@ -25,6 +26,8 @@ export default function AccountScreen() {
   const { isAuthenticated, user, logout, refreshUser, isRefreshing } = useAuth();
   const { navigate } = useAuthGate();
   const [refreshing, setRefreshing] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleRefresh = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -45,18 +48,15 @@ export default function AccountScreen() {
     { id: 'rule',     label: tr.accountRule,        sublabel: tr.accountRuleSub,      icon: 'book-outline',      color: '#1ABC9C' },
   ] as const;
 
-  function handleLogout() {
-    Alert.alert(tr.logoutConfirmTitle, tr.logoutConfirmMsg, [
-      { text: tr.logoutCancel, style: 'cancel' },
-      {
-        text: tr.logoutConfirm,
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/');
-        },
-      },
-    ]);
+  async function confirmLogout() {
+    setLoggingOut(true);
+    try {
+      await logout();
+      setLogoutOpen(false);
+      router.replace('/');
+    } finally {
+      setLoggingOut(false);
+    }
   }
 
   return (
@@ -89,7 +89,7 @@ export default function AccountScreen() {
               <View style={s.bannerChip}>
                 <Ionicons name="cash-outline" size={14} color="rgba(255,255,255,0.7)" />
                 <Text style={s.bannerChipLabel}>{tr.profileCashOut}</Text>
-                <Text style={s.bannerChipValue}>{user.cash_out ?? '—'}</Text>
+                <Text style={s.bannerChipValue}>{formatCashOut(user.cash_out, lang, tr.currencyUnit)}</Text>
               </View>
             </View>
           </View>
@@ -143,8 +143,8 @@ export default function AccountScreen() {
         </View>
 
         {/* Language selector */}
-        <View style={s.section}>
-          <View style={s.row}>
+        <View style={[s.section, s.langSection]}>
+          <View style={[s.row, s.langRow]}>
             <View style={[s.rowIcon, { backgroundColor: Colors.brand.greenButton + '18' }]}>
               <Ionicons name="language-outline" size={20} color={Colors.brand.greenButton} />
             </View>
@@ -171,12 +171,28 @@ export default function AccountScreen() {
 
         {/* Logout */}
         {isAuthenticated && (
-          <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+          <TouchableOpacity style={s.logoutBtn} onPress={() => setLogoutOpen(true)} activeOpacity={0.8}>
             <Ionicons name="log-out-outline" size={20} color="#fff" />
             <Text style={s.logoutText}>{tr.accountLogout}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      <ConfirmDialog
+        visible={logoutOpen}
+        title={tr.logoutConfirmTitle}
+        message={tr.logoutConfirmMsg}
+        cancelLabel={tr.logoutCancel}
+        confirmLabel={tr.logoutConfirm}
+        destructive
+        busy={loggingOut}
+        onCancel={() => {
+          if (!loggingOut) setLogoutOpen(false);
+        }}
+        onConfirm={() => {
+          void confirmLogout();
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -259,22 +275,73 @@ const s = StyleSheet.create({
     backgroundColor: '#fff', margin: Spacing.md, marginBottom: 0,
     borderRadius: BorderRadius.xl, ...Shadow.sm,
   },
+  langSection: Platform.select({
+    web: { overflow: 'visible' },
+    default: {},
+  }),
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: 14 },
+  langRow: Platform.select({
+    web: { alignItems: 'center', paddingVertical: 18, minHeight: 72 },
+    default: {},
+  }),
   rowIcon: { width: 40, height: 40, borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
-  rowText: { flex: 1 },
-  rowLabel: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, color: Colors.light.text },
-  rowSublabel: { fontSize: FontSize.xs, color: Colors.light.textSecondary, marginTop: 1 },
+  rowText: { flex: 1, minWidth: 0, marginRight: 8 },
+  rowLabel: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.semibold,
+    color: Colors.light.text,
+    ...Platform.select({ web: { lineHeight: 24 }, default: {} }),
+  },
+  rowSublabel: {
+    fontSize: FontSize.xs,
+    color: Colors.light.textSecondary,
+    marginTop: 1,
+    ...Platform.select({
+      web: { lineHeight: 18, marginTop: 4, paddingBottom: 2 },
+      default: {},
+    }),
+  },
   separator: { height: 1, backgroundColor: Colors.light.border, marginLeft: 68 },
 
   // Language picker
-  langPicker: { flexDirection: 'row', gap: 6 },
+  langPicker: {
+    flexDirection: 'row',
+    gap: 6,
+    flexShrink: 0,
+    alignItems: 'center',
+  },
   langBtn: {
-    paddingHorizontal: 12, paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: BorderRadius.full,
-    borderWidth: 1.5, borderColor: Colors.light.border,
+    borderWidth: 1.5,
+    borderColor: Colors.light.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      web: {
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        minHeight: 40,
+        overflow: 'visible',
+      },
+      default: {},
+    }),
   },
   langBtnActive: { backgroundColor: Colors.brand.greenButton, borderColor: Colors.brand.greenButton },
-  langBtnText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.light.textSecondary },
+  langBtnText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.light.textSecondary,
+    ...Platform.select({
+      web: {
+        lineHeight: 24,
+        paddingVertical: 2,
+        overflow: 'visible',
+      },
+      default: {},
+    }),
+  },
   langBtnTextActive: { color: '#fff' },
 
   logoutBtn: {

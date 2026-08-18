@@ -14,13 +14,13 @@ import { submitWithdrawRequest } from '@/services/coin-requests';
 import { fetchPaymentAccounts } from '@/services/payment-accounts';
 import type { PaymentAccount } from '@/types/api';
 import { formatBalance } from '@/utils/format-balance';
+import { showAlert } from '@/utils/app-alert';
 import { getBoundAccount } from '@/utils/payment-accounts';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -65,15 +65,15 @@ export default function WithdrawScreen() {
     if (!token || !bound) return;
     const parsed = parseInt(amount.replace(/,/g, ''), 10);
     if (!parsed || parsed < 1) {
-      Alert.alert('', tr.withdrawAmountRequired);
+      showAlert('', tr.withdrawAmountRequired);
       return;
     }
     if (user && parsed > user.balance) {
-      Alert.alert('', tr.withdrawInsufficient);
+      showAlert('', tr.withdrawInsufficient);
       return;
     }
 
-    Alert.alert(tr.withdrawConfirmTitle, tr.withdrawConfirmMsg, [
+    showAlert(tr.withdrawConfirmTitle, tr.withdrawConfirmMsg, [
       { text: tr.logoutCancel, style: 'cancel' },
       {
         text: tr.withdrawSubmit,
@@ -86,7 +86,7 @@ export default function WithdrawScreen() {
               note: note.trim() || undefined,
             });
             await refreshUser();
-            Alert.alert(tr.withdrawSuccessTitle, tr.withdrawSuccessMsg, [
+            showAlert(tr.withdrawSuccessTitle, tr.withdrawSuccessMsg, [
               {
                 text: tr.coinRequestViewRequests,
                 onPress: () => router.push('/(tabs)/coin-requests' as never),
@@ -96,7 +96,7 @@ export default function WithdrawScreen() {
             setAmount('');
             setNote('');
           } catch (e) {
-            Alert.alert('', e instanceof Error ? e.message : tr.withdrawFailed);
+            showAlert('', e instanceof Error ? e.message : tr.withdrawFailed);
           } finally {
             setSubmitting(false);
           }

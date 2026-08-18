@@ -6,7 +6,7 @@ import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/c
 import { useLanguage } from '@/contexts/language';
 import { useAuth } from '@/contexts/auth';
 import { useRequireAuth } from '@/hooks/use-require-auth';
-import { formatBalance } from '@/utils/format-balance';
+import { formatBalance, formatCashOut } from '@/utils/format-balance';
 import { useCallback, useState } from 'react';
 
 export default function ProfileScreen() { 
@@ -28,7 +28,7 @@ export default function ProfileScreen() {
 
   const infoRows = [
     { icon: 'call-outline', label: tr.profilePhone, value: user.phone ?? '—' },
-    { icon: 'cash-outline', label: tr.profileCashOut, value: user.cash_out_id ?? user.cash_out ?? '—' },
+    { icon: 'cash-outline', label: tr.profileCashOut, value: formatCashOut(user.cash_out, lang, tr.currencyUnit) },
     { icon: 'keypad-outline', label: tr.profileCashCode, value: user.cash_code ?? '—' },
   ] as const;
 

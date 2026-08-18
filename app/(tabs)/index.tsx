@@ -1,4 +1,5 @@
 import { ActivitySheet } from "@/components/activity-sheet";
+import { AnnouncementBanner } from "@/components/announcement-banner";
 import { LoginPromptCard } from "@/components/login-prompt-card";
 import {
   BorderRadius,
@@ -13,17 +14,16 @@ import { useAuth } from "@/contexts/auth";
 import { useLanguage } from "@/contexts/language";
 import { useAuthGate } from "@/hooks/use-auth-gate";
 import type { MeUser } from "@/types/api";
-import { formatBalance } from "@/utils/format-balance";
+import { formatBalance, formatCashOut } from "@/utils/format-balance";
 import { Ionicons } from "@expo/vector-icons";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Animated,
   Easing,
   Image,
   type ImageSourcePropType,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -40,7 +40,9 @@ const MENU_ICONS = {
   "mix-fh": require("@/assets/bet365 icons/First-Maung.png"),
   "hdp-fh": require("@/assets/bet365 icons/First-BODY.png"),
   esports: require("@/assets/bet365 icons/Esport.png"),
+  fight: require("@/assets/bet365 icons/Fight.png"),
   "esports-score": require("@/assets/bet365 icons/Esportresult.png"),
+  "fight-score": require("@/assets/bet365 icons/Fight-result.png"),
   sonema: require("@/assets/bet365 icons/Evenodd.png"),
   onextwo: require("@/assets/bet365 icons/1x2.png"),
   correctscore: require("@/assets/bet365 icons/Correct-score.png"),
@@ -67,61 +69,12 @@ const MENU_ROUTES: Record<string, string> = {
   onextwo: "/(tabs)/one-x-two",
   correctscore: "/(tabs)/correct-score",
   esports: "/(tabs)/esports",
+  fight: "/(tabs)/fight",
   "esports-score": "/(tabs)/esports-scores",
+  "fight-score": "/(tabs)/fight-scores",
   betlist: "/(tabs)/bets",
   news: "/(tabs)/news",
 };
-
-// ─── Ticker ───────────────────────────────────────────────────────────────────
-
-function AnnouncementBanner({ text }: { text: string }) {
-  const x = useRef(new Animated.Value(0)).current;
-  const [tw, setTw] = useState(0);
-  const loopText = `${text.trim()}   ✦   `;
-
-  useEffect(() => {
-    if (!tw) return;
-    x.setValue(0);
-    const anim = Animated.loop(
-      Animated.timing(x, {
-        toValue: -tw,
-        duration: Math.max(tw, 80) * 22,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    );
-    anim.start();
-    return () => {
-      anim.stop();
-    };
-  }, [tw, loopText, x]);
-
-  return (
-    <View style={s.announce}>
-      <View style={s.announceIcon}>
-        <Ionicons name="megaphone" size={14} color={Colors.brand.greenDark} />
-      </View>
-      <View style={s.announceTrack}>
-        <Animated.View style={[s.announceRow, { transform: [{ translateX: x }] }]}>
-          <View
-            collapsable={false}
-            onLayout={(e) => {
-              const w = e.nativeEvent.layout.width;
-              if (w > 0 && Math.abs(w - tw) > 1) setTw(w);
-            }}
-          >
-            <Text style={s.announceText} numberOfLines={1}>
-              {loopText}
-            </Text>
-          </View>
-          <Text style={s.announceText} numberOfLines={1}>
-            {loopText}
-          </Text>
-        </Animated.View>
-      </View>
-    </View>
-  );
-}
 
 // ─── Wallet card ──────────────────────────────────────────────────────────────
 
@@ -164,7 +117,7 @@ function WalletCard({
   const stats = [
     { key: "profilePhone" as const, value: user.phone ?? "—" },
     { key: "profileUserId" as const, value: user.username || "—" },
-    { key: "profileCashOut" as const, value: user.cash_out ?? "—" },
+    { key: "profileCashOut" as const, value: formatCashOut(user.cash_out, lang, tr.currencyUnit) },
   ];
 
   return (
@@ -308,17 +261,23 @@ const QUICK_PLAY: MenuEntry[] = [
     labelKey: "menuCorrectScore",
     icon: MENU_ICONS.correctscore,
   },
+  { id: "fight", labelKey: "menuFight", icon: MENU_ICONS.fight },
   {
     id: "esports-score",
     labelKey: "menuEsportsScore",
     icon: MENU_ICONS["esports-score"],
   },
   { id: "score", labelKey: "menuScore", icon: MENU_ICONS.score },
-  { id: "news", labelKey: "menuNews", icon: MENU_ICONS.news },
+  {
+    id: "fight-score",
+    labelKey: "menuFightScore",
+    icon: MENU_ICONS["fight-score"],
+  },
 ];
 
 const SERVICES: MenuEntry[] = [
   { id: "betlist", labelKey: "menuBetList", icon: MENU_ICONS.betlist },
+  { id: "news", labelKey: "menuNews", icon: MENU_ICONS.news },
   { id: "deposit", labelKey: "menuDeposit", icon: MENU_ICONS.deposit },
   { id: "withdraw", labelKey: "menuWithdraw", icon: MENU_ICONS.withdraw },
   { id: "rule", labelKey: "menuRule", icon: MENU_ICONS.rule },
@@ -339,6 +298,9 @@ export default function HomeScreen() {
 
   const announcement =
     application?.interface_content?.trim() || tr.announcement;
+  console.log("[announcement]", announcement, {
+    interface_content: application?.interface_content ?? null,
+  });
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -383,9 +345,9 @@ export default function HomeScreen() {
               }
             >
               <Ionicons
-                name="person"
+                name="person-outline"
                 size={18}
-                color={Colors.brand.greenDark}
+                color="#fff"
               />
             </TouchableOpacity>
           </View>
@@ -423,7 +385,11 @@ export default function HomeScreen() {
 
           <Text style={s.sectionTitle}>{tr.homeQuickPlay}</Text>
           <View style={s.quickGrid}>
-            {QUICK_PLAY.map((item) => (
+            {QUICK_PLAY.filter(
+              (item) =>
+                (item.id !== "fight" && item.id !== "fight-score") ||
+                application?.is_fight_open !== false,
+            ).map((item) => (
               <QuickTile key={item.id} item={item} />
             ))}
           </View>
@@ -454,12 +420,13 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    // paddingLeft: Spacing.xs,
-    paddingRight: Spacing.md,
-    paddingBottom: 6,
+    paddingHorizontal: Spacing.md,
+    paddingTop: 8,
+    paddingBottom: 10,
+    minHeight: 58,
   },
-  headerLogo: { justifyContent: "center", marginLeft: 0 },
-  headerLogoImg: { width: 118, height: 40 },
+  headerLogo: { justifyContent: "center" },
+  headerLogoImg: { width: 64, height: 50 },
   headerActions: { flexDirection: "row", gap: 6 },
   headerIconBtn: {
     width: 34,
@@ -622,52 +589,6 @@ const s = StyleSheet.create({
     fontSize: 10,
     fontWeight: FontWeight.bold,
     color: "#fff",
-  },
-  announce: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: BorderRadius.md,
-    paddingVertical: 8,
-    paddingHorizontal: Spacing.sm,
-    marginBottom: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    ...Shadow.sm,
-  },
-  announceIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.brand.gold + "44",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: Spacing.sm,
-  },
-  announceTrack: {
-    flex: 1,
-    overflow: "hidden",
-    height: 18,
-    position: "relative",
-  },
-  announceRow: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    height: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "nowrap",
-  },
-  announceText: {
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
-    color: Colors.light.text,
-    flexShrink: 0,
-    ...Platform.select({
-      web: { whiteSpace: "nowrap" as const },
-      default: {},
-    }),
   },
   sectionTitle: {
     fontSize: FontSize.md,

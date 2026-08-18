@@ -21,12 +21,12 @@ import {
 } from '@/services/payment-accounts';
 import type { PaymentAccount } from '@/types/api';
 import { maskAccountNumber } from '@/utils/payment-accounts';
+import { showAlert } from '@/utils/app-alert';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -113,7 +113,7 @@ export default function PaymentAccountsScreen() {
   }
 
   function handleDelete(account: PaymentAccount) {
-    Alert.alert(tr.paymentAccountDeleteTitle, tr.paymentAccountDeleteMsg, [
+    showAlert(tr.paymentAccountDeleteTitle, tr.paymentAccountDeleteMsg, [
       { text: tr.logoutCancel, style: 'cancel' },
       {
         text: tr.paymentAccountDeleteConfirm,
@@ -124,7 +124,7 @@ export default function PaymentAccountsScreen() {
             await deletePaymentAccount(token, account.id);
             await load();
           } catch (e) {
-            Alert.alert('', e instanceof Error ? e.message : tr.paymentAccountDeleteFailed);
+            showAlert('', e instanceof Error ? e.message : tr.paymentAccountDeleteFailed);
           }
         },
       },

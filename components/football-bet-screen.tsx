@@ -10,10 +10,12 @@ import {
 import { useAuth } from "@/contexts/auth";
 import { useLanguage } from "@/contexts/language";
 import { useEsportsMatches } from "@/hooks/use-esports-matches";
+import { useFightMatches } from "@/hooks/use-fight-matches";
 import { useFootballMatches } from "@/hooks/use-football-matches";
 import { useHideParentTabBar } from "@/hooks/use-hide-parent-tab-bar";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { submitBetSlip } from "@/services/football";
+import { showAlert } from "@/utils/app-alert";
 import type { FootballMarket } from "@/types/football";
 import {
   ALL_MARKETS,
@@ -26,6 +28,7 @@ import {
   pickLabel,
   hdpMarketFromList,
   ouMarketFromList,
+  toWinMarketFromList,
   uiMatchHasValidMarket,
   type UiLeagueData,
   type UiMatchData,
@@ -44,7 +47,6 @@ import {
   type ReactNode,
 } from "react";
 import {
-  Alert,
   Animated,
   InteractionManager,
   KeyboardAvoidingView,
@@ -84,8 +86,12 @@ type Props = {
   hint: string;
   minErr: string;
   /** Defaults to football matches API. */
-  source?: "football" | "esports";
+  source?: "football" | "esports" | "fight";
+  /** When false, odds are shown but picks / slip / submit are disabled. */
+  allowBetting?: boolean;
 };
+
+type BetSource = NonNullable<Props["source"]>;
 
 function LeagueFilterModal({
   visible,
@@ -233,17 +239,18 @@ const OddsChip = memo(function OddsChip({
   label: string;
   odds?: string;
   selected: boolean;
-  onPress: () => void;
+  onPress?: () => void;
   compact?: boolean;
 }) {
   return (
     <Pressable
       onPress={onPress}
+      disabled={!onPress}
       style={({ pressed }) => [
         styles.chip,
         compact && styles.chipCompact,
         selected && styles.chipSelected,
-        pressed && !selected && styles.chipPressed,
+        pressed && !!onPress && !selected && styles.chipPressed,
       ]}
     >
       {odds ? (
@@ -360,6 +367,7 @@ const MatchMarkets = memo(function MatchMarkets({
   flash,
   exiting,
   onExited,
+  interactive = true,
 }: {
   match: UiMatchData;
   markets: FootballMarket[];
@@ -368,6 +376,7 @@ const MatchMarkets = memo(function MatchMarkets({
   flash?: boolean;
   exiting?: boolean;
   onExited?: (matchId: string) => void;
+  interactive?: boolean;
 }) {
   const { tr } = useLanguage();
   // Always home left / away right (match header order). Odds line stays on giving team.
@@ -378,6 +387,7 @@ const MatchMarkets = memo(function MatchMarkets({
   const hideMarketTitle = true;
   const hdpMarket = hdpMarketFromList(markets);
   const ouMarket = ouMarketFromList(markets);
+  const toWinMarket = toWinMarketFromList(markets);
   const flashAnim = useRef(new Animated.Value(0)).current;
   const exitOpacity = useRef(new Animated.Value(1)).current;
   const exitTranslate = useRef(new Animated.Value(0)).current;
@@ -602,8 +612,8 @@ const MatchMarkets = memo(function MatchMarkets({
           </MarketSection>
         )}
 
-        {markets.includes("to_win") &&
-          uiMatchHasValidMarket(match, "to_win") &&
+        {toWinMarket &&
+          uiMatchHasValidMarket(match, toWinMarket) &&
           match.toWin && (
           <MarketSection title={tr.esportsToWin} hideTitle={hideMarketTitle}>
             <View style={styles.chipRow}>
@@ -611,17 +621,25 @@ const MatchMarkets = memo(function MatchMarkets({
                 label={match.home}
                 odds={formatDecimalOdds(match.toWin.home)}
                 selected={
-                  selectedKey === makeSelectKey(match.id, "to_win", "home")
+                  selectedKey === makeSelectKey(match.id, toWinMarket, "home")
                 }
-                onPress={() => onPick(match.id, "to_win", "home")}
+                onPress={
+                  interactive
+                    ? () => onPick(match.id, toWinMarket, "home")
+                    : undefined
+                }
               />
               <OddsChip
                 label={match.away}
                 odds={formatDecimalOdds(match.toWin.away)}
                 selected={
-                  selectedKey === makeSelectKey(match.id, "to_win", "away")
+                  selectedKey === makeSelectKey(match.id, toWinMarket, "away")
                 }
-                onPress={() => onPick(match.id, "to_win", "away")}
+                onPress={
+                  interactive
+                    ? () => onPick(match.id, toWinMarket, "away")
+                    : undefined
+                }
               />
             </View>
           </MarketSection>
@@ -712,7 +730,8 @@ type LeagueBlockProps = {
   markets: FootballMarket[];
   selectedByMatch: Record<string, string>;
   onPick: (matchId: string, market: FootballMarket, pick: string) => void;
-  source?: "football" | "esports";
+  source?: BetSource;
+  interactive?: boolean;
   flashIds: Set<string>;
   exitingIds: Set<string>;
   onMatchExited: (matchId: string) => void;
@@ -734,6 +753,7 @@ function areLeagueBlocksEqual(
     prev.markets !== next.markets ||
     prev.onPick !== next.onPick ||
     prev.source !== next.source ||
+    prev.interactive !== next.interactive ||
     prev.onMatchExited !== next.onMatchExited
   ) {
     return false;
@@ -768,17 +788,24 @@ const LeagueBlock = memo(function LeagueBlock({
   selectedByMatch,
   onPick,
   source = "football",
+  interactive = true,
   flashIds,
   exitingIds,
   onMatchExited,
 }: LeagueBlockProps) {
+  const leagueIcon =
+    source === "esports"
+      ? "game-controller"
+      : source === "fight"
+        ? "flash"
+        : "football";
   return (
     <View style={styles.leagueBlock}>
       <View style={styles.leagueHeader}>
         <View style={styles.leagueAccent} />
         <View style={styles.leagueIcon}>
           <Ionicons
-            name={source === "esports" ? "game-controller" : "football"}
+            name={leagueIcon}
             size={11}
             color={Colors.brand.greenButton}
           />
@@ -798,6 +825,7 @@ const LeagueBlock = memo(function LeagueBlock({
             markets={markets}
             selectedKey={selectedByMatch[match.id] ?? null}
             onPick={onPick}
+            interactive={interactive}
             flash={flashIds.has(match.id)}
             exiting={exitingIds.has(match.id)}
             onExited={onMatchExited}
@@ -817,6 +845,7 @@ export function FootballBetScreen({
   hint,
   minErr,
   source = "football",
+  allowBetting = true,
 }: Props) {
   useRequireAuth();
   useHideParentTabBar();
@@ -830,8 +859,11 @@ export function FootballBetScreen({
   const esports = useEsportsMatches({
     enabled: source === "esports" && isFocused,
   });
+  const fight = useFightMatches({
+    enabled: source === "fight" && isFocused,
+  });
   const { leagues, loading, error, reload } =
-    source === "esports" ? esports : football;
+    source === "esports" ? esports : source === "fight" ? fight : football;
   const reloadRef = useRef(reload);
   reloadRef.current = reload;
   const matchMap = useMemo(() => buildMatchMap(leagues), [leagues]);
@@ -917,22 +949,25 @@ export function FootballBetScreen({
     useCallback(() => {
       markDueMatches();
       const tickId = setInterval(markDueMatches, 1000);
-      const pollId = setInterval(() => {
-        if (interactingRef.current) {
-          pendingPollRef.current = true;
-          return;
-        }
-        void reloadRef.current();
-      }, 5000);
+      const pollId =
+        source === "fight"
+          ? null
+          : setInterval(() => {
+              if (interactingRef.current) {
+                pendingPollRef.current = true;
+                return;
+              }
+              void reloadRef.current();
+            }, 5000);
       return () => {
         clearInterval(tickId);
-        clearInterval(pollId);
+        if (pollId) clearInterval(pollId);
         if (interactTimerRef.current) {
           clearTimeout(interactTimerRef.current);
           interactTimerRef.current = null;
         }
       };
-    }, [markDueMatches]),
+    }, [markDueMatches, source]),
   );
 
   const beginInteract = useCallback(() => {
@@ -1107,6 +1142,7 @@ export function FootballBetScreen({
 
   const handlePick = useCallback(
     (matchId: string, market: FootballMarket, pick: string) => {
+      if (!allowBetting) return;
       const key = makeSelectKey(matchId, market, pick);
       setSelections((prev) => {
         if (prev[key]) {
@@ -1127,7 +1163,7 @@ export function FootballBetScreen({
         return next;
       });
     },
-    [mode],
+    [mode, allowBetting],
   );
 
   const handleRemove = useCallback((key: string) => {
@@ -1144,13 +1180,14 @@ export function FootballBetScreen({
   }, [stakePlaceholder]);
 
   async function handleOK() {
+    if (!allowBetting) return;
     if (!canBet || !token) {
-      if (!canBet) Alert.alert("", minErr);
+      if (!canBet) showAlert("", minErr);
       return;
     }
     const total = parseInt(stake.replace(/,/g, ""), 10);
     if (!total || total < 1) {
-      Alert.alert("", tr.footballAmountRequired);
+      showAlert("", tr.footballAmountRequired);
       return;
     }
     setSubmitting(true);
@@ -1159,7 +1196,7 @@ export function FootballBetScreen({
       await submitBetSlip(token, payload);
       await refreshUser();
       setSelections({});
-      Alert.alert(tr.footballBetSuccessTitle, tr.footballBetSuccessMsg, [
+      showAlert(tr.footballBetSuccessTitle, tr.footballBetSuccessMsg, [
         {
           text: tr.footballViewBets,
           onPress: () => router.push("/(tabs)/bets" as never),
@@ -1167,7 +1204,7 @@ export function FootballBetScreen({
         { text: tr.ok },
       ]);
     } catch (e) {
-      Alert.alert("", e instanceof Error ? e.message : tr.footballBetFailed);
+      showAlert("", e instanceof Error ? e.message : tr.footballBetFailed);
     } finally {
       setSubmitting(false);
     }
@@ -1175,7 +1212,7 @@ export function FootballBetScreen({
 
   const safeBottom = Math.max(insets.bottom, 8);
   // Stable pad so opening the slip does not relayout the match list.
-  const scrollBottomPad = safeBottom + 320;
+  const scrollBottomPad = allowBetting ? safeBottom + 320 : safeBottom + 24;
 
   return (
     <KeyboardAvoidingView
@@ -1193,9 +1230,13 @@ export function FootballBetScreen({
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{title}</Text>
-          <View style={styles.pickBadge}>
-            <Text style={styles.pickBadgeText}>{count}</Text>
-          </View>
+          {allowBetting ? (
+            <View style={styles.pickBadge}>
+              <Text style={styles.pickBadgeText}>{count}</Text>
+            </View>
+          ) : (
+            <View style={styles.backBtn} />
+          )}
         </View>
 
         {count === 0 && (
@@ -1315,6 +1356,7 @@ export function FootballBetScreen({
                 selectedByMatch={selectedByMatch}
                 onPick={handlePick}
                 source={source}
+                interactive={allowBetting}
                 flashIds={flashIds}
                 exitingIds={exitingIds}
                 onMatchExited={handleMatchExited}
@@ -1323,21 +1365,23 @@ export function FootballBetScreen({
           )}
         </ScrollView>
 
-        <BetSlipDrawer
-          count={count}
-          canBet={canBet && !submitting}
-          stake={stake}
-          onStakeChange={setStake}
-          slipItems={slipItems}
-          onRemove={handleRemove}
-          onReset={handleReset}
-          onPlaceBet={handleOK}
-          safeBottom={safeBottom}
-          tabBarOffset={0}
-          copy={slipCopy}
-          minPicks={minPicks}
-          stakePlaceholder={stakePlaceholder}
-        />
+               {allowBetting ? (
+          <BetSlipDrawer
+            count={count}
+            canBet={canBet && !submitting}
+            stake={stake}
+            onStakeChange={setStake}
+            slipItems={slipItems}
+            onRemove={handleRemove}
+            onReset={handleReset}
+            onPlaceBet={handleOK}
+            safeBottom={safeBottom}
+            tabBarOffset={0}
+            copy={slipCopy}
+            minPicks={minPicks}
+            stakePlaceholder={stakePlaceholder}
+          />
+        ) : null}
       </SafeAreaView>
     </KeyboardAvoidingView>
   );

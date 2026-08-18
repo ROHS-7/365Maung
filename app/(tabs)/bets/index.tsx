@@ -8,6 +8,7 @@ import {
   Pressable,
   ActivityIndicator,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,7 +42,8 @@ type BetTypeFilter =
   | '1x2'
   | 'oe'
   | 'cs'
-  | 'esports';
+  | 'esports'
+  | 'fight';
 
 function matchesBetTypeFilter(bet: Bet, filter: BetTypeFilter): boolean {
   if (filter === 'all') return true;
@@ -59,6 +61,7 @@ function matchesBetTypeFilter(bet: Bet, filter: BetTypeFilter): boolean {
   if (filter === 'oe') return bet.betType === 'O/E';
   if (filter === 'cs') return bet.betType === 'CS';
   if (filter === 'esports') return bet.betType === 'To Win';
+  if (filter === 'fight') return bet.betType === 'Fight';
   return true;
 }
 
@@ -324,6 +327,7 @@ export default function BetsScreen() {
   const { isAuthenticated, token } = useAuth();
   const [tab, setTab] = useState<BetTab>('unfinished');
   const [betType, setBetType] = useState<BetTypeFilter>('all');
+  const [typeOpen, setTypeOpen] = useState(false);
   const [date, setDate] = useState(new Date());
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(false);
@@ -344,7 +348,9 @@ export default function BetsScreen() {
     { key: 'oe' as const, label: tr.menuSoneMa },
     { key: 'cs' as const, label: tr.menuCorrectScore },
     { key: 'esports' as const, label: tr.menuEsports },
+    { key: 'fight' as const, label: tr.menuFight },
   ];
+  const selectedType = typeFilters.find((f) => f.key === betType) ?? typeFilters[0];
 
   const loadBets = useCallback(async (opts?: { soft?: boolean }) => {
     if (!token) return;
@@ -428,25 +434,53 @@ export default function BetsScreen() {
 
       <View style={s.typeRow}>
         <Text style={s.typeLabel}>{tr.betListType}</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={s.typePills}
-          style={s.typeScroll}
+        <TouchableOpacity
+          style={s.dropdown}
+          onPress={() => setTypeOpen(true)}
+          activeOpacity={0.8}
         >
-          {typeFilters.map(({ key, label }) => (
-            <TouchableOpacity
-              key={key}
-              style={[s.pill, betType === key && s.pillActive]}
-              onPress={() => setBetType(key)}
-              activeOpacity={0.8}
-            >
-              <View style={[s.pillDot, betType === key && s.pillDotActive]} />
-              <Text style={[s.pillText, betType === key && s.pillTextActive]}>{label}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+          <Text style={s.dropdownValue} numberOfLines={1}>
+            {selectedType.label}
+          </Text>
+          <Ionicons name="chevron-down" size={16} color={GREEN} />
+        </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={typeOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTypeOpen(false)}
+      >
+        <View style={s.ddWrap}>
+          <Pressable style={s.ddBackdrop} onPress={() => setTypeOpen(false)} />
+          <View style={s.ddCard}>
+            <Text style={s.ddTitle}>{tr.betListType}</Text>
+            <ScrollView bounces={false}>
+              {typeFilters.map(({ key, label }) => {
+                const active = betType === key;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={[s.ddItem, active && s.ddItemActive]}
+                    onPress={() => {
+                      setBetType(key);
+                      setTypeOpen(false);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[s.pillDot, active && s.pillDotActive]} />
+                    <Text style={[s.ddItemText, active && s.ddItemTextActive]} numberOfLines={1}>
+                      {label}
+                    </Text>
+                    {active ? <Ionicons name="checkmark" size={18} color={GREEN} /> : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       <ScrollView
         style={s.scroll}
@@ -504,16 +538,81 @@ const s = StyleSheet.create({
   dateSide: { fontSize: FontSize.sm, color: '#6B7280' },
   dateCenterWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#E5E7EB', paddingVertical: 12 },
   dateCenterText: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: '#111827' },
-  typeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingLeft: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', gap: 10 },
+  typeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    gap: 10,
+  },
   typeLabel: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: '#374151' },
-  typeScroll: { flex: 1 },
-  typePills: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 14 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 12, borderRadius: BorderRadius.full, borderWidth: 1.5, borderColor: '#D1D5DB', backgroundColor: '#F9FAFB' },
-  pillActive: { borderColor: GREEN, backgroundColor: '#E8F5EE' },
+  dropdown: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 40,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1.5,
+    borderColor: GREEN,
+    backgroundColor: '#E8F5EE',
+    gap: 8,
+  },
+  dropdownValue: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: GREEN,
+    lineHeight: 22,
+  },
+  ddWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  ddBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(13, 59, 36, 0.45)',
+  },
+  ddCard: {
+    backgroundColor: '#fff',
+    borderRadius: BorderRadius.xl,
+    paddingVertical: 8,
+    ...Shadow.md,
+    maxHeight: '80%',
+  },
+  ddTitle: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.bold,
+    color: '#111827',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    lineHeight: 24,
+  },
+  ddItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 48,
+  },
+  ddItemActive: { backgroundColor: '#E8F5EE' },
+  ddItemText: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    color: '#374151',
+    fontWeight: FontWeight.medium,
+    lineHeight: 22,
+  },
+  ddItemTextActive: { color: GREEN, fontWeight: FontWeight.semibold },
   pillDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 2, borderColor: '#D1D5DB', backgroundColor: '#fff' },
   pillDotActive: { borderColor: GREEN, backgroundColor: GREEN },
-  pillText: { fontSize: FontSize.sm, color: '#6B7280', fontWeight: FontWeight.medium },
-  pillTextActive: { color: GREEN, fontWeight: FontWeight.semibold },
   scroll: { flex: 1 },
   scrollContent: { padding: 12, gap: 10, paddingBottom: 32 },
   loadWrap: { alignItems: 'center', paddingTop: 64, gap: 10 },

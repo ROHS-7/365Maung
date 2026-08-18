@@ -32,6 +32,8 @@ const translations = {
     menuHdpFh: "1H Body",
     menuEsports: "E-Sports",
     menuEsportsScore: "E-Sports Score",
+    menuFight: "Fight",
+    menuFightScore: "Fight Score",
     menuSoneMa: "Odd / Even",
     menu1x2: "1X2",
     menuCorrectScore: "Correct Score",
@@ -374,6 +376,11 @@ const translations = {
     esportsToWin: "To Win",
     esportsScoresTitle: "E-Sports Scores",
     esportsScoresEmpty: "No e-sports scores available",
+    fightTitle: "Fight",
+    fightHint: "To Win odds are shown below. Betting is not open yet.",
+    fightClosed: "Fight betting is not available",
+    fightScoresTitle: "Fight Scores",
+    fightScoresEmpty: "No fight scores available",
 
     // Language picker
     langEnglish: "English",
@@ -411,6 +418,8 @@ const translations = {
     menuHdpFh: "ပထမပိုင်း ဘော်ဒီ",
     menuEsports: "E-Sports",
     menuEsportsScore: "E-Sports ရလဒ်",
+    menuFight: "လက်ဝှေ့",
+    menuFightScore: "လက်ဝှေ့ ရလဒ်",
     menuSoneMa: "စုံ / မ",
     menu1x2: "1X2",
     menuCorrectScore: "ဂိုးမှန်",
@@ -756,6 +765,11 @@ const translations = {
     esportsToWin: "အနိုင်ယူ",
     esportsScoresTitle: "E-Sports ရလဒ်",
     esportsScoresEmpty: "E-Sports ရလဒ် မရှိသေးပါ",
+    fightTitle: "လက်ဝှေ့",
+    fightHint: "အနိုင်ယူ အလျော်အစား ပြသထားသည်။ လောင်းခြင်း မဖွင့်သေးပါ။",
+    fightClosed: "လက်ဝှေ့ လောင်းခြင်း မရသေးပါ",
+    fightScoresTitle: "လက်ဝှေ့ ရလဒ်",
+    fightScoresEmpty: "လက်ဝှေ့ ရလဒ် မရှိသေးပါ",
 
     // Language picker
     langEnglish: "English",

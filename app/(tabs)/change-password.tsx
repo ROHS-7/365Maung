@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { useLanguage } from '@/contexts/language';
 import { useAuth } from '@/contexts/auth';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { changePasswordRequest } from '@/services/auth';
+import { showAlert } from '@/utils/app-alert';
 
 export default function ChangePasswordScreen() {
   useRequireAuth();
@@ -26,15 +27,15 @@ export default function ChangePasswordScreen() {
 
   async function handleSubmit() {
     if (!current || !next || !confirm) {
-      Alert.alert(tr.changePwErrEmpty, tr.changePwErrEmptyMsg);
+      showAlert(tr.changePwErrEmpty, tr.changePwErrEmptyMsg);
       return;
     }
     if (next !== confirm) {
-      Alert.alert(tr.changePwErrMismatch, tr.changePwErrMismatchMsg);
+      showAlert(tr.changePwErrMismatch, tr.changePwErrMismatchMsg);
       return;
     }
     if (next.length < 6) {
-      Alert.alert(tr.changePwErrShort, tr.changePwErrShortMsg);
+      showAlert(tr.changePwErrShort, tr.changePwErrShortMsg);
       return;
     }
     if (!token) {
@@ -49,11 +50,11 @@ export default function ChangePasswordScreen() {
         password: next,
         password_confirmation: confirm,
       });
-      Alert.alert(tr.changePwSuccess, tr.changePwSuccessMsg, [
+      showAlert(tr.changePwSuccess, tr.changePwSuccessMsg, [
         { text: tr.ok, onPress: () => router.back() },
       ]);
     } catch (e) {
-      Alert.alert('', e instanceof Error ? e.message : tr.changePwFailed);
+      showAlert('', e instanceof Error ? e.message : tr.changePwFailed);
     } finally {
       setSubmitting(false);
     }

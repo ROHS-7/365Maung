@@ -4,6 +4,7 @@ export type Application = {
   football_rules: string;
   interface_content: string;
   is_esports_open?: boolean;
+  is_fight_open?: boolean;
   updated_at: string;
 };
 

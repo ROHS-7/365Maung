@@ -67,6 +67,13 @@ export function ouMarketFromList(
   return null;
 }
 
+export function toWinMarketFromList(
+  markets: FootballMarket[],
+): 'to_win' | null {
+  if (markets.includes('to_win')) return 'to_win';
+  return null;
+}
+
 export function oddsPeriodFromMarkets(markets?: FootballMarket[]): OddsPeriod {
   if (!markets?.length) return 'ft';
   return markets.some((m) => m === 'asian_handicap_fh' || m === 'goals_ou_fh')
@@ -713,6 +720,8 @@ function resolveSelectedSide(leg: BetSlipLeg): 'home' | 'away' | 'draw' | null {
 }
 
 function inferBetType(leg: BetSlipLeg): HdpOuBet['betType'] {
+  const sport = leg.sport ?? leg.match?.sport;
+  if (sport === 'fight') return 'Fight';
   if (leg.market === 'to_win') return 'To Win';
   if (leg.market === 'match_winner_1x2') return '1X2';
   if (leg.market === 'correct_score') return 'CS';
@@ -809,6 +818,8 @@ export function betTypeDisplayLabel(
       return tr.footballCorrectScoreTitle;
     case 'To Win':
       return tr.esportsToWin;
+    case 'Fight':
+      return tr.menuFight;
     default:
       return betType;
   }

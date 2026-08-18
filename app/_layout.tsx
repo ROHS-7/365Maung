@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 import { LanguageProvider } from '@/contexts/language';
 import { AuthProvider } from '@/contexts/auth';
 import { AppConfigProvider } from '@/contexts/app-config';
+import { AppAlertHost } from '@/components/app-alert-host';
 
 if (Platform.OS !== 'web' && typeof Appearance.setColorScheme === 'function') {
   Appearance.setColorScheme('light');
@@ -45,6 +46,7 @@ export default function RootLayout() {
                   <Stack.Screen name="modal"           options={{ presentation: 'modal', title: 'Modal' }} />
                 </Stack>
                 <StatusBar style="light" />
+                <AppAlertHost />
               </ThemeProvider>
           </AppConfigProvider>
         </AuthProvider>

@@ -17,12 +17,12 @@ import { fetchDepositPaymentAccounts } from '@/services/deposit-accounts';
 import { fetchPaymentAccounts } from '@/services/payment-accounts';
 import type { AgentSummary, PaymentAccount } from '@/types/api';
 import { agentDisplayName, filterByProvider, getBoundAccount } from '@/utils/payment-accounts';
+import { showAlert } from '@/utils/app-alert';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -99,11 +99,11 @@ export default function AutoDepositScreen() {
     if (!token || !selected) return;
     const parsed = parseInt(amount.replace(/,/g, ''), 10);
     if (!parsed || parsed < 1) {
-      Alert.alert('', tr.depositAmountRequired);
+      showAlert('', tr.depositAmountRequired);
       return;
     }
 
-    Alert.alert(tr.depositConfirmTitle, tr.depositConfirmMsg, [
+    showAlert(tr.depositConfirmTitle, tr.depositConfirmMsg, [
       { text: tr.logoutCancel, style: 'cancel' },
       {
         text: tr.depositSubmit,
@@ -115,7 +115,7 @@ export default function AutoDepositScreen() {
               payment_account_id: selected.id,
               note: note.trim() || undefined,
             });
-            Alert.alert(tr.depositSuccessTitle, tr.depositSuccessMsg, [
+            showAlert(tr.depositSuccessTitle, tr.depositSuccessMsg, [
               {
                 text: tr.coinRequestViewRequests,
                 onPress: () => router.push('/(tabs)/coin-requests' as never),
@@ -125,7 +125,7 @@ export default function AutoDepositScreen() {
             setAmount('');
             setNote('');
           } catch (e) {
-            Alert.alert('', e instanceof Error ? e.message : tr.depositFailed);
+            showAlert('', e instanceof Error ? e.message : tr.depositFailed);
           } finally {
             setSubmitting(false);
           }

@@ -7,7 +7,7 @@ const {
 } = require('expo/config-plugins');
 const { addImports } = require('@expo/config-plugins/build/android/codeMod');
 
-const SPLASH_BG = '#FFFFFF';
+const SPLASH_BG = '#27A060';
 const APP_BG = '#FFFFFF';
 
 function ensureStyleItem(style, name, value) {
@@ -53,7 +53,7 @@ function withLightSplash(config) {
         ensureStyleItem(style, 'android:windowSplashScreenBackground', '@color/splashscreen_background');
         ensureStyleItem(style, 'android:statusBarColor', '@color/splashscreen_background');
         ensureStyleItem(style, 'android:navigationBarColor', '@color/splashscreen_background');
-        ensureStyleItem(style, 'android:windowLightStatusBar', 'true');
+        ensureStyleItem(style, 'android:windowLightStatusBar', 'false');
       }
     }
     return cfg;

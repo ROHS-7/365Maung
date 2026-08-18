@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  Switch, StyleSheet, KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator, Alert,
+  Switch, StyleSheet, KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
 import { useAuth } from '@/contexts/auth';
+import { showAlert } from '@/utils/app-alert';
 
 export default function LoginScreen() {
   const { tr } = useLanguage();
@@ -21,7 +22,7 @@ export default function LoginScreen() {
 
   async function handleLogin() {
     if (!account.trim() || !password.trim()) {
-      Alert.alert('', tr.loginAccountPh);
+      showAlert('', tr.loginAccountPh);
       return;
     }
     setSubmitting(true);
@@ -29,7 +30,7 @@ export default function LoginScreen() {
       await login(account.trim(), password);
       router.replace('/');
     } catch (e) {
-      Alert.alert('', e instanceof Error ? e.message : tr.loginFailed);
+      showAlert('', e instanceof Error ? e.message : tr.loginFailed);
     } finally {
       setSubmitting(false);
     }
@@ -138,7 +139,7 @@ const s = StyleSheet.create({
     backgroundColor: Colors.brand.greenLight, opacity: 0.2, bottom: 80, left: -60,
   },
   logoSection: { alignItems: 'center', paddingBottom: Spacing.lg },
-  logoImg: { width: 220, height: 120 },
+  logoImg: { width: 180, height: 140 },
   logoTagline: { fontSize: FontSize.sm, color: 'rgba(255,255,255,0.6)', marginTop: 8, letterSpacing: 1 },
   card: {
     backgroundColor: Colors.brand.white, borderRadius: BorderRadius.xxl,

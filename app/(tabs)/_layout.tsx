@@ -115,7 +115,15 @@ export default function TabLayout() {
         options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
       <Tabs.Screen
+        name="fight"
+        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
+      />
+      <Tabs.Screen
         name="esports-scores"
+        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
+      />
+      <Tabs.Screen
+        name="fight-scores"
         options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
       <Tabs.Screen name="rule"            options={{ href: null, freezeOnBlur: true }} />

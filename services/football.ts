@@ -141,7 +141,7 @@ function normalizeLeague(raw: unknown): FootballLeague {
   };
 }
 
-function normalizeLeg(raw: unknown): BetSlipLeg {
+function normalizeLeg(raw: unknown, slipSport?: string): BetSlipLeg {
   if (!raw || typeof raw !== 'object') {
     return {
       id: 0,
@@ -172,6 +172,12 @@ function normalizeLeg(raw: unknown): BetSlipLeg {
   const soneMa = r.sone_ma;
   const marketRaw = typeof r.market === 'string' ? r.market : null;
   const selectionRaw = typeof r.selection === 'string' ? r.selection : null;
+  const sportRaw =
+    typeof r.sport === 'string'
+      ? r.sport
+      : typeof match?.sport === 'string'
+        ? match.sport
+        : slipSport;
 
   return {
     id: Number(r.id ?? 0),
@@ -189,10 +195,12 @@ function normalizeLeg(raw: unknown): BetSlipLeg {
     away,
     selected_team: selected,
     league: normalizeLeague(r.league),
+    sport: sportRaw,
     match: match
       ? {
           home: normalizeTeam(match.home),
           away: normalizeTeam(match.away),
+          sport: typeof match.sport === 'string' ? match.sport : sportRaw,
         }
       : undefined,
   };
@@ -210,7 +218,7 @@ function normalizeBetSlip(raw: unknown): BetSlip {
     is_bingo: Boolean(r.is_bingo),
     is_settled: Boolean(r.is_settled),
     created_at: String(r.created_at ?? ''),
-    legs: legsRaw.map(normalizeLeg),
+    legs: legsRaw.map((leg) => normalizeLeg(leg, typeof r.sport === 'string' ? r.sport : undefined)),
   };
 }
 
@@ -234,7 +242,11 @@ export async function fetchFootballMatches(
 ): Promise<FootballMatchesResponse> {
   if (!API_BASE_URL) return MOCK_MATCHES;
   const q = drawDate ? `?draw_date=${drawDate}` : '';
-  return apiRequest<FootballMatchesResponse>(`/football/matches${q}`, { token });
+  const data = await apiRequest<FootballMatchesResponse>(`/football/matches${q}`, {
+    token,
+  });
+  console.log("[football/matches]", data);
+  return data;
 }
 
 const MOCK_RESULTS: FootballMatchResultsResponse = {

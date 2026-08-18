@@ -11,7 +11,7 @@ export type HdpOuBet = {
   time: string;
   home: string;
   away: string;
-  betType: 'HDP' | 'O/U' | 'O/E' | '1X2' | 'CS' | 'HDP 1H' | 'O/U 1H' | 'To Win';
+  betType: 'HDP' | 'O/U' | 'O/E' | '1X2' | 'CS' | 'HDP 1H' | 'O/U 1H' | 'To Win' | 'Fight';
   pick: string;
   line: string;
   odds: number;
@@ -132,7 +132,7 @@ export function formatBetOdds(odds: number) {
 
 /** Decimal-odds markets (1X2, CS, To Win) — show the multiplier as-is. */
 export function isDecimalOddsBetType(betType: HdpOuBet['betType']): boolean {
-  return betType === '1X2' || betType === 'CS' || betType === 'To Win';
+  return betType === '1X2' || betType === 'CS' || betType === 'To Win' || betType === 'Fight';
 }
 
 export function formatHdpOuOddsLine(bet: HdpOuBet): string {

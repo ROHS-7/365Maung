@@ -124,9 +124,11 @@ export type BetSlipLeg = {
   away: FootballTeam;
   selected_team: FootballTeam;
   league: FootballLeague;
+  sport?: string;
   match?: {
     home?: FootballTeam;
     away?: FootballTeam;
+    sport?: string;
   };
 };
 
