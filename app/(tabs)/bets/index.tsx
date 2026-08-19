@@ -42,8 +42,7 @@ type BetTypeFilter =
   | '1x2'
   | 'oe'
   | 'cs'
-  | 'esports'
-  | 'fight';
+  | 'to_win';
 
 function matchesBetTypeFilter(bet: Bet, filter: BetTypeFilter): boolean {
   if (filter === 'all') return true;
@@ -60,8 +59,7 @@ function matchesBetTypeFilter(bet: Bet, filter: BetTypeFilter): boolean {
   if (filter === '1x2') return bet.betType === '1X2';
   if (filter === 'oe') return bet.betType === 'O/E';
   if (filter === 'cs') return bet.betType === 'CS';
-  if (filter === 'esports') return bet.betType === 'To Win';
-  if (filter === 'fight') return bet.betType === 'Fight';
+  if (filter === 'to_win') return bet.betType === 'To Win' || bet.betType === 'Fight';
   return true;
 }
 
@@ -347,8 +345,7 @@ export default function BetsScreen() {
     { key: '1x2' as const, label: tr.menu1x2 },
     { key: 'oe' as const, label: tr.menuSoneMa },
     { key: 'cs' as const, label: tr.menuCorrectScore },
-    { key: 'esports' as const, label: tr.menuEsports },
-    { key: 'fight' as const, label: tr.menuFight },
+    { key: 'to_win' as const, label: tr.betListToWin },
   ];
   const selectedType = typeFilters.find((f) => f.key === betType) ?? typeFilters[0];
 
