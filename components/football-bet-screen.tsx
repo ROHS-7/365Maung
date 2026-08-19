@@ -664,25 +664,26 @@ const MatchMarkets = memo(function MatchMarkets({
                     return (
                       <View key={rowIndex} style={styles.csRow}>
                         {row.map((item) => (
-                          <OddsChip
-                            key={item.key}
-                            label={item.key}
-                            odds={formatDecimalOdds(item.odds)}
-                            selected={
-                              selectedKey ===
-                              makeSelectKey(match.id, "correct_score", item.key)
-                            }
-                            onPress={() =>
-                              onPick(match.id, "correct_score", item.key)
-                            }
-                            compact
-                          />
+                          <View key={item.key} style={styles.csCell}>
+                            <OddsChip
+                              label={item.key}
+                              odds={formatDecimalOdds(item.odds)}
+                              selected={
+                                selectedKey ===
+                                makeSelectKey(match.id, "correct_score", item.key)
+                              }
+                              onPress={() =>
+                                onPick(match.id, "correct_score", item.key)
+                              }
+                              compact
+                            />
+                          </View>
                         ))}
                         {row.length < 4
                           ? Array.from(
                               { length: 4 - row.length },
                               (_, pad) => (
-                                <View key={`pad-${pad}`} style={styles.csCellPad} />
+                                <View key={`pad-${pad}`} style={styles.csCell} />
                               ),
                             )
                           : null}
@@ -1803,8 +1804,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
   },
-  csCellPad: {
-    flex: 1,
+  csCell: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
     minWidth: 0,
   },
   chip: {
@@ -1822,9 +1825,11 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   chipCompact: {
-    flex: 1,
-    minWidth: 0,
-    paddingVertical: 5,
+    width: "100%",
+    flex: 0,
+    alignSelf: "stretch",
+    minHeight: 52,
+    paddingVertical: 8,
   },
   chipPressed: {
     backgroundColor: "#EEF5F1",

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   Switch, StyleSheet, KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
@@ -10,6 +10,11 @@ import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/c
 import { useLanguage } from '@/contexts/language';
 import { useAuth } from '@/contexts/auth';
 import { showAlert } from '@/utils/app-alert';
+import {
+  clearRememberedLogin,
+  loadRememberedLogin,
+  saveRememberedLogin,
+} from '@/utils/remembered-login';
 
 export default function LoginScreen() {
   const { tr } = useLanguage();
@@ -20,6 +25,25 @@ export default function LoginScreen() {
   const [rememberMe, setRememberMe]   = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const saved = await loadRememberedLogin();
+      if (cancelled || !saved) return;
+      setAccount(saved.username);
+      setPassword(saved.password);
+      setRememberMe(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleRememberChange(value: boolean) {
+    setRememberMe(value);
+    if (!value) await clearRememberedLogin();
+  }
+
   async function handleLogin() {
     if (!account.trim() || !password.trim()) {
       showAlert('', tr.loginAccountPh);
@@ -27,7 +51,13 @@ export default function LoginScreen() {
     }
     setSubmitting(true);
     try {
-      await login(account.trim(), password);
+      const username = account.trim();
+      await login(username, password);
+      if (rememberMe) {
+        await saveRememberedLogin(username, password);
+      } else {
+        await clearRememberedLogin();
+      }
       router.replace('/');
     } catch (e) {
       showAlert('', e instanceof Error ? e.message : tr.loginFailed);
@@ -100,7 +130,7 @@ export default function LoginScreen() {
             <Text style={s.rememberLabel}>{tr.loginRemember}</Text>
             <Switch
               value={rememberMe}
-              onValueChange={setRememberMe}
+              onValueChange={handleRememberChange}
               trackColor={{ false: Colors.light.border, true: Colors.brand.greenLight }}
               thumbColor={rememberMe ? Colors.brand.greenButton : Colors.brand.white}
               ios_backgroundColor={Colors.light.border}
