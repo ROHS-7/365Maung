@@ -9,6 +9,7 @@ import { LanguageProvider } from '@/contexts/language';
 import { AuthProvider } from '@/contexts/auth';
 import { AppConfigProvider } from '@/contexts/app-config';
 import { AppAlertHost } from '@/components/app-alert-host';
+import { WebCappedSafeArea } from '@/components/web-capped-safe-area';
 
 if (Platform.OS !== 'web' && typeof Appearance.setColorScheme === 'function') {
   Appearance.setColorScheme('light');
@@ -32,6 +33,7 @@ const LightTheme = {
 export default function RootLayout() {
   return (
     <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <WebCappedSafeArea>
       <LanguageProvider>
         <AuthProvider>
           <AppConfigProvider>
@@ -51,6 +53,7 @@ export default function RootLayout() {
           </AppConfigProvider>
         </AuthProvider>
       </LanguageProvider>
+      </WebCappedSafeArea>
     </View>
   );
 }

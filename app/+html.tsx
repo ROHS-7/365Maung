@@ -15,6 +15,7 @@ export default function Root({ children }: PropsWithChildren) {
         <style
           dangerouslySetInnerHTML={{
             __html:
+              'html,body,#root{height:100%;height:100dvh;max-height:100dvh}' +
               'html,body{background:#ffffff;color:#1A2E22;color-scheme:light!important}' +
               '.burma-announce-track{flex:1;min-width:0;overflow:hidden;height:18px}' +
               '@keyframes burma-announce-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}' +

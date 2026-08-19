@@ -31,6 +31,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -421,9 +422,9 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: Spacing.md,
-    paddingTop: 8,
-    paddingBottom: 10,
-    minHeight: 58,
+    paddingTop: Platform.OS === "web" ? 4 : 8,
+    paddingBottom: Platform.OS === "web" ? 6 : 10,
+    minHeight: Platform.OS === "web" ? 48 : 58,
   },
   headerLogo: { justifyContent: "center" },
   headerLogoImg: { width: 64, height: 50 },

@@ -1,4 +1,4 @@
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, View, Text, StyleSheet, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -156,7 +156,7 @@ const s = StyleSheet.create({
   liveWrap: {
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: 12,
+    paddingBottom: Platform.OS === 'web' ? 4 : 12,
     flex: 1,
   },
   liveDiamond: {
