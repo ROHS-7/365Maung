@@ -12,7 +12,7 @@
       "distribution": "internal",
       "node": "22.14.0",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.burma90.com/api",
+        "EXPO_PUBLIC_API_URL": "https://api-client.burma90.com/api",
         "EXPO_PUBLIC_APP_PAYLOAD_KEY": "mK8pQ2vL9xN4wR7t"
       },
       "android": {
@@ -25,7 +25,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.burma90.com/api",
+        "EXPO_PUBLIC_API_URL": "https://api-client.burma90.com/api",
         "EXPO_PUBLIC_APP_PAYLOAD_KEY": "mK8pQ2vL9xN4wR7t"
       }
     }
