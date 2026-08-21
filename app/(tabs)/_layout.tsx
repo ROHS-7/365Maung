@@ -147,7 +147,7 @@ const s = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 11,
-    lineHeight: 18,
+    lineHeight: Platform.OS === 'web' ? 20 : 18,
     fontWeight: FontWeight.semibold,
     color: Colors.light.icon,
     marginTop: 2,
@@ -156,8 +156,9 @@ const s = StyleSheet.create({
   liveWrap: {
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: Platform.OS === 'web' ? 4 : 12,
+    paddingBottom: Platform.OS === 'web' ? 0 : 12,
     flex: 1,
+    ...(Platform.OS === 'web' ? { transform: [{ translateY: -8 }] } : {}),
   },
   liveDiamond: {
     width: 52, height: 52, borderRadius: 14,
@@ -170,7 +171,7 @@ const s = StyleSheet.create({
   liveDiamondInner: { transform: [{ rotate: '-45deg' }], alignItems: 'center', justifyContent: 'center' },
   liveLabel: {
     fontSize: 11,
-    lineHeight: 18,
+    lineHeight: Platform.OS === 'web' ? 20 : 18,
     fontWeight: FontWeight.semibold,
     color: Colors.brand.greenButton,
   },

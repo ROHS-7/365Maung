@@ -299,9 +299,6 @@ export default function HomeScreen() {
 
   const announcement =
     application?.interface_content?.trim() || tr.announcement;
-  console.log("[announcement]", announcement, {
-    interface_content: application?.interface_content ?? null,
-  });
 
   async function handleRefresh() {
     setRefreshing(true);

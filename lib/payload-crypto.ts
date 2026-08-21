@@ -23,7 +23,6 @@ export function isEncryptedEnvelope(
 
 export function decryptApiPayload<T>(envelope: EncryptedEnvelope): T {
   const key = APP_PAYLOAD_KEY;
-  console.log(key);
   if (key.length !== 16) {
     throw new Error("APP_PAYLOAD_KEY must be exactly 16 characters");
   }

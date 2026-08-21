@@ -53,16 +53,17 @@ function initials(name: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function formatMatchTime(iso?: string): string {
+function formatMatchDateTime(iso?: string): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
+  const md = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   let hours = d.getHours();
   const minutes = String(d.getMinutes()).padStart(2, '0');
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12;
   if (hours === 0) hours = 12;
-  return `${hours}:${minutes} ${ampm}`;
+  return `${md} ${hours}:${minutes} ${ampm}`;
 }
 
 function mapResultToRow(
@@ -74,7 +75,7 @@ function mapResultToRow(
   }
   return {
     id: m.id,
-    time: formatMatchTime(m.match_time),
+    time: formatMatchDateTime(m.match_time),
     home: teamDisplayName(m.home, lang),
     away: teamDisplayName(m.away, lang),
     homeScore: m.home_result,

@@ -8,7 +8,7 @@ import {
 /** iOS Safari fullscreen reports large env(safe-area-inset-*) even when the
  *  status bar / home indicator already sit outside the page. Cap on web only. */
 const WEB_TOP_CAP = 12;
-const WEB_BOTTOM_CAP = 16;
+const WEB_BOTTOM_CAP = 20;
 
 export function WebCappedSafeArea({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();

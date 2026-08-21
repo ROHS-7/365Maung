@@ -245,7 +245,6 @@ export async function fetchFootballMatches(
   const data = await apiRequest<FootballMatchesResponse>(`/football/matches${q}`, {
     token,
   });
-  console.log("[football/matches]", data);
   return data;
 }
 

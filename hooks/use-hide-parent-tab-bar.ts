@@ -5,17 +5,27 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 
 const HIDDEN_TAB_BAR = { display: 'none' as const };
-const TAB_BAR_BODY = Platform.OS === 'web' ? 62 : 84;
+const TAB_BAR_BODY = Platform.OS === 'web' ? 74 : 84;
 
 export function visibleTabBarStyle(insetsBottom: number) {
-  const padBottom = Platform.OS === 'web' ? 6 + insetsBottom : 14 + insetsBottom;
+  if (Platform.OS === 'web') {
+    return {
+      backgroundColor: '#fff',
+      borderTopColor: Colors.light.border,
+      borderTopWidth: 1,
+      paddingTop: 4,
+      paddingBottom: 0,
+      height: TAB_BAR_BODY,
+      overflow: 'visible' as const,
+    };
+  }
   return {
     backgroundColor: '#fff',
     borderTopColor: Colors.light.border,
     borderTopWidth: 1,
-    paddingTop: Platform.OS === 'web' ? 4 : 8,
+    paddingTop: 8,
     height: TAB_BAR_BODY + insetsBottom,
-    paddingBottom: padBottom,
+    paddingBottom: 14 + insetsBottom,
     overflow: 'visible' as const,
   };
 }
