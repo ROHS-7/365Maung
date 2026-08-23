@@ -1125,6 +1125,10 @@ export function FootballBetScreen({
   const filterSummary = filterActive
     ? String(selectedLeagues.length)
     : tr.footballAllLeagues;
+  const filterLabel =
+    source === "esports" || source === "fight"
+      ? tr.competitionFilter
+      : tr.footballLeagueFilter;
   const canFilter = !loading && !error && leagues.length > 0;
 
   const count = Object.keys(selections).length;
@@ -1295,7 +1299,7 @@ export function FootballBetScreen({
                 ]}
                 numberOfLines={1}
               >
-                {tr.footballLeagueFilter}
+                {filterLabel}
               </Text>
               {filterActive ? (
                 <View style={styles.headerFilterActiveBadge}>
