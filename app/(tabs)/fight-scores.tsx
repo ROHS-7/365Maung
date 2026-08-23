@@ -4,6 +4,7 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Text as RNText,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -92,45 +93,66 @@ function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
   return (
     <View style={[s.matchCard, !last && s.matchCardBorder]}>
       <View style={s.matchTop}>
-        <View style={s.statusPill}>
-          <Text style={s.statusPillText}>FT</Text>
+        <View style={[s.statusPill, s.statusPillFt]}>
+          <RNText style={s.statusPillText}>FT</RNText>
         </View>
         <Text style={s.matchTime}>{m.time}</Text>
       </View>
 
       <View style={s.matchBody}>
-        <View style={s.teamLine}>
-          <TeamBadge name={m.home} logo={m.homeLogo} />
-          <Text
-            style={[s.teamLineName, (homeWin || isDraw) && s.teamLineNameWin]}
-            numberOfLines={1}
-          >
-            {m.home}
-          </Text>
+        <View style={s.teamCol}>
+          <TeamBadge
+            name={m.home}
+            logo={m.homeLogo}
+            size={20}
+            useDefaultLogo={false}
+          />
+          <View style={s.teamNameClip}>
+            <Text
+              compact
+              style={[
+                s.teamLineName,
+                (homeWin || isDraw) && s.teamLineNameWin,
+              ]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {m.home}
+            </Text>
+          </View>
         </View>
 
         <View style={s.scorePill}>
-          <Text style={[s.scorePillNum, homeWin && s.scorePillNumWin]}>
+          <RNText style={[s.scorePillNum, homeWin && s.scorePillNumWin]}>
             {m.homeScore}
-          </Text>
-          <Text style={s.scorePillSep}>:</Text>
-          <Text style={[s.scorePillNum, awayWin && s.scorePillNumWin]}>
+          </RNText>
+          <RNText style={s.scorePillSep}>:</RNText>
+          <RNText style={[s.scorePillNum, awayWin && s.scorePillNumWin]}>
             {m.awayScore}
-          </Text>
+          </RNText>
         </View>
 
-        <View style={[s.teamLine, s.teamLineRight]}>
-          <Text
-            style={[
-              s.teamLineName,
-              s.teamLineNameRight,
-              (awayWin || isDraw) && s.teamLineNameWin,
-            ]}
-            numberOfLines={1}
-          >
-            {m.away}
-          </Text>
-          <TeamBadge name={m.away} logo={m.awayLogo} />
+        <View style={[s.teamCol, s.teamColRight]}>
+          <View style={s.teamNameClip}>
+            <Text
+              compact
+              style={[
+                s.teamLineName,
+                s.teamLineNameRight,
+                (awayWin || isDraw) && s.teamLineNameWin,
+              ]}
+              numberOfLines={1}
+              ellipsizeMode="head"
+            >
+              {m.away}
+            </Text>
+          </View>
+          <TeamBadge
+            name={m.away}
+            logo={m.awayLogo}
+            size={20}
+            useDefaultLogo={false}
+          />
         </View>
       </View>
     </View>
@@ -149,7 +171,9 @@ function LeagueCard({ league }: { league: League }) {
           />
         </View>
         <Text style={s.leagueName}>{league.name}</Text>
-        <Text style={s.leagueCount}>{league.matches.length}</Text>
+        <View style={s.leagueCountPill}>
+          <RNText style={s.leagueCount}>{league.matches.length}</RNText>
+        </View>
       </View>
       <View style={s.leagueCard}>
         {league.matches.map((m, i) => (
@@ -381,15 +405,23 @@ const s = StyleSheet.create({
     fontWeight: FontWeight.bold,
     color: Colors.light.text,
   },
-  leagueCount: {
-    fontSize: 11,
-    fontWeight: FontWeight.semibold,
-    color: Colors.light.textSecondary,
+  leagueCountPill: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: '#fff',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    ...Shadow.sm,
+  },
+  leagueCount: {
+    fontSize: 10,
+    lineHeight: 10,
+    fontWeight: FontWeight.bold,
+    color: Colors.brand.greenMid,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
 
   leagueCard: {
@@ -415,47 +447,46 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   statusPill: {
-    backgroundColor: Colors.brand.offWhite,
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: BorderRadius.full,
   },
+  statusPillFt: {
+    backgroundColor: '#EF8121',
+  },
   statusPillText: {
-    fontSize: 10,
-    fontWeight: FontWeight.bold,
-    color: Colors.brand.greenMid,
-    letterSpacing: 0.4,
+    fontSize: 9,
+    lineHeight: 9,
+    fontWeight: FontWeight.extrabold,
+    color: '#FFF5E1',
+    letterSpacing: 0.3,
+    includeFontPadding: false,
   },
   matchTime: { fontSize: 11, color: Colors.light.placeholder },
   matchBody: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
-  teamLine: {
+  teamCol: {
     flex: 1,
+    flexBasis: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     minWidth: 0,
   },
-  teamLineRight: { flexDirection: 'row', justifyContent: 'flex-end' },
-  teamBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
+  teamColRight: {
+    justifyContent: 'flex-end',
   },
-  teamBadgeText: {
-    fontSize: 9,
-    fontWeight: FontWeight.bold,
-    color: '#fff',
+  teamNameClip: {
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
   },
   teamLineName: {
-    flexShrink: 1,
-    fontSize: FontSize.sm,
+    fontSize: 11,
+    lineHeight: 14,
     fontWeight: FontWeight.medium,
     color: Colors.light.textSecondary,
   },
@@ -465,21 +496,22 @@ const s = StyleSheet.create({
     color: Colors.light.text,
   },
   scorePill: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.brand.offWhite,
     borderRadius: BorderRadius.md,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     gap: 2,
-    minWidth: 58,
+    minWidth: 52,
     justifyContent: 'center',
   },
   scorePillNum: {
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md,
     fontWeight: FontWeight.extrabold,
     color: Colors.light.placeholder,
-    minWidth: 14,
+    minWidth: 12,
     textAlign: 'center',
   },
   scorePillNumWin: { color: Colors.light.text },

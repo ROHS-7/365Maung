@@ -8,17 +8,48 @@ type Props = {
   logo?: string;
   size?: number;
   style?: StyleProp<ViewStyle>;
+  /** When false, hide badge if no remote logo (used for boxing/fight). */
+  useDefaultLogo?: boolean;
 };
 
-export function TeamBadge({ name, logo, size = 26, style }: Props) {
+export function TeamBadge({
+  name,
+  logo,
+  size = 26,
+  style,
+  useDefaultLogo = true,
+}: Props) {
   const [failed, setFailed] = useState(false);
   const radius = size / 2;
   const remoteLogo = logo?.trim();
   const useRemote = Boolean(remoteLogo) && !failed;
 
+  if (useRemote) {
+    return (
+      <Image
+        source={{ uri: remoteLogo }}
+        style={[
+          s.badge,
+          { width: size, height: size, borderRadius: radius },
+          style,
+        ]}
+        contentFit="contain"
+        cachePolicy="memory-disk"
+        recyclingKey={remoteLogo}
+        transition={0}
+        accessibilityLabel={name}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+
+  if (!useDefaultLogo) {
+    return null;
+  }
+
   return (
     <Image
-      source={useRemote ? { uri: remoteLogo } : DEFAULT_TEAM_LOGO}
+      source={DEFAULT_TEAM_LOGO}
       style={[
         s.badge,
         { width: size, height: size, borderRadius: radius },
@@ -26,10 +57,9 @@ export function TeamBadge({ name, logo, size = 26, style }: Props) {
       ]}
       contentFit="contain"
       cachePolicy="memory-disk"
-      recyclingKey={useRemote ? remoteLogo : 'team-default-logo'}
+      recyclingKey="team-default-logo"
       transition={0}
       accessibilityLabel={name}
-      onError={() => setFailed(true)}
     />
   );
 }

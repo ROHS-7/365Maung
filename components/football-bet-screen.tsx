@@ -105,7 +105,7 @@ const OddsChip = memo(function OddsChip({
   onPress,
   compact,
 }: {
-  label: string;
+  label?: string;
   odds?: string;
   selected: boolean;
   onPress?: () => void;
@@ -123,20 +123,23 @@ const OddsChip = memo(function OddsChip({
       ]}
     >
       {odds ? (
-        <Text style={[styles.chipOdds, selected && styles.chipOddsSelected]}>
+        <RNText style={[styles.chipOdds, selected && styles.chipOddsSelected]}>
           {odds}
+        </RNText>
+      ) : null}
+      {label ? (
+        <Text
+          compact
+          style={[
+            styles.chipLabel,
+            !odds && styles.chipLabelOnly,
+            selected && styles.chipLabelSelected,
+          ]}
+          numberOfLines={2}
+        >
+          {label}
         </Text>
       ) : null}
-      <Text
-        style={[
-          styles.chipLabel,
-          !odds && styles.chipLabelOnly,
-          selected && styles.chipLabelSelected,
-        ]}
-        numberOfLines={2}
-      >
-        {label}
-      </Text>
       {selected ? (
         <View style={styles.chipSelectedDot}>
           <Ionicons name="checkmark" size={8} color="#fff" />
@@ -185,6 +188,7 @@ const HdpTeamRow = memo(function HdpTeamRow({
         <View style={styles.hdpTeamContent}>
           <TeamBadge name={homeLabel} logo={homeLogo} size={HDP_TEAM_LOGO_SIZE} />
           <Text
+            compact
             style={[styles.hdpTeamText, homeSelected && styles.hdpTeamTextSelected]}
             numberOfLines={1}
             adjustsFontSizeToFit
@@ -195,14 +199,14 @@ const HdpTeamRow = memo(function HdpTeamRow({
         </View>
         {homeHasLine ? (
           <View style={styles.hdpBadgeInline}>
-            <Text
+            <RNText
               style={[
                 styles.hdpBadgeText,
                 homeSelected && styles.hdpBadgeTextOnSelected,
               ]}
             >
               {line}
-            </Text>
+            </RNText>
           </View>
         ) : null}
       </Pressable>
@@ -216,18 +220,19 @@ const HdpTeamRow = memo(function HdpTeamRow({
       >
         {!homeHasLine ? (
           <View style={[styles.hdpBadgeInline, styles.hdpBadgeInlineLeading]}>
-            <Text
+            <RNText
               style={[
                 styles.hdpBadgeText,
                 awaySelected && styles.hdpBadgeTextOnSelected,
               ]}
             >
               {line}
-            </Text>
+            </RNText>
           </View>
         ) : null}
         <View style={[styles.hdpTeamContent, styles.hdpTeamContentAway]}>
           <Text
+            compact
             style={[
               styles.hdpTeamText,
               styles.hdpTeamTextAway,
@@ -273,6 +278,7 @@ const TriLineRow = memo(function TriLineRow({
         ]}
       >
         <Text
+          compact
           style={[styles.triSideText, leftSelected && styles.triSideTextSelected]}
           numberOfLines={1}
         >
@@ -280,9 +286,9 @@ const TriLineRow = memo(function TriLineRow({
         </Text>
       </Pressable>
       <View style={styles.triCenter}>
-        <Text style={styles.triCenterText} numberOfLines={1}>
+        <RNText style={styles.triCenterText} numberOfLines={1}>
           {centerLine}
-        </Text>
+        </RNText>
       </View>
       <Pressable
         onPress={onRight}
@@ -293,6 +299,7 @@ const TriLineRow = memo(function TriLineRow({
         ]}
       >
         <Text
+          compact
           style={[styles.triSideText, rightSelected && styles.triSideTextSelected]}
           numberOfLines={1}
         >
@@ -361,6 +368,11 @@ const MatchMarkets = memo(function MatchMarkets({
   const toWinMarket = toWinMarketFromList(markets);
   const periodLabel =
     period === "fh" ? tr.footballFirstHalf : tr.footballFullTime;
+  const showHeaderTeams =
+    source !== "esports" &&
+    (source !== "football" ||
+      !hdpMarket ||
+      !uiMatchHasValidMarket(match, hdpMarket));
   const flashAnim = useRef(new Animated.Value(0)).current;
   const exitOpacity = useRef(new Animated.Value(1)).current;
   const exitTranslate = useRef(new Animated.Value(0)).current;
@@ -441,7 +453,7 @@ const MatchMarkets = memo(function MatchMarkets({
                   match.isMajor && styles.periodBadgeMajor,
                 ]}
               >
-                <Text style={styles.periodBadgeText} numberOfLines={1}>
+                <Text compact style={styles.periodBadgeText} numberOfLines={1}>
                   {periodLabel}
                 </Text>
               </View>
@@ -449,45 +461,64 @@ const MatchMarkets = memo(function MatchMarkets({
             {match.isMajor ? (
               <View style={styles.majorBadge}>
                 <Ionicons name="star" size={9} color={Colors.brand.greenDark} />
-                <Text style={styles.majorBadgeText}>{tr.footballMajorMatch}</Text>
+                <Text compact style={styles.majorBadgeText}>
+                  {tr.footballMajorMatch}
+                </Text>
               </View>
             ) : null}
           </View>
-          <Text
+          <RNText
             style={[
               styles.matchTimeText,
               match.isMajor && styles.matchTimeTextMajor,
             ]}
           >
             {match.date}
-          </Text>
+          </RNText>
         </View>
 
-        {source !== "football" ? (
+        {showHeaderTeams ? (
         <View style={styles.teamsRow}>
           <View style={styles.teamCol}>
-            <TeamBadge name={match.home} logo={match.homeLogo} size={24} />
+            <TeamBadge
+              name={match.home}
+              logo={match.homeLogo}
+              size={24}
+              useDefaultLogo={source !== "fight"}
+            />
             <Text
+              compact
               style={[styles.teamName, match.isMajor && styles.teamNameMajor]}
-              numberOfLines={2}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
             >
               {match.home}
             </Text>
           </View>
-          <Text style={[styles.vsText, match.isMajor && styles.vsTextMajor]}>
+          <Text compact style={[styles.vsText, match.isMajor && styles.vsTextMajor]}>
             {tr.maungVs}
           </Text>
-          <View style={styles.teamCol}>
-            <TeamBadge name={match.away} logo={match.awayLogo} size={24} />
+          <View style={[styles.teamCol, styles.teamColAway]}>
             <Text
+              compact
               style={[
                 styles.teamName,
+                styles.teamNameAway,
                 match.isMajor && styles.teamNameMajor,
               ]}
-              numberOfLines={2}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
             >
               {match.away}
             </Text>
+            <TeamBadge
+              name={match.away}
+              logo={match.awayLogo}
+              size={24}
+              useDefaultLogo={source !== "fight"}
+            />
           </View>
         </View>
         ) : null}
@@ -569,7 +600,6 @@ const MatchMarkets = memo(function MatchMarkets({
           <MarketSection title={tr.football1x2} hideTitle={hideMarketTitle}>
             <View style={styles.chipRowThree}>
               <OddsChip
-                label={match.home}
                 odds={formatDecimalOdds(match.oneXTwo.home)}
                 selected={
                   selectedKey ===
@@ -587,7 +617,6 @@ const MatchMarkets = memo(function MatchMarkets({
                 onPress={() => onPick(match.id, "match_winner_1x2", "draw")}
               />
               <OddsChip
-                label={match.away}
                 odds={formatDecimalOdds(match.oneXTwo.away)}
                 selected={
                   selectedKey ===
@@ -1693,12 +1722,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
+  teamColAway: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
   teamName: {
     flex: 1,
     minWidth: 0,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: FontWeight.bold,
     color: Colors.light.text,
+  },
+  teamNameAway: {
+    textAlign: "right",
   },
   teamNameMajor: {
     color: Colors.brand.greenDark,
@@ -1752,13 +1788,13 @@ const styles = StyleSheet.create({
   hdpSide: {
     flex: 1,
     minWidth: 0,
-    minHeight: 50,
+    minHeight: 48,
     backgroundColor: "#F4F8F6",
     borderWidth: 1,
     borderColor: Colors.light.border,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: 6,
-    paddingVertical: 7,
+    paddingVertical: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
@@ -1822,12 +1858,13 @@ const styles = StyleSheet.create({
   triSide: {
     flex: 1,
     minWidth: 0,
+    minHeight: 40,
     backgroundColor: "#F4F8F6",
     borderWidth: 1,
     borderColor: Colors.light.border,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: 6,
-    paddingVertical: 8,
+    paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1847,10 +1884,11 @@ const styles = StyleSheet.create({
   triCenter: {
     flex: 1,
     minWidth: 0,
+    minHeight: 40,
     backgroundColor: Colors.brand.greenButton,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: 6,
-    paddingVertical: 8,
+    paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1876,22 +1914,23 @@ const styles = StyleSheet.create({
   chip: {
     flex: 1,
     minWidth: 0,
+    minHeight: 40,
     backgroundColor: "#F4F8F6",
     borderWidth: 1,
     borderColor: Colors.light.border,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: 6,
-    paddingVertical: 6,
+    paddingVertical: 8,
     alignItems: "center",
     justifyContent: "center",
-    gap: 1,
+    gap: 2,
     position: "relative",
   },
   chipCompact: {
     width: "100%",
     flex: 0,
     alignSelf: "stretch",
-    minHeight: 52,
+    minHeight: 48,
     paddingVertical: 8,
   },
   chipPressed: {
