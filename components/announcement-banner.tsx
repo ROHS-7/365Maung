@@ -1,5 +1,12 @@
 import { createElement, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Platform, StyleSheet, Text, View } from 'react-native';
+import {
+  Animated,
+  Easing,
+  Platform,
+  StyleSheet,
+  Text as RNText,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   BorderRadius,
@@ -9,51 +16,91 @@ import {
   Shadow,
   Spacing,
 } from '@/constants/theme';
+import { useLanguage } from '@/contexts/language';
+import { myanmarLineHeight } from '@/utils/myanmar-text-style';
 
-const COPY_STYLE = {
-  flexShrink: 0,
-  whiteSpace: 'nowrap',
-  display: 'inline-block',
-  paddingRight: 48,
-  fontSize: 14,
-  fontWeight: 500,
-  lineHeight: '24px',
-  color: '#1A2E22',
-  boxSizing: 'content-box',
-} as const;
+const MARQUEE_GAP = 48;
+const MARQUEE_SPEED = 50;
+
+function sanitizeAnnounceText(text: string) {
+  return text.trim().replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
+}
+
+function loopLabel(text: string) {
+  return `${sanitizeAnnounceText(text)}   ✦   `;
+}
+
+function MarqueeLine({
+  children,
+  lang,
+  onSegmentWidth,
+}: {
+  children: string;
+  lang: 'en' | 'my';
+  onSegmentWidth?: (width: number) => void;
+}) {
+  const lineHeight = myanmarLineHeight(FontSize.sm, lang === 'my' ? undefined : 20);
+  return (
+    <View style={s.marqueeSegment} collapsable={false}>
+      <RNText
+        numberOfLines={1}
+        ellipsizeMode="clip"
+        style={[s.marqueeText, { lineHeight }]}
+        onLayout={(e) => {
+          const w = Math.ceil(e.nativeEvent.layout.width);
+          if (w > 1) onSegmentWidth?.(w);
+        }}
+      >
+        {children}
+      </RNText>
+    </View>
+  );
+}
 
 function WebAnnouncementBanner({ text }: { text: string }) {
+  const { lang } = useLanguage();
   const rowRef = useRef<HTMLDivElement | null>(null);
-  const loopText = `${text.trim()}   ✦   `;
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const loopText = loopLabel(text);
+  const lineH = myanmarLineHeight(FontSize.sm, lang === 'my' ? undefined : 28);
+  const trackH = Math.max(lineH + (lang === 'my' ? 6 : 4), 30);
+
+  const copyStyle = {
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+    display: 'inline-block',
+    paddingRight: MARQUEE_GAP,
+    fontSize: 14,
+    fontWeight: 500,
+    lineHeight: `${lineH}px`,
+    color: '#1A2E22',
+  } as const;
 
   useEffect(() => {
     const el = rowRef.current;
-    if (!el) return;
+    const track = trackRef.current;
+    if (!el || !track) return;
 
-    const track = el.parentElement;
-    const trackW = track?.clientWidth ?? 0;
-    for (const child of Array.from(el.children)) {
-      const node = child as HTMLElement;
-      node.style.minWidth = trackW > 0 ? `${trackW}px` : '';
-    }
-
+    let raf = 0;
     let offset = 0;
     let last = performance.now();
-    let raf = 0;
-    const speed = 55;
 
-    const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
+    const run = () => {
       const copyW = el.scrollWidth / 2;
-      if (copyW > 1) {
-        offset += speed * dt;
-        if (offset >= copyW) offset -= copyW;
-        el.style.transform = `translate3d(${-offset}px,0,0)`;
+      if (copyW <= 1) {
+        raf = requestAnimationFrame(run);
+        return;
       }
-      raf = requestAnimationFrame(tick);
+
+      const dt = Math.min(0.05, (performance.now() - last) / 1000);
+      last = performance.now();
+      offset += MARQUEE_SPEED * dt;
+      if (offset >= copyW) offset -= copyW;
+      el.style.transform = `translate3d(${-offset}px,0,0)`;
+      raf = requestAnimationFrame(run);
     };
-    raf = requestAnimationFrame(tick);
+
+    raf = requestAnimationFrame(run);
     return () => cancelAnimationFrame(raf);
   }, [text]);
 
@@ -62,25 +109,39 @@ function WebAnnouncementBanner({ text }: { text: string }) {
       <View style={s.announceIcon}>
         <Ionicons name="megaphone" size={14} color={Colors.brand.greenDark} />
       </View>
-      <View style={s.announceTrack}>
+      <View style={[s.announceTrack, { height: trackH }]}>
         {createElement(
           'div',
           {
-            ref: rowRef,
+            ref: trackRef,
             style: {
-              display: 'inline-flex',
-              flexDirection: 'row',
-              flexWrap: 'nowrap',
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              height: 24,
-              whiteSpace: 'nowrap',
-              willChange: 'transform',
+              flex: 1,
+              minWidth: 0,
+              overflow: 'hidden',
+              position: 'relative',
+              height: trackH,
             },
           },
-          createElement('span', { style: COPY_STYLE }, loopText),
-          createElement('span', { style: COPY_STYLE }, loopText),
+          createElement(
+            'div',
+            {
+              ref: rowRef,
+              style: {
+                display: 'inline-flex',
+                flexDirection: 'row',
+                flexWrap: 'nowrap',
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                height: trackH,
+                alignItems: 'center',
+                whiteSpace: 'nowrap',
+                willChange: 'transform',
+              },
+            },
+            createElement('span', { style: copyStyle }, loopText),
+            createElement('span', { style: copyStyle }, loopText),
+          ),
         )}
       </View>
     </View>
@@ -88,55 +149,73 @@ function WebAnnouncementBanner({ text }: { text: string }) {
 }
 
 function NativeAnnouncementBanner({ text }: { text: string }) {
-  const x = useRef(new Animated.Value(0)).current;
-  const [tw, setTw] = useState(0);
-  const loopText = `${text.trim()}   ✦   `;
+  const { lang } = useLanguage();
+  const translateX = useRef(new Animated.Value(0)).current;
+  const animRef = useRef<Animated.CompositeAnimation | null>(null);
+  const [segmentW, setSegmentW] = useState(0);
+  const loopText = loopLabel(text);
+  const lineH = myanmarLineHeight(FontSize.sm, lang === 'my' ? undefined : 20);
+  const trackH = Math.max(lineH + (lang === 'my' ? 6 : 4), 30);
 
   useEffect(() => {
-    if (!tw) return;
-    x.setValue(0);
-    const anim = Animated.loop(
-      Animated.timing(x, {
-        toValue: -tw,
-        duration: Math.max(tw, 80) * 22,
+    animRef.current?.stop();
+    translateX.stopAnimation();
+    translateX.setValue(0);
+
+    if (segmentW <= 0) return;
+
+    const loopDistance = segmentW + MARQUEE_GAP;
+    const duration = Math.max((loopDistance / MARQUEE_SPEED) * 1000, 4000);
+    const loop = Animated.loop(
+      Animated.timing(translateX, {
+        toValue: -loopDistance,
+        duration,
         easing: Easing.linear,
         useNativeDriver: true,
       }),
     );
-    anim.start();
-    return () => {
-      anim.stop();
-    };
-  }, [tw, loopText, x]);
+    animRef.current = loop;
+    loop.start();
+    return () => loop.stop();
+  }, [segmentW, loopText, translateX]);
 
   return (
     <View style={s.announce}>
       <View style={s.announceIcon}>
         <Ionicons name="megaphone" size={14} color={Colors.brand.greenDark} />
       </View>
-      <View style={s.announceTrack}>
-        <Animated.View style={[s.announceRow, { transform: [{ translateX: x }] }]}>
-          <View
-            collapsable={false}
-            onLayout={(e) => {
-              const w = e.nativeEvent.layout.width;
-              if (w > 0 && Math.abs(w - tw) > 1) setTw(w);
-            }}
+
+      {/* Off-screen single-line width measure — must not be inside clipped track. */}
+      <View style={s.measureWrap} pointerEvents="none">
+        <MarqueeLine lang={lang} onSegmentWidth={setSegmentW}>
+          {loopText}
+        </MarqueeLine>
+      </View>
+
+      <View style={[s.announceTrack, { height: trackH }]}>
+        {segmentW > 0 ? (
+          <Animated.View
+            style={[
+              s.announceRow,
+              {
+                height: trackH,
+                width: segmentW * 2 + MARQUEE_GAP,
+                transform: [{ translateX }],
+              },
+            ]}
           >
-            <Text style={s.announceText} numberOfLines={1}>
-              {loopText}
-            </Text>
-          </View>
-          <Text style={s.announceText} numberOfLines={1}>
-            {loopText}
-          </Text>
-        </Animated.View>
+            <MarqueeLine lang={lang}>{loopText}</MarqueeLine>
+            <View style={s.marqueeGap} />
+            <MarqueeLine lang={lang}>{loopText}</MarqueeLine>
+          </Animated.View>
+        ) : null}
       </View>
     </View>
   );
 }
 
 export function AnnouncementBanner({ text }: { text: string }) {
+  if (!text.trim()) return null;
   if (Platform.OS === 'web') {
     return <WebAnnouncementBanner text={text} />;
   }
@@ -158,34 +237,48 @@ const s = StyleSheet.create({
   },
   announceIcon: {
     width: 28,
-    height: 28,
+    height: 32,
     borderRadius: 14,
     backgroundColor: Colors.brand.gold + '44',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.sm,
+    flexShrink: 0,
+  },
+  measureWrap: {
+    position: 'absolute',
+    opacity: 0,
+    top: -200,
+    left: -20000,
+    width: 50000,
+    flexDirection: 'row',
   },
   announceTrack: {
     flex: 1,
     overflow: 'hidden',
-    height: 24,
-    position: 'relative',
     minWidth: 0,
+    justifyContent: 'center',
   },
   announceRow: {
     position: 'absolute',
     left: 0,
     top: 0,
-    height: 24,
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'nowrap',
   },
-  announceText: {
+  marqueeText: {
     fontSize: FontSize.sm,
-    lineHeight: 24,
     fontWeight: FontWeight.medium,
     color: Colors.light.text,
+    flexShrink: 0,
+    includeFontPadding: false,
+  },
+  marqueeSegment: {
+    flexShrink: 0,
+  },
+  marqueeGap: {
+    width: MARQUEE_GAP,
     flexShrink: 0,
   },
 });

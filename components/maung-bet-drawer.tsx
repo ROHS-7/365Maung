@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   StyleSheet,
   Animated,
   Pressable,
   Easing,
 } from 'react-native';
+import { Text, TextInput } from '@/components/app-text';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 

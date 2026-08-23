@@ -1,4 +1,6 @@
 import { BetSlipDrawer } from "@/components/maung-bet-drawer";
+import { LeagueFilterModal } from "@/components/league-filter-modal";
+import { TeamBadge } from "@/components/team-badge";
 import {
   BorderRadius,
   Colors,
@@ -26,12 +28,15 @@ import {
   makeSelectKey,
   parseSelectKey,
   pickLabel,
+  sortBettingLeagues,
   hdpMarketFromList,
+  oddsPeriodFromMarkets,
   ouMarketFromList,
   toWinMarketFromList,
   uiMatchHasValidMarket,
   type UiLeagueData,
   type UiMatchData,
+  type OddsPeriod,
 } from "@/utils/football-ui";
 import { safeBack } from "@/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
@@ -50,32 +55,20 @@ import {
   Animated,
   InteractionManager,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
+  Text as RNText,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Text } from '@/components/app-text';
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-
-type LeagueFilterModalProps = {
-  visible: boolean;
-  leagues: UiLeagueData[];
-  /** `null` = all leagues. `[]` = none. Otherwise explicit names. */
-  selected: string[] | null;
-  onClose: () => void;
-  onApply: (names: string[] | null) => void;
-  title: string;
-  allLabel: string;
-  applyLabel: string;
-};
 
 type Props = {
   title: string;
@@ -89,144 +82,20 @@ type Props = {
   source?: "football" | "esports" | "fight";
   /** When false, odds are shown but picks / slip / submit are disabled. */
   allowBetting?: boolean;
+  /** Match period label on cards. Defaults from markets when omitted. */
+  period?: OddsPeriod;
 };
 
 type BetSource = NonNullable<Props["source"]>;
 
-function LeagueFilterModal({
-  visible,
-  leagues,
-  selected,
-  onClose,
-  onApply,
-  title,
-  allLabel,
-  applyLabel,
-}: LeagueFilterModalProps) {
-  const [draft, setDraft] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!visible) return;
-    // Show explicit checks: null (all) → every league checked.
-    setDraft(
-      selected == null ? leagues.map((l) => l.name) : [...selected],
-    );
-  }, [visible, selected, leagues]);
-
-  const allNames = useMemo(() => leagues.map((l) => l.name), [leagues]);
-  const allSelected =
-    leagues.length > 0 && draft.length === leagues.length;
-
-  function toggleAll() {
-    setDraft(allSelected ? [] : allNames);
-  }
-
-  function toggleLeague(name: string) {
-    setDraft((prev) =>
-      prev.includes(name)
-        ? prev.filter((n) => n !== name)
-        : [...prev, name],
-    );
-  }
-
-  function handleApply() {
-    if (draft.length === 0) {
-      onApply([]);
-      return;
-    }
-    if (draft.length === leagues.length) {
-      onApply(null);
-      return;
-    }
-    onApply(draft);
-  }
-
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <TouchableOpacity
-        style={styles.filterOverlay}
-        activeOpacity={1}
-        onPress={onClose}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.filterSheet}
-          onPress={(e) => e.stopPropagation?.()}
-        >
-          <View style={styles.filterHandle} />
-          <View style={styles.filterHeader}>
-            <Text style={styles.filterTitle}>{title}</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={10}>
-              <Ionicons
-                name="close"
-                size={22}
-                color={Colors.light.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            style={styles.filterList}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Pressable onPress={toggleAll} style={styles.filterRow}>
-              <Ionicons
-                name={allSelected ? "checkbox" : "square-outline"}
-                size={22}
-                color={
-                  allSelected
-                    ? Colors.brand.greenButton
-                    : Colors.light.placeholder
-                }
-              />
-              <Text style={styles.filterRowText}>{allLabel}</Text>
-            </Pressable>
-
-            {leagues.map((league) => {
-              const checked = draft.includes(league.name);
-              return (
-                <Pressable
-                  key={league.name}
-                  onPress={() => toggleLeague(league.name)}
-                  style={styles.filterRow}
-                >
-                  <Ionicons
-                    name={checked ? "checkbox" : "square-outline"}
-                    size={22}
-                    color={
-                      checked
-                        ? Colors.brand.greenButton
-                        : Colors.light.placeholder
-                    }
-                  />
-                  <Text style={styles.filterRowText} numberOfLines={2}>
-                    {league.name}
-                  </Text>
-                  <Text style={styles.filterRowCount}>
-                    {league.matches.length}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          <TouchableOpacity
-            style={styles.filterApplyBtn}
-            onPress={handleApply}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.filterApplyText}>{applyLabel}</Text>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </Modal>
-  );
+function BadgeCount({
+  value,
+  style,
+}: {
+  value: string | number;
+  style: object;
+}) {
+  return <RNText style={[styles.badgeCircleText, style]}>{value}</RNText>;
 }
 
 const OddsChip = memo(function OddsChip({
@@ -277,7 +146,105 @@ const OddsChip = memo(function OddsChip({
   );
 });
 
-/** Left | green center line | Right — like Over | 2.5 | Under */
+/** Home | Away with green handicap pill on the inner edge of the giving team. */
+const HDP_TEAM_LOGO_SIZE = 26;
+
+const HdpTeamRow = memo(function HdpTeamRow({
+  homeLabel,
+  awayLabel,
+  homeLogo,
+  awayLogo,
+  line,
+  homeHasLine,
+  homeSelected,
+  awaySelected,
+  onHome,
+  onAway,
+}: {
+  homeLabel: string;
+  awayLabel: string;
+  homeLogo?: string;
+  awayLogo?: string;
+  line: string;
+  homeHasLine: boolean;
+  homeSelected: boolean;
+  awaySelected: boolean;
+  onHome: () => void;
+  onAway: () => void;
+}) {
+  return (
+    <View style={styles.hdpRow}>
+      <Pressable
+        onPress={onHome}
+        style={({ pressed }) => [
+          styles.hdpSide,
+          homeSelected && styles.hdpSideSelected,
+          pressed && !homeSelected && styles.chipPressed,
+        ]}
+      >
+        <View style={styles.hdpTeamContent}>
+          <TeamBadge name={homeLabel} logo={homeLogo} size={HDP_TEAM_LOGO_SIZE} />
+          <Text
+            style={[styles.hdpTeamText, homeSelected && styles.hdpTeamTextSelected]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}
+          >
+            {homeLabel}
+          </Text>
+        </View>
+        {homeHasLine ? (
+          <View style={styles.hdpBadgeInline}>
+            <Text
+              style={[
+                styles.hdpBadgeText,
+                homeSelected && styles.hdpBadgeTextOnSelected,
+              ]}
+            >
+              {line}
+            </Text>
+          </View>
+        ) : null}
+      </Pressable>
+      <Pressable
+        onPress={onAway}
+        style={({ pressed }) => [
+          styles.hdpSide,
+          awaySelected && styles.hdpSideSelected,
+          pressed && !awaySelected && styles.chipPressed,
+        ]}
+      >
+        {!homeHasLine ? (
+          <View style={[styles.hdpBadgeInline, styles.hdpBadgeInlineLeading]}>
+            <Text
+              style={[
+                styles.hdpBadgeText,
+                awaySelected && styles.hdpBadgeTextOnSelected,
+              ]}
+            >
+              {line}
+            </Text>
+          </View>
+        ) : null}
+        <View style={[styles.hdpTeamContent, styles.hdpTeamContentAway]}>
+          <Text
+            style={[
+              styles.hdpTeamText,
+              styles.hdpTeamTextAway,
+              awaySelected && styles.hdpTeamTextSelected,
+            ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}
+          >
+            {awayLabel}
+          </Text>
+          <TeamBadge name={awayLabel} logo={awayLogo} size={HDP_TEAM_LOGO_SIZE} />
+        </View>
+      </Pressable>
+    </View>
+  );
+});
 const TriLineRow = memo(function TriLineRow({
   leftLabel,
   rightLabel,
@@ -362,21 +329,25 @@ function MarketSection({
 const MatchMarkets = memo(function MatchMarkets({
   match,
   markets,
+  period,
   selectedKey,
   onPick,
   flash,
   exiting,
   onExited,
   interactive = true,
+  source = "football",
 }: {
   match: UiMatchData;
   markets: FootballMarket[];
+  period: OddsPeriod;
   selectedKey: string | null;
   onPick: (matchId: string, market: FootballMarket, pick: string) => void;
   flash?: boolean;
   exiting?: boolean;
   onExited?: (matchId: string) => void;
   interactive?: boolean;
+  source?: BetSource;
 }) {
   const { tr } = useLanguage();
   // Always home left / away right (match header order). Odds line stays on giving team.
@@ -388,6 +359,8 @@ const MatchMarkets = memo(function MatchMarkets({
   const hdpMarket = hdpMarketFromList(markets);
   const ouMarket = ouMarketFromList(markets);
   const toWinMarket = toWinMarketFromList(markets);
+  const periodLabel =
+    period === "fh" ? tr.footballFirstHalf : tr.footballFullTime;
   const flashAnim = useRef(new Animated.Value(0)).current;
   const exitOpacity = useRef(new Animated.Value(1)).current;
   const exitTranslate = useRef(new Animated.Value(0)).current;
@@ -459,14 +432,27 @@ const MatchMarkets = memo(function MatchMarkets({
         style={[styles.matchHeader, match.isMajor && styles.matchHeaderMajor]}
       >
         <View style={styles.matchMetaRow}>
-          {match.isMajor ? (
-            <View style={styles.majorBadge}>
-              <Ionicons name="star" size={9} color={Colors.brand.greenDark} />
-              <Text style={styles.majorBadgeText}>{tr.footballMajorMatch}</Text>
-            </View>
-          ) : (
-            <View />
-          )}
+          <View style={styles.matchMetaLeft}>
+            {source === "football" ? (
+              <View
+                style={[
+                  styles.periodBadge,
+                  period === "fh" ? styles.periodBadgeFh : styles.periodBadgeFt,
+                  match.isMajor && styles.periodBadgeMajor,
+                ]}
+              >
+                <Text style={styles.periodBadgeText} numberOfLines={1}>
+                  {periodLabel}
+                </Text>
+              </View>
+            ) : null}
+            {match.isMajor ? (
+              <View style={styles.majorBadge}>
+                <Ionicons name="star" size={9} color={Colors.brand.greenDark} />
+                <Text style={styles.majorBadgeText}>{tr.footballMajorMatch}</Text>
+              </View>
+            ) : null}
+          </View>
           <Text
             style={[
               styles.matchTimeText,
@@ -477,11 +463,13 @@ const MatchMarkets = memo(function MatchMarkets({
           </Text>
         </View>
 
+        {source !== "football" ? (
         <View style={styles.teamsRow}>
           <View style={styles.teamCol}>
+            <TeamBadge name={match.home} logo={match.homeLogo} size={24} />
             <Text
               style={[styles.teamName, match.isMajor && styles.teamNameMajor]}
-              numberOfLines={1}
+              numberOfLines={2}
             >
               {match.home}
             </Text>
@@ -489,19 +477,20 @@ const MatchMarkets = memo(function MatchMarkets({
           <Text style={[styles.vsText, match.isMajor && styles.vsTextMajor]}>
             {tr.maungVs}
           </Text>
-          <View style={[styles.teamCol, styles.teamColAway]}>
+          <View style={styles.teamCol}>
+            <TeamBadge name={match.away} logo={match.awayLogo} size={24} />
             <Text
               style={[
                 styles.teamName,
-                styles.teamNameAway,
                 match.isMajor && styles.teamNameMajor,
               ]}
-              numberOfLines={1}
+              numberOfLines={2}
             >
               {match.away}
             </Text>
           </View>
         </View>
+        ) : null}
       </View>
 
       <View
@@ -510,26 +499,24 @@ const MatchMarkets = memo(function MatchMarkets({
         {hdpMarket &&
           uiMatchHasValidMarket(match, hdpMarket) && (
           <MarketSection title={tr.maungHDP} hideTitle={hideMarketTitle}>
-            <View style={styles.chipRow}>
-              <OddsChip
-                label={match.home}
-                odds={homeIsGiving ? match.hdpLine : undefined}
-                selected={
-                  selectedKey ===
-                  makeSelectKey(match.id, hdpMarket, homePick)
-                }
-                onPress={() => onPick(match.id, hdpMarket, homePick)}
-              />
-              <OddsChip
-                label={match.away}
-                odds={homeIsGiving ? undefined : match.hdpLine}
-                selected={
-                  selectedKey ===
-                  makeSelectKey(match.id, hdpMarket, awayPick)
-                }
-                onPress={() => onPick(match.id, hdpMarket, awayPick)}
-              />
-            </View>
+            <HdpTeamRow
+              homeLabel={match.home}
+              awayLabel={match.away}
+              homeLogo={match.homeLogo}
+              awayLogo={match.awayLogo}
+              line={match.hdpLine}
+              homeHasLine={homeIsGiving}
+              homeSelected={
+                selectedKey ===
+                makeSelectKey(match.id, hdpMarket, homePick)
+              }
+              awaySelected={
+                selectedKey ===
+                makeSelectKey(match.id, hdpMarket, awayPick)
+              }
+              onHome={() => onPick(match.id, hdpMarket, homePick)}
+              onAway={() => onPick(match.id, hdpMarket, awayPick)}
+            />
           </MarketSection>
         )}
 
@@ -729,6 +716,7 @@ const MatchMarkets = memo(function MatchMarkets({
 type LeagueBlockProps = {
   league: UiLeagueData;
   markets: FootballMarket[];
+  period: OddsPeriod;
   selectedByMatch: Record<string, string>;
   onPick: (matchId: string, market: FootballMarket, pick: string) => void;
   source?: BetSource;
@@ -752,6 +740,7 @@ function areLeagueBlocksEqual(
   if (
     prev.league !== next.league ||
     prev.markets !== next.markets ||
+    prev.period !== next.period ||
     prev.onPick !== next.onPick ||
     prev.source !== next.source ||
     prev.interactive !== next.interactive ||
@@ -786,6 +775,7 @@ function areLeagueBlocksEqual(
 const LeagueBlock = memo(function LeagueBlock({
   league,
   markets,
+  period,
   selectedByMatch,
   onPick,
   source = "football",
@@ -815,7 +805,7 @@ const LeagueBlock = memo(function LeagueBlock({
           {league.name}
         </Text>
         <View style={styles.leagueCountPill}>
-          <Text style={styles.leagueCount}>{league.matches.length}</Text>
+          <BadgeCount value={league.matches.length} style={styles.leagueCount} />
         </View>
       </View>
       <View style={styles.leagueMatches}>
@@ -824,9 +814,11 @@ const LeagueBlock = memo(function LeagueBlock({
             key={match.id}
             match={match}
             markets={markets}
+            period={period}
             selectedKey={selectedByMatch[match.id] ?? null}
             onPick={onPick}
             interactive={interactive}
+            source={source}
             flash={flashIds.has(match.id)}
             exiting={exitingIds.has(match.id)}
             onExited={onMatchExited}
@@ -847,6 +839,7 @@ export function FootballBetScreen({
   minErr,
   source = "football",
   allowBetting = true,
+  period: periodProp,
 }: Props) {
   useRequireAuth();
   useHideParentTabBar();
@@ -893,6 +886,7 @@ export function FootballBetScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [marketsKey],
   );
+  const oddsPeriod = periodProp ?? oddsPeriodFromMarkets(stableMarkets);
 
   const filteredLeagues = useMemo(() => {
     if (selectedLeagues == null) return leagues;
@@ -1017,9 +1011,16 @@ export function FootballBetScreen({
         out.push({ ...league, matches });
       }
     }
-    if (!changed && out.length === filteredLeagues.length) return filteredLeagues;
-    return out;
+    if (!changed && out.length === filteredLeagues.length) {
+      return sortBettingLeagues(filteredLeagues);
+    }
+    return sortBettingLeagues(out);
   }, [filteredLeagues, exitingIds, removedIds]);
+
+  const visibleMatchCount = useMemo(
+    () => displayLeagues.reduce((sum, league) => sum + league.matches.length, 0),
+    [displayLeagues],
+  );
 
   const handleMatchExited = useCallback((matchId: string) => {
     setExitingIds((prev) => {
@@ -1095,6 +1096,7 @@ export function FootballBetScreen({
   const filterSummary = filterActive
     ? String(selectedLeagues.length)
     : tr.footballAllLeagues;
+  const canFilter = !loading && !error && leagues.length > 0;
 
   const count = Object.keys(selections).length;
   const canBet = count >= minPicks;
@@ -1230,14 +1232,58 @@ export function FootballBetScreen({
           >
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{title}</Text>
-          {allowBetting ? (
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {title}
+          </Text>
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              onPress={() => setFilterOpen(true)}
+              disabled={!canFilter}
+              style={[
+                styles.headerFilterPill,
+                filterActive && styles.headerFilterPillActive,
+                !canFilter && styles.headerFilterPillDisabled,
+              ]}
+              hitSlop={4}
+              activeOpacity={0.75}
+            >
+              <Ionicons
+                name="options-outline"
+                size={15}
+                color={
+                  !canFilter
+                    ? "rgba(255,255,255,0.35)"
+                    : filterActive
+                      ? Colors.brand.gold
+                      : "#fff"
+                }
+              />
+              <Text
+                style={[
+                  styles.headerFilterLabel,
+                  filterActive && styles.headerFilterLabelActive,
+                  !canFilter && styles.headerFilterLabelDisabled,
+                ]}
+                numberOfLines={1}
+              >
+                {tr.footballLeagueFilter}
+              </Text>
+              {filterActive ? (
+                <View style={styles.headerFilterActiveBadge}>
+                  <BadgeCount
+                    value={filterSummary}
+                    style={styles.headerFilterActiveBadgeText}
+                  />
+                </View>
+              ) : null}
+            </TouchableOpacity>
             <View style={styles.pickBadge}>
-              <Text style={styles.pickBadgeText}>{count}</Text>
+              <BadgeCount
+                value={visibleMatchCount}
+                style={styles.pickBadgeText}
+              />
             </View>
-          ) : (
-            <View style={styles.backBtn} />
-          )}
+          </View>
         </View>
 
         {count === 0 && (
@@ -1248,49 +1294,6 @@ export function FootballBetScreen({
               color={Colors.brand.greenMid}
             />
             <Text style={styles.hintText}>{hint}</Text>
-          </View>
-        )}
-
-        {!loading && !error && leagues.length > 0 && (
-          <View style={styles.filterBar}>
-            <TouchableOpacity
-              style={[
-                styles.filterBtn,
-                filterActive && styles.filterBtnActive,
-              ]}
-              onPress={() => setFilterOpen(true)}
-              activeOpacity={0.85}
-            >
-              <Ionicons
-                name="options-outline"
-                size={16}
-                color={filterActive ? "#fff" : Colors.brand.greenMid}
-              />
-              <Text
-                style={[
-                  styles.filterBtnText,
-                  filterActive && styles.filterBtnTextActive,
-                ]}
-              >
-                {tr.footballLeagueFilter}
-              </Text>
-              <View
-                style={[
-                  styles.filterBadge,
-                  filterActive && styles.filterBadgeActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.filterBadgeText,
-                    filterActive && styles.filterBadgeTextActive,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {filterSummary}
-                </Text>
-              </View>
-            </TouchableOpacity>
           </View>
         )}
 
@@ -1354,6 +1357,7 @@ export function FootballBetScreen({
                 key={league.name}
                 league={league}
                 markets={stableMarkets}
+                period={oddsPeriod}
                 selectedByMatch={selectedByMatch}
                 onPick={handlePick}
                 source={source}
@@ -1409,6 +1413,69 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: "center",
   },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 8,
+    flexShrink: 1,
+    maxWidth: "46%",
+  },
+  headerFilterPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    maxWidth: 132,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.24)",
+  },
+  headerFilterPillActive: {
+    backgroundColor: "rgba(255,255,255,0.22)",
+    borderColor: Colors.brand.gold,
+  },
+  headerFilterPillDisabled: {
+    opacity: 0.5,
+  },
+  headerFilterLabel: {
+    flexShrink: 1,
+    fontSize: 11,
+    fontWeight: FontWeight.semibold,
+    color: "#fff",
+  },
+  headerFilterLabelActive: {
+    color: Colors.brand.gold,
+  },
+  headerFilterLabelDisabled: {
+    color: "rgba(255,255,255,0.35)",
+  },
+  headerFilterActiveBadge: {
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.brand.gold,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  headerFilterActiveBadgeText: {
+    fontSize: 9,
+    lineHeight: 9,
+    fontWeight: FontWeight.bold,
+    color: Colors.brand.greenDark,
+  },
+  badgeCircleText: {
+    textAlign: "center",
+    includeFontPadding: false,
+    paddingTop: 0,
+    paddingBottom: 0,
+    ...(Platform.OS === "android"
+      ? { textAlignVertical: "center" as const }
+      : {}),
+  },
   pickBadge: {
     minWidth: 28,
     height: 28,
@@ -1416,10 +1483,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brand.gold,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
   },
+  pickBadgeSpacer: { width: 28 },
   pickBadgeText: {
     fontSize: FontSize.sm,
+    lineHeight: FontSize.sm,
     fontWeight: FontWeight.bold,
     color: Colors.brand.greenDark,
   },
@@ -1441,114 +1510,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FontSize.sm,
     color: Colors.light.textSecondary,
-  },
-  filterBar: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.sm,
-  },
-  filterBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    alignSelf: "flex-start",
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    borderRadius: BorderRadius.full,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    ...Shadow.sm,
-  },
-  filterBtnActive: {
-    backgroundColor: Colors.brand.greenButton,
-    borderColor: Colors.brand.greenButton,
-  },
-  filterBtnText: {
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.semibold,
-    color: Colors.brand.greenMid,
-  },
-  filterBtnTextActive: { color: "#fff" },
-  filterBadge: {
-    maxWidth: 120,
-    backgroundColor: Colors.brand.offWhite,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  filterBadgeActive: { backgroundColor: "rgba(255,255,255,0.25)" },
-  filterBadgeText: {
-    fontSize: 11,
-    fontWeight: FontWeight.bold,
-    color: Colors.light.textSecondary,
-  },
-  filterBadgeTextActive: { color: "#fff" },
-  filterOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  filterSheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: 28,
-    maxHeight: "75%",
-    ...Shadow.lg,
-  },
-  filterHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.light.border,
-    alignSelf: "center",
-    marginBottom: Spacing.md,
-  },
-  filterHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: Spacing.sm,
-  },
-  filterTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: Colors.light.text,
-  },
-  filterList: { flexGrow: 0 },
-  filterRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.light.border,
-  },
-  filterRowText: {
-    flex: 1,
-    fontSize: FontSize.md,
-    fontWeight: FontWeight.medium,
-    color: Colors.light.text,
-  },
-  filterRowCount: {
-    fontSize: 12,
-    fontWeight: FontWeight.semibold,
-    color: Colors.light.textSecondary,
-  },
-  filterApplyBtn: {
-    marginTop: Spacing.md,
-    backgroundColor: Colors.brand.greenButton,
-    borderRadius: BorderRadius.xl,
-    height: 50,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  filterApplyText: {
-    fontSize: FontSize.md,
-    fontWeight: FontWeight.bold,
-    color: "#fff",
   },
   scroll: { flex: 1 },
   scrollContent: {
@@ -1608,14 +1569,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   leagueCountPill: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: "#fff",
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
     ...Shadow.sm,
   },
   leagueCount: {
     fontSize: 10,
+    lineHeight: 10,
     fontWeight: FontWeight.bold,
     color: Colors.brand.greenMid,
   },
@@ -1660,6 +1625,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     minHeight: 16,
+    gap: 8,
+  },
+  matchMetaLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  periodBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  periodBadgeFt: {
+    backgroundColor: "#EF8121",
+  },
+  periodBadgeFh: {
+    backgroundColor: "#F09440",
+  },
+  periodBadgeMajor: {
+    backgroundColor: "#D9701A",
+  },
+  periodBadgeText: {
+    fontSize: 9,
+    fontWeight: FontWeight.extrabold,
+    color: "#FFF5E1",
+    letterSpacing: 0.3,
   },
   majorBadge: {
     flexDirection: "row",
@@ -1694,18 +1689,16 @@ const styles = StyleSheet.create({
   teamCol: {
     flex: 1,
     minWidth: 0,
-  },
-  teamColAway: {
-    alignItems: "flex-end",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   teamName: {
+    flex: 1,
+    minWidth: 0,
     fontSize: 14,
     fontWeight: FontWeight.bold,
     color: Colors.light.text,
-    lineHeight: 18,
-  },
-  teamNameAway: {
-    textAlign: "right",
   },
   teamNameMajor: {
     color: Colors.brand.greenDark,
@@ -1750,6 +1743,76 @@ const styles = StyleSheet.create({
   chipRowThree: {
     flexDirection: "row",
     gap: 6,
+  },
+  hdpRow: {
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "stretch",
+  },
+  hdpSide: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 50,
+    backgroundColor: "#F4F8F6",
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  hdpSideSelected: {
+    backgroundColor: Colors.brand.greenDark,
+    borderColor: Colors.brand.greenDark,
+  },
+  hdpTeamContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    minWidth: 0,
+  },
+  hdpTeamText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 11,
+    fontWeight: FontWeight.semibold,
+    color: Colors.light.text,
+    textAlign: "left",
+  },
+  hdpTeamTextAway: {
+    textAlign: "right",
+  },
+  hdpTeamContentAway: {
+    justifyContent: "flex-end",
+  },
+  hdpTeamTextSelected: {
+    color: "#fff",
+  },
+  hdpBadgeInline: {
+    flexShrink: 0,
+    marginLeft: 2,
+  },
+  hdpBadgeInlineLeading: {
+    marginLeft: 0,
+    marginRight: 2,
+  },
+  hdpBadgeText: {
+    fontSize: 11,
+    fontWeight: FontWeight.extrabold,
+    color: "#fff",
+    letterSpacing: -0.3,
+    backgroundColor: Colors.brand.greenButton,
+    borderRadius: 999,
+    overflow: "hidden",
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+  hdpBadgeTextOnSelected: {
+    color: Colors.brand.greenDark,
+    backgroundColor: "#fff",
   },
   triRow: {
     flexDirection: "row",
@@ -1853,7 +1916,6 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.medium,
     color: Colors.light.textSecondary,
     textAlign: "center",
-    lineHeight: 12,
   },
   chipLabelOnly: {
     fontSize: 11,

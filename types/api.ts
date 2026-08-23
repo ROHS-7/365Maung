@@ -219,6 +219,8 @@ export type CoinRequestsResponse = {
   meta: PaginationMeta;
 };
 
+export type NewsCategory = 'football' | 'esports' | 'fight';
+
 export type FootballNewsArticle = {
   id: number;
   title: string;
@@ -229,6 +231,7 @@ export type FootballNewsArticle = {
   is_loved: boolean;
   created_at: string;
   updated_at?: string;
+  category: NewsCategory;
 };
 
 export type FootballNewsListResponse = {

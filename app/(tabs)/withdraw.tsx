@@ -25,12 +25,11 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
   RefreshControl,
 } from 'react-native';
+import { Text, TextInput } from '@/components/app-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WithdrawScreen() {

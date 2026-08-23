@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import {
   Modal,
   View,
-  Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
   Pressable,
 } from 'react-native';
+import { Text, TextInput } from '@/components/app-text';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { PAYMENT_PROVIDERS } from '@/constants/payment-providers';

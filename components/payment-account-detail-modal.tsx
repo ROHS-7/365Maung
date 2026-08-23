@@ -1,4 +1,5 @@
-import { Modal, TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { Modal, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { Text } from '@/components/app-text';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { getProviderMeta } from '@/constants/payment-providers';

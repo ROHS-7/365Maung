@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity,
-  Switch, StyleSheet, KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
+  View,
+  TouchableOpacity,
+  Switch,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar,
+  ActivityIndicator,
   Image,
 } from 'react-native';
+import { Text, TextInput } from '@/components/app-text';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';

@@ -9,6 +9,7 @@ export type HdpOuBet = {
   kind: 'hdpou';
   id: string;
   time: string;
+  createdAt?: string;
   home: string;
   away: string;
   betType: 'HDP' | 'O/U' | 'O/E' | '1X2' | 'CS' | 'HDP 1H' | 'O/U 1H' | 'To Win' | 'Fight';
@@ -34,6 +35,7 @@ export type ParlayBet = {
   kind: 'parlay';
   id: string;
   time: string;
+  createdAt?: string;
   picks: {
     home: string;
     away: string;

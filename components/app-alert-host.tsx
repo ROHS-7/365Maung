@@ -4,10 +4,10 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/app-text';
 import {
   BorderRadius,
   Colors,

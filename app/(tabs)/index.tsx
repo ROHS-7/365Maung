@@ -28,11 +28,11 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
   Platform,
 } from "react-native";
+import { Text } from '@/components/app-text';
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const MENU_ICONS = {
@@ -628,7 +628,6 @@ const s = StyleSheet.create({
     fontWeight: FontWeight.semibold,
     color: Colors.light.text,
     textAlign: "center",
-    lineHeight: 14,
   },
   serviceGrid: {
     flexDirection: "row",
@@ -659,7 +658,6 @@ const s = StyleSheet.create({
     fontWeight: FontWeight.semibold,
     color: Colors.light.text,
     textAlign: "center",
-    lineHeight: 14,
   },
   tilePressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
 });

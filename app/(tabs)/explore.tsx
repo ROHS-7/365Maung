@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, RefreshControl, Platform } from 'react-native';
+import { Text } from '@/components/app-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -290,14 +291,13 @@ const s = StyleSheet.create({
     fontSize: FontSize.md,
     fontWeight: FontWeight.semibold,
     color: Colors.light.text,
-    ...Platform.select({ web: { lineHeight: 24 }, default: {} }),
   },
   rowSublabel: {
     fontSize: FontSize.xs,
     color: Colors.light.textSecondary,
     marginTop: 1,
     ...Platform.select({
-      web: { lineHeight: 18, marginTop: 4, paddingBottom: 2 },
+      web: { marginTop: 4, paddingBottom: 2 },
       default: {},
     }),
   },
@@ -335,7 +335,6 @@ const s = StyleSheet.create({
     color: Colors.light.textSecondary,
     ...Platform.select({
       web: {
-        lineHeight: 24,
         paddingVertical: 2,
         overflow: 'visible',
       },

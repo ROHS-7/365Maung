@@ -6,6 +6,8 @@ export type LiveStreamServer = {
 
 export type LiveMatchStatus = 'live' | 'vs' | string;
 
+export type LiveSport = 'football' | 'basketball';
+
 export type LiveMatch = {
   match_time: number;
   match_status: LiveMatchStatus;
@@ -15,6 +17,7 @@ export type LiveMatch = {
   away_team_logo: string;
   league_name: string;
   league_logo: string;
+  sport: LiveSport;
   servers: LiveStreamServer[] | null;
 };
 

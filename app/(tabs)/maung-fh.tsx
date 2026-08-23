@@ -8,6 +8,7 @@ export default function MaungFhScreen() {
       title={tr.maungFhTitle}
       mode="mix"
       markets={['asian_handicap_fh', 'goals_ou_fh']}
+      period="fh"
       minPicks={2}
       stakePlaceholder="500"
       hint={tr.maungMinPicksHint}

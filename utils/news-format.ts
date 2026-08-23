@@ -1,5 +1,5 @@
-import type { Lang } from '@/constants/i18n';
-import type { FootballNewsArticle } from '@/types/api';
+import type { Lang, Translations } from '@/constants/i18n';
+import type { FootballNewsArticle, NewsCategory } from '@/types/api';
 
 export function formatCount(n: number): string {
   if (n >= 1_000_000) {
@@ -43,4 +43,13 @@ export function estimateReadMinutes(content: string): number {
 export function newsImageUri(article: FootballNewsArticle): string | null {
   const url = article.image_url?.trim();
   return url || null;
+}
+
+export function newsCategoryLabel(
+  category: NewsCategory | undefined,
+  tr: Translations,
+): string {
+  if (category === 'esports') return tr.newsCategoryEsports;
+  if (category === 'fight') return tr.newsCategoryFight;
+  return tr.newsCategoryFootball;
 }

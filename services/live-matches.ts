@@ -3,9 +3,16 @@ import { apiRequest } from '@/lib/api-client';
 import type {
   LiveMatch,
   LiveMatchesResponse,
+  LiveSport,
   LiveStreamServer,
   UiLiveMatch,
 } from '@/types/live-matches';
+
+/** Generic basketball league mark used by the live-stream source. */
+const BASKETBALL_LEAGUE_LOGO = 'f3ca56f46baa72406815281470283bb8';
+
+const BASKETBALL_LEAGUE_RE =
+  /\b(wnba|nba|mpbl|lnbp|nzbl|vba|fiba|ncaa|nbl|wcbc|wfi|cba|kbl|pba|ncaab|euroleague)\b|basket/i;
 
 const matchCache = new Map<string, UiLiveMatch>();
 
@@ -51,12 +58,40 @@ function normalizeServers(raw: unknown): LiveStreamServer[] | null {
   return servers.length ? servers : null;
 }
 
+function resolveLiveSport(
+  raw: Record<string, unknown>,
+  leagueName: string,
+  leagueLogo: string,
+): LiveSport {
+  const league = asRecord(raw.league);
+  const explicit = pickString(
+    raw.category,
+    raw.sport,
+    raw.sport_type,
+    raw.sportType,
+    raw.match_type,
+    league.category,
+    league.sport,
+  ).toLowerCase();
+
+  if (explicit) {
+    if (/(basket|nba|wnba)/.test(explicit)) return 'basketball';
+    if (/(foot|soccer)/.test(explicit)) return 'football';
+  }
+
+  if (leagueLogo.includes(BASKETBALL_LEAGUE_LOGO)) return 'basketball';
+  if (BASKETBALL_LEAGUE_RE.test(leagueName)) return 'basketball';
+  return 'football';
+}
+
 function normalizeLiveMatch(raw: unknown): LiveMatch {
   const m = asRecord(raw);
   const home = asRecord(m.home ?? m.home_team);
   const away = asRecord(m.away ?? m.away_team);
   const league = asRecord(m.league);
   const isLive = m.is_live === true || m.match_status === 'live' || m.status === 'live';
+  const league_name = pickString(m.league_name, league.name, league.name_en);
+  const league_logo = pickString(m.league_logo, league.logo, league.logo_url, league.image);
 
   return {
     match_time: toUnixSeconds(m.match_time),
@@ -65,8 +100,9 @@ function normalizeLiveMatch(raw: unknown): LiveMatch {
     home_team_logo: pickString(m.home_team_logo, home.logo, home.logo_url, home.image),
     away_team_name: pickString(m.away_team_name, away.name, away.name_en),
     away_team_logo: pickString(m.away_team_logo, away.logo, away.logo_url, away.image),
-    league_name: pickString(m.league_name, league.name, league.name_en),
-    league_logo: pickString(m.league_logo, league.logo, league.logo_url, league.image),
+    league_name,
+    league_logo,
+    sport: resolveLiveSport(m, league_name, league_logo),
     servers: normalizeServers(m.servers ?? m.streams ?? m.live_streams),
   };
 }

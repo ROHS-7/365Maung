@@ -6,7 +6,8 @@ import { useRequireAuth } from '@/hooks/use-require-auth';
 import { Colors, FontSize, FontWeight, Spacing } from '@/constants/theme';
 import { safeBack } from '@/utils/navigation';
 import { Ionicons } from '@expo/vector-icons';
-import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { TouchableOpacity, View, StyleSheet } from 'react-native';
+import { Text } from '@/components/app-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function FightScreen() {

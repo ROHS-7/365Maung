@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Text } from '@/components/app-text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -7,7 +8,7 @@ import { NewsTheme } from '@/constants/news-theme';
 import { useLanguage } from '@/contexts/language';
 import { formatCount } from '@/utils/news-format';
 
-const TAB_ROW_HEIGHT = 50;
+const TAB_ROW_HEIGHT = 58;
 const ACTION_ROW_HEIGHT = 52;
 
 export function getNewsDetailBottomBarHeight(insetsBottom: number) {

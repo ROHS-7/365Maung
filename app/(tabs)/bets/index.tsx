@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
   RefreshControl,
   Modal,
 } from 'react-native';
+import { Text } from '@/components/app-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';

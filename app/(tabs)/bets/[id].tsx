@@ -1,12 +1,12 @@
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { Text } from '@/components/app-text';
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,9 +28,13 @@ import {
 } from '@/constants/bets';
 import { formatHdpTierLabel } from '@/utils/hdp-settlement';
 import { fetchBetSlips, getCachedBetSlip } from '@/services/football';
-import { mapBetSlipToBet, betTypeDisplayLabel, parlayTypeLabel } from '@/utils/football-ui';
+import { mapBetSlipToBet, betTypeDisplayLabel, parlayTypeLabel, formatSlipDateTime } from '@/utils/football-ui';
 
 const GREEN = '#27A060';
+
+function placedAtText(bet: Bet): string {
+  return bet.createdAt ? formatSlipDateTime(bet.createdAt) : bet.time;
+}
 
 function MatchTeamsTitle({
   home,
@@ -98,7 +102,7 @@ function HdpOuDetail({ bet }: { bet: HdpOuBet }) {
           <View style={d.typePill}>
             <Text style={d.typePillText}>{betTypeDisplayLabel(bet.betType, tr)}</Text>
           </View>
-          <Text style={d.cardMeta}>{tr.betDetailPlacedAt} · {bet.time}</Text>
+          <Text style={d.cardMeta}>{tr.betDetailPlacedAt} · {placedAtText(bet)}</Text>
         </View>
 
         <Text style={d.sectionTitle}>{tr.betDetailMatch}</Text>
@@ -113,6 +117,7 @@ function HdpOuDetail({ bet }: { bet: HdpOuBet }) {
 
         <Text style={d.sectionTitle}>{tr.betDetailSummary}</Text>
         <DetailRow label={tr.betDetailBetId} value={bet.id.toUpperCase()} />
+        <DetailRow label={tr.betDetailPlacedAt} value={placedAtText(bet)} />
         <DetailRow label={tr.betListPick} value={bet.pick} highlight />
         <DetailRow label={tr.betListLineOdds} value={oddsStr} />
         {tierLabel && <DetailRow label={tr.betListPayout} value={tierLabel} />}
@@ -158,7 +163,7 @@ function ParlayDetail({ bet }: { bet: ParlayBet }) {
           <View style={[d.typePill, { backgroundColor: '#7C3AED' }]}>
             <Text style={d.typePillText}>{parlayTypeLabel(bet.period, tr)}</Text>
           </View>
-          <Text style={d.cardMeta}>{tr.betDetailPlacedAt} · {bet.time}</Text>
+          <Text style={d.cardMeta}>{tr.betDetailPlacedAt} · {placedAtText(bet)}</Text>
         </View>
 
         <Text style={d.sectionTitle}>{tr.betDetailSelections}</Text>
@@ -178,6 +183,7 @@ function ParlayDetail({ bet }: { bet: ParlayBet }) {
 
         <Text style={d.sectionTitle}>{tr.betDetailSummary}</Text>
         <DetailRow label={tr.betDetailBetId} value={bet.id.toUpperCase()} />
+        <DetailRow label={tr.betDetailPlacedAt} value={placedAtText(bet)} />
         <DetailRow label={tr.betListStake} value={`${bet.stake.toLocaleString()} ${tr.currencyUnit}`} highlight />
         {!isPending && (
           <DetailRow

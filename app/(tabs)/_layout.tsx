@@ -1,4 +1,5 @@
-import { TouchableOpacity, View, Text, StyleSheet, Platform } from 'react-native';
+import { TouchableOpacity, View, StyleSheet, Platform, type GestureResponderEvent } from 'react-native';
+import { Text } from '@/components/app-text';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,8 +7,8 @@ import { Colors, FontWeight } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language';
 import { visibleTabBarStyle } from '@/hooks/use-hide-parent-tab-bar';
 
-function LiveTabButton({ onPress }: { onPress?: () => void }) {
-  const { tr } = useLanguage();
+function LiveTabButton({ onPress }: { onPress?: (e: GestureResponderEvent) => void }) {
+  const { tr, lang } = useLanguage();
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={s.liveWrap}>
       <View style={s.liveDiamond}>
@@ -15,21 +16,30 @@ function LiveTabButton({ onPress }: { onPress?: () => void }) {
           <Ionicons name="radio" size={22} color="#fff" />
         </View>
       </View>
-      <Text style={s.liveLabel}>{tr.tabLive}</Text>
+      <Text
+        style={[s.liveLabel, lang === 'my' && s.liveLabelMy]}
+        numberOfLines={lang === 'my' ? 2 : 1}
+      >
+        {tr.tabLive}
+      </Text>
     </TouchableOpacity>
   );
 }
 
 function TabLabel({ children, color }: { children: string; color: string }) {
+  const { lang } = useLanguage();
   return (
-    <Text style={[s.tabLabel, { color }]} numberOfLines={1}>
+    <Text
+      style={[s.tabLabel, lang === 'my' && s.tabLabelMy, { color }]}
+      numberOfLines={lang === 'my' ? 2 : 1}
+    >
       {children}
     </Text>
   );
 }
 
 export default function TabLayout() {
-  const { tr } = useLanguage();
+  const { tr, lang } = useLanguage();
   const insets = useSafeAreaInsets();
 
   return (
@@ -38,7 +48,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: Colors.light.tabIconSelected,
         tabBarInactiveTintColor: Colors.light.icon,
-        tabBarStyle: visibleTabBarStyle(insets.bottom),
+        tabBarStyle: visibleTabBarStyle(insets.bottom, lang),
         tabBarItemStyle: s.tabItem,
         tabBarLabelStyle: s.tabLabel,
         tabBarLabel: ({ children, color }) => (
@@ -147,11 +157,14 @@ const s = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 11,
-    lineHeight: Platform.OS === 'web' ? 20 : 18,
     fontWeight: FontWeight.semibold,
     color: Colors.light.icon,
     marginTop: 2,
     includeFontPadding: true,
+    textAlign: 'center',
+  },
+  tabLabelMy: {
+    marginTop: 0,
   },
   liveWrap: {
     alignItems: 'center',
@@ -171,8 +184,11 @@ const s = StyleSheet.create({
   liveDiamondInner: { transform: [{ rotate: '-45deg' }], alignItems: 'center', justifyContent: 'center' },
   liveLabel: {
     fontSize: 11,
-    lineHeight: Platform.OS === 'web' ? 20 : 18,
     fontWeight: FontWeight.semibold,
     color: Colors.brand.greenButton,
+    textAlign: 'center',
+  },
+  liveLabelMy: {
+    marginTop: -2,
   },
 });

@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
+  Text as RNText,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/app-text';
+import { TeamBadge } from '@/components/team-badge';
+import { LeagueFilterModal } from '@/components/league-filter-modal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LoginPromptCard } from '@/components/login-prompt-card';
@@ -17,6 +21,7 @@ import { useLanguage } from '@/contexts/language';
 import { fetchFootballMatchResults } from '@/services/football';
 import type { FootballMatchResult } from '@/types/football';
 import { formatDrawDate, teamDisplayName } from '@/utils/football-ui';
+import { teamBadgeName, teamLogoUrl } from '@/utils/team-logo';
 import { safeBack } from '@/utils/navigation';
 
 type MatchRow = {
@@ -24,6 +29,10 @@ type MatchRow = {
   time: string;
   home: string;
   away: string;
+  homeBadgeName: string;
+  awayBadgeName: string;
+  homeLogo?: string;
+  awayLogo?: string;
   /** Score shown in the main pill (FT preferred, else HT). */
   displayHome: number | null;
   displayAway: number | null;
@@ -35,29 +44,6 @@ type MatchRow = {
 };
 
 type League = { name: string; matches: MatchRow[] };
-
-const AVATAR_COLORS = [
-  '#2563EB',
-  '#DC2626',
-  '#D97706',
-  '#7C3AED',
-  '#059669',
-  '#DB2777',
-  '#0891B2',
-  '#EA580C',
-];
-
-function avatarColor(name: string) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
-  return AVATAR_COLORS[h % AVATAR_COLORS.length];
-}
-
-function initials(name: string) {
-  const parts = name.trim().split(' ');
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 function addDays(d: Date, n: number) {
   const r = new Date(d);
@@ -115,6 +101,10 @@ function mapResultToRow(
     time: formatMatchTime(m.match_time),
     home: teamDisplayName(m.home, lang),
     away: teamDisplayName(m.away, lang),
+    homeBadgeName: teamBadgeName(m.home),
+    awayBadgeName: teamBadgeName(m.away),
+    homeLogo: teamLogoUrl(m.home),
+    awayLogo: teamLogoUrl(m.away),
     displayHome: ft ? m.home_result : m.home_ht_result,
     displayAway: ft ? m.away_result : m.away_ht_result,
     htHome: ht ? m.home_ht_result : null,
@@ -173,9 +163,7 @@ function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
 
       <View style={s.matchBody}>
         <View style={s.teamLine}>
-          <View style={[s.teamBadge, { backgroundColor: avatarColor(m.home) }]}>
-            <Text style={s.teamBadgeText}>{initials(m.home)}</Text>
-          </View>
+          <TeamBadge name={m.homeBadgeName} logo={m.homeLogo} size={28} />
           <Text
             style={[s.teamLineName, (homeWin || isDraw) && s.teamLineNameWin]}
             numberOfLines={1}
@@ -205,9 +193,7 @@ function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
           >
             {m.away}
           </Text>
-          <View style={[s.teamBadge, { backgroundColor: avatarColor(m.away) }]}>
-            <Text style={s.teamBadgeText}>{initials(m.away)}</Text>
-          </View>
+          <TeamBadge name={m.awayBadgeName} logo={m.awayLogo} size={28} />
         </View>
       </View>
 
@@ -228,7 +214,7 @@ function LeagueCard({ league }: { league: League }) {
           <Ionicons name="football" size={15} color={Colors.brand.greenMid} />
         </View>
         <Text style={s.leagueName}>{league.name}</Text>
-        <Text style={s.leagueCount}>{league.matches.length}</Text>
+        <RNText style={s.leagueCount}>{league.matches.length}</RNText>
       </View>
       <View style={s.leagueCard}>
         {league.matches.map((m, i) => (
@@ -243,6 +229,16 @@ function LeagueCard({ league }: { league: League }) {
   );
 }
 
+function BadgeCount({
+  value,
+  style,
+}: {
+  value: string | number;
+  style: object;
+}) {
+  return <RNText style={[s.badgeCircleText, style]}>{value}</RNText>;
+}
+
 export default function ScoresScreen() {
   const { tr, lang } = useLanguage();
   const { isAuthenticated, token } = useAuth();
@@ -251,8 +247,26 @@ export default function ScoresScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedLeagues, setSelectedLeagues] = useState<string[] | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const drawDateStr = useMemo(() => formatDrawDate(date), [date.toDateString()]);
+
+  const filteredLeagues = useMemo(() => {
+    if (selectedLeagues == null) return leagues;
+    if (selectedLeagues.length === 0) return [];
+    const set = new Set(selectedLeagues);
+    return leagues.filter((l) => set.has(l.name));
+  }, [leagues, selectedLeagues]);
+
+  const visibleMatchCount = useMemo(
+    () => filteredLeagues.reduce((sum, league) => sum + league.matches.length, 0),
+    [filteredLeagues],
+  );
+
+  const filterActive = selectedLeagues != null;
+  const filterSummary = filterActive ? String(selectedLeagues.length) : tr.footballAllLeagues;
+  const canFilter = !loading && !error && leagues.length > 0;
 
   const load = useCallback(
     async (opts?: { soft?: boolean }) => {
@@ -276,6 +290,21 @@ export default function ScoresScreen() {
   useEffect(() => {
     if (isAuthenticated) load();
   }, [isAuthenticated, load]);
+
+  useEffect(() => {
+    setSelectedLeagues(null);
+  }, [drawDateStr]);
+
+  useEffect(() => {
+    if (selectedLeagues == null || leagues.length === 0) return;
+    const names = new Set(leagues.map((l) => l.name));
+    const next = selectedLeagues.filter((n) => names.has(n));
+    if (next.length !== selectedLeagues.length) {
+      setSelectedLeagues(next.length === leagues.length ? null : next);
+    } else if (next.length === leagues.length) {
+      setSelectedLeagues(null);
+    }
+  }, [leagues, selectedLeagues]);
 
   const prev = addDays(date, -1);
   const next = addDays(date, 1);
@@ -315,8 +344,67 @@ export default function ScoresScreen() {
           <Ionicons name="chevron-back" size={22} color="#fff" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{tr.scoresTitle}</Text>
-        <View style={s.headerBtn} />
+        <View style={s.headerRight}>
+          <TouchableOpacity
+            onPress={() => setFilterOpen(true)}
+            disabled={!canFilter}
+            style={[
+              s.headerFilterPill,
+              filterActive && s.headerFilterPillActive,
+              !canFilter && s.headerFilterPillDisabled,
+            ]}
+            hitSlop={4}
+            activeOpacity={0.75}
+          >
+            <Ionicons
+              name="options-outline"
+              size={15}
+              color={
+                !canFilter
+                  ? 'rgba(255,255,255,0.35)'
+                  : filterActive
+                    ? Colors.brand.gold
+                    : '#fff'
+              }
+            />
+            <Text
+              style={[
+                s.headerFilterLabel,
+                filterActive && s.headerFilterLabelActive,
+                !canFilter && s.headerFilterLabelDisabled,
+              ]}
+              numberOfLines={1}
+            >
+              {tr.footballLeagueFilter}
+            </Text>
+            {filterActive ? (
+              <View style={s.headerFilterActiveBadge}>
+                <BadgeCount
+                  value={filterSummary}
+                  style={s.headerFilterActiveBadgeText}
+                />
+              </View>
+            ) : null}
+          </TouchableOpacity>
+          <View style={s.pickBadge}>
+            <BadgeCount value={visibleMatchCount} style={s.pickBadgeText} />
+          </View>
+        </View>
       </View>
+
+      <LeagueFilterModal
+        visible={filterOpen}
+        leagues={leagues}
+        selected={selectedLeagues}
+        onClose={() => setFilterOpen(false)}
+        onApply={(names) => {
+          setSelectedLeagues(names);
+          setFilterOpen(false);
+        }}
+        title={tr.hdpLeagues}
+        allLabel={tr.footballAllLeagues}
+        applyLabel={tr.footballApplyFilter}
+      />
 
       <View style={s.dateNav}>
         <TouchableOpacity
@@ -376,12 +464,12 @@ export default function ScoresScreen() {
               <Text style={s.retryText}>{tr.footballRetry}</Text>
             </TouchableOpacity>
           </View>
-        ) : leagues.length === 0 ? (
+        ) : filteredLeagues.length === 0 ? (
           <View style={s.stateWrap}>
             <Text style={s.emptyText}>{tr.scoresEmpty}</Text>
           </View>
         ) : (
-          leagues.map((league) => (
+          filteredLeagues.map((league) => (
             <LeagueCard key={league.name} league={league} />
           ))
         )}
@@ -396,16 +484,96 @@ const s = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: Colors.brand.greenButton,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 12,
+    gap: Spacing.sm,
   },
-  headerBtn: { padding: 4, minWidth: 36 },
+  headerBtn: { padding: 4, width: 36 },
   headerTitle: {
+    flex: 1,
     fontSize: FontSize.lg,
     fontWeight: FontWeight.bold,
     color: '#fff',
+    textAlign: 'center',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 8,
+    flexShrink: 1,
+    maxWidth: '46%',
+  },
+  headerFilterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    maxWidth: 132,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.24)',
+  },
+  headerFilterPillActive: {
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderColor: Colors.brand.gold,
+  },
+  headerFilterPillDisabled: {
+    opacity: 0.5,
+  },
+  headerFilterLabel: {
+    flexShrink: 1,
+    fontSize: 11,
+    fontWeight: FontWeight.semibold,
+    color: '#fff',
+  },
+  headerFilterLabelActive: {
+    color: Colors.brand.gold,
+  },
+  headerFilterLabelDisabled: {
+    color: 'rgba(255,255,255,0.35)',
+  },
+  headerFilterActiveBadge: {
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.brand.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  headerFilterActiveBadgeText: {
+    fontSize: 9,
+    lineHeight: 9,
+    fontWeight: FontWeight.bold,
+    color: Colors.brand.greenDark,
+  },
+  badgeCircleText: {
+    textAlign: 'center',
+    includeFontPadding: false,
+    paddingTop: 0,
+    paddingBottom: 0,
+    ...(Platform.OS === 'android'
+      ? { textAlignVertical: 'center' as const }
+      : {}),
+  },
+  pickBadge: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.brand.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  pickBadgeText: {
+    fontSize: FontSize.sm,
+    lineHeight: FontSize.sm,
+    fontWeight: FontWeight.bold,
+    color: Colors.brand.greenDark,
   },
 
   dateNav: {
@@ -500,6 +668,7 @@ const s = StyleSheet.create({
   },
   leagueCount: {
     fontSize: 11,
+    lineHeight: 11,
     fontWeight: FontWeight.semibold,
     color: Colors.light.textSecondary,
     backgroundColor: '#fff',
@@ -507,6 +676,8 @@ const s = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: BorderRadius.full,
     overflow: 'hidden',
+    textAlign: 'center',
+    includeFontPadding: false,
   },
 
   leagueCard: {
@@ -564,6 +735,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    overflow: 'hidden',
+  },
+  teamLogo: {
+    backgroundColor: '#F3F4F6',
   },
   teamBadgeText: {
     fontSize: 9,

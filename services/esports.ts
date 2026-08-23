@@ -6,6 +6,7 @@ import type {
   EsportsMatchResultsResponse,
   EsportsMatchesResponse,
 } from '@/types/esports';
+import { applyMatchTeamLogos, normalizeTeamWithLogo } from '@/utils/team-logo';
 
 const MOCK_MATCHES: EsportsMatchesResponse = {
   matches: [
@@ -43,26 +44,13 @@ const MOCK_MATCHES: EsportsMatchesResponse = {
 };
 
 function normalizeTeam(raw: unknown): EsportsMatch['home'] {
-  if (!raw || typeof raw !== 'object') {
-    return { id: 0, name: '', name_en: '' };
-  }
-  const t = raw as Record<string, unknown>;
-  const nameEn =
-    typeof t.name_en === 'string'
-      ? t.name_en
-      : typeof t.nameEn === 'string'
-        ? t.nameEn
-        : '';
-  return {
-    id: typeof t.id === 'number' ? t.id : 0,
-    name: typeof t.name === 'string' ? t.name : '',
-    name_en: nameEn,
-  };
+  return normalizeTeamWithLogo(raw);
 }
 
 function normalizeMatch(raw: unknown): EsportsMatch {
   const m = (raw ?? {}) as Record<string, unknown>;
   const odds = (m.to_win_odds ?? {}) as Record<string, unknown>;
+  const teams = applyMatchTeamLogos(m, normalizeTeam(m.home), normalizeTeam(m.away));
   return {
     id: Number(m.id ?? 0),
     match_id: Number(m.match_id ?? 0),
@@ -77,8 +65,8 @@ function normalizeMatch(raw: unknown): EsportsMatch {
     away_result: m.away_result == null ? null : Number(m.away_result),
     is_show: Boolean(m.is_show),
     is_settle: Boolean(m.is_settle),
-    home: normalizeTeam(m.home),
-    away: normalizeTeam(m.away),
+    home: teams.home,
+    away: teams.away,
     league: {
       id: Number((m.league as { id?: number } | undefined)?.id ?? 0),
       name: String((m.league as { name?: string } | undefined)?.name ?? ''),
@@ -133,6 +121,7 @@ const MOCK_RESULTS: EsportsMatchResultsResponse = {
 
 function normalizeMatchResult(raw: unknown): EsportsMatchResult {
   const m = (raw ?? {}) as Record<string, unknown>;
+  const teams = applyMatchTeamLogos(m, normalizeTeam(m.home), normalizeTeam(m.away));
   return {
     id: Number(m.id ?? 0),
     match_id: Number(m.match_id ?? 0),
@@ -142,8 +131,8 @@ function normalizeMatchResult(raw: unknown): EsportsMatchResult {
     home_result: Number(m.home_result ?? 0),
     away_result: Number(m.away_result ?? 0),
     is_settle: Boolean(m.is_settle),
-    home: normalizeTeam(m.home),
-    away: normalizeTeam(m.away),
+    home: teams.home,
+    away: teams.away,
     league: {
       id: Number((m.league as { id?: number } | undefined)?.id ?? 0),
       name: String((m.league as { name?: string } | undefined)?.name ?? ''),

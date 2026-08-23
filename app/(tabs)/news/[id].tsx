@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { Text } from '@/components/app-text';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,6 +36,7 @@ import type { FootballNewsArticle } from '@/types/api';
 import {
   estimateReadMinutes,
   newsBodyParagraphs,
+  newsCategoryLabel,
   newsImageUri,
   timeAgo,
 } from '@/utils/news-format';
@@ -67,7 +68,7 @@ export default function NewsDetailScreen() {
   const related = useMemo(() => {
     if (!article) return [];
     return getCachedNewsArticles()
-      .filter((item) => item.id !== article.id)
+      .filter((item) => item.id !== article.id && item.category === article.category)
       .slice(0, 4);
   }, [article]);
 
@@ -226,6 +227,7 @@ export default function NewsDetailScreen() {
           <SourceBadge
             name={tr.newsSource}
             timeLabel={`${timeAgo(article.created_at, lang)} · ${readMinutes} ${tr.newsMinRead}`}
+            category={newsCategoryLabel(article.category, tr)}
           />
 
           <View style={s.statsStrip}>

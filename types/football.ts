@@ -2,6 +2,7 @@ export type FootballTeam = {
   id: number;
   name: string;
   name_en: string;
+  logo?: string;
 };
 
 export type FootballLeague = {

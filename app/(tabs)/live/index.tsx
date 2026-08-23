@@ -1,7 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Pressable,
   RefreshControl,
@@ -9,6 +8,7 @@ import {
   FlatList,
   type ListRenderItem,
 } from 'react-native';
+import { Text } from '@/components/app-text';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +32,11 @@ import type { UiLiveMatch } from '@/types/live-matches';
 type ListRow =
   | { type: 'header'; key: string; title: string }
   | { type: 'match'; key: string; match: UiLiveMatch };
+
+const SPORT_ICONS = {
+  football: require('@/assets/icons/football.png'),
+  basketball: require('@/assets/icons/basketball.png'),
+} as const;
 
 function CachedLogo({
   uri,
@@ -73,14 +78,17 @@ const MatchCard = memo(function MatchCard({ match }: { match: UiLiveMatch }) {
     >
       <View style={s.cardTop}>
         <View style={s.leagueRow}>
-          <CachedLogo
-            uri={match.league_logo}
-            style={s.leagueLogo}
-            fallback={
-              <View style={s.leagueLogoPlaceholder}>
-                <Ionicons name="trophy-outline" size={12} color={Colors.brand.greenMid} />
-              </View>
+          <Image
+            source={
+              match.sport === 'basketball'
+                ? SPORT_ICONS.basketball
+                : SPORT_ICONS.football
             }
+            style={s.sportIcon}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+            recyclingKey={match.sport}
+            transition={0}
           />
           <Text style={s.leagueName} numberOfLines={1}>
             {match.league_name}
@@ -344,15 +352,7 @@ const s = StyleSheet.create({
     gap: 8,
   },
   leagueRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 },
-  leagueLogo: { width: 18, height: 18, borderRadius: 4 },
-  leagueLogoPlaceholder: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    backgroundColor: '#E8F5EE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  sportIcon: { width: 18, height: 18 },
   leagueName: {
     flex: 1,
     fontSize: 12,
@@ -405,7 +405,6 @@ const s = StyleSheet.create({
     fontWeight: FontWeight.bold,
     color: Colors.light.text,
     textAlign: 'center',
-    lineHeight: 15,
   },
   teamNameAway: {},
   vsCol: { alignItems: 'center', gap: 4, paddingHorizontal: 4 },

@@ -21,6 +21,8 @@ export type UiMatchData = {
   awayId: number;
   home: string;
   away: string;
+  homeLogo?: string;
+  awayLogo?: string;
   date: string;
   /** Kickoff epoch ms — used to hide matches once started. */
   matchTimeMs: number;
@@ -82,6 +84,38 @@ export function oddsPeriodFromMarkets(markets?: FootballMarket[]): OddsPeriod {
 }
 
 export type UiLeagueData = { name: string; matches: UiMatchData[] };
+
+function compareMatchesForDisplay(a: UiMatchData, b: UiMatchData): number {
+  const majorDiff = Number(b.isMajor) - Number(a.isMajor);
+  if (majorDiff !== 0) return majorDiff;
+  return a.matchTimeMs - b.matchTimeMs;
+}
+
+function leagueDisplayRank(league: UiLeagueData): [number, number] {
+  const majors = league.matches.filter((m) => m.isMajor);
+  const hasMajor = majors.length > 0;
+  const earliestMajor = hasMajor
+    ? Math.min(...majors.map((m) => m.matchTimeMs))
+    : Number.POSITIVE_INFINITY;
+  const earliest = Math.min(...league.matches.map((m) => m.matchTimeMs));
+  return [hasMajor ? 0 : 1, hasMajor ? earliestMajor : earliest];
+}
+
+/** Major matches first within each league; leagues with majors pinned to the top. */
+export function sortBettingLeagues(leagues: UiLeagueData[]): UiLeagueData[] {
+  return leagues
+    .map((league) => ({
+      ...league,
+      matches: [...league.matches].sort(compareMatchesForDisplay),
+    }))
+    .sort((a, b) => {
+      const [aMajor, aTime] = leagueDisplayRank(a);
+      const [bMajor, bTime] = leagueDisplayRank(b);
+      if (aMajor !== bMajor) return aMajor - bMajor;
+      if (aTime !== bTime) return aTime - bTime;
+      return a.name.localeCompare(b.name);
+    });
+}
 
 export const ALL_MARKETS: FootballMarket[] = [
   'asian_handicap',
@@ -280,6 +314,8 @@ export function mapFootballMatchToUi(
     awayId: match.away.id,
     home: teamDisplayName(match.home, lang),
     away: teamDisplayName(match.away, lang),
+    homeLogo: match.home.logo,
+    awayLogo: match.away.logo,
     date: dateStr,
     matchTimeMs,
     hdpGiving,
@@ -325,12 +361,14 @@ export function groupMatchesByLeague(
     arr.push(ui);
     map.set(leagueName, arr);
   }
-  return Array.from(map.entries())
-    .map(([name, leagueMatches]) => ({
-      name,
-      matches: leagueMatches.sort((a, b) => Number(b.isMajor) - Number(a.isMajor)),
-    }))
-    .filter((league) => league.matches.length > 0);
+  return sortBettingLeagues(
+    Array.from(map.entries())
+      .map(([name, leagueMatches]) => ({
+        name,
+        matches: leagueMatches,
+      }))
+      .filter((league) => league.matches.length > 0),
+  );
 }
 
 export function buildMatchMap(leagues: UiLeagueData[]): Map<string, UiMatchData> {
@@ -378,6 +416,8 @@ function matchUiEqual(a: UiMatchData, b: UiMatchData): boolean {
     a.awayId === b.awayId &&
     a.home === b.home &&
     a.away === b.away &&
+    a.homeLogo === b.homeLogo &&
+    a.awayLogo === b.awayLogo &&
     a.date === b.date &&
     a.matchTimeMs === b.matchTimeMs &&
     a.hdpGiving === b.hdpGiving &&
@@ -574,6 +614,21 @@ function formatSlipTime(iso: string): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+export function formatSlipDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const seconds = String(d.getSeconds()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${day}-${month}-${year} ${hours}:${minutes}:${seconds} ${ampm}`;
+}
+
 function readTeamName(team: unknown, lang: Lang): string {
   if (!team || typeof team !== 'object') return '';
   const t = team as Record<string, unknown>;
@@ -750,6 +805,7 @@ export function mapBetSlipToBet(slip: BetSlip, tr: Translations, lang: Lang = 'm
       kind: 'parlay',
       id: String(slip.id),
       time: formatSlipTime(slip.created_at),
+      createdAt: slip.created_at,
       picks: slip.legs.map((leg) => {
         const teams = resolveLegTeams(leg, lang);
         return {
@@ -781,6 +837,7 @@ export function mapBetSlipToBet(slip: BetSlip, tr: Translations, lang: Lang = 'm
     kind: 'hdpou',
     id: String(slip.id),
     time: formatSlipTime(slip.created_at),
+    createdAt: slip.created_at,
     home: teams.home,
     away: teams.away,
     betType,

@@ -7,12 +7,17 @@ import type {
   BetSlipsQuery,
   BetSlipsResponse,
   FootballLeague,
+  FootballMatch,
   FootballMatchResult,
   FootballMatchResultsResponse,
   FootballMatchesResponse,
   FootballTeam,
   SubmitBetSlipPayload,
 } from '@/types/football';
+import {
+  applyMatchTeamLogos,
+  normalizeTeamWithLogo,
+} from '@/utils/team-logo';
 
 const MOCK_MATCHES: FootballMatchesResponse = {
   matches: [
@@ -113,21 +118,7 @@ let mockSlips: BetSlip[] = [];
 let cachedSlips: BetSlip[] = [];
 
 function normalizeTeam(raw: unknown): FootballTeam {
-  if (!raw || typeof raw !== 'object') {
-    return { id: 0, name: '', name_en: '' };
-  }
-  const t = raw as Record<string, unknown>;
-  const nameEn =
-    typeof t.name_en === 'string'
-      ? t.name_en
-      : typeof t.nameEn === 'string'
-        ? t.nameEn
-        : '';
-  return {
-    id: typeof t.id === 'number' ? t.id : 0,
-    name: typeof t.name === 'string' ? t.name : '',
-    name_en: nameEn,
-  };
+  return normalizeTeamWithLogo(raw);
 }
 
 function normalizeLeague(raw: unknown): FootballLeague {
@@ -159,8 +150,10 @@ function normalizeLeg(raw: unknown, slipSport?: string): BetSlipLeg {
 
   const r = raw as Record<string, unknown>;
   const match = r.match as Record<string, unknown> | undefined;
-  const home = normalizeTeam(r.home ?? r.home_team ?? match?.home);
-  const away = normalizeTeam(r.away ?? r.away_team ?? match?.away);
+  const logoSource = match ?? r;
+  let home = normalizeTeam(r.home ?? r.home_team ?? match?.home);
+  let away = normalizeTeam(r.away ?? r.away_team ?? match?.away);
+  ({ home, away } = applyMatchTeamLogos(logoSource, home, away));
   let selected = normalizeTeam(r.selected_team ?? r.selectedTeam);
 
   if (!selected.name && selected.id) {
@@ -197,11 +190,16 @@ function normalizeLeg(raw: unknown, slipSport?: string): BetSlipLeg {
     league: normalizeLeague(r.league),
     sport: sportRaw,
     match: match
-      ? {
-          home: normalizeTeam(match.home),
-          away: normalizeTeam(match.away),
-          sport: typeof match.sport === 'string' ? match.sport : sportRaw,
-        }
+      ? (() => {
+          const mh = normalizeTeam(match.home);
+          const ma = normalizeTeam(match.away);
+          const teams = applyMatchTeamLogos(match, mh, ma);
+          return {
+            home: teams.home,
+            away: teams.away,
+            sport: typeof match.sport === 'string' ? match.sport : sportRaw,
+          };
+        })()
       : undefined,
   };
 }
@@ -245,7 +243,50 @@ export async function fetchFootballMatches(
   const data = await apiRequest<FootballMatchesResponse>(`/football/matches${q}`, {
     token,
   });
-  return data;
+  return {
+    matches: (data.matches ?? []).map(normalizeFootballMatch),
+  };
+}
+
+function normalizeFootballMatch(raw: unknown): FootballMatch {
+  const m = (raw ?? {}) as Record<string, unknown>;
+  const home = normalizeTeam(m.home);
+  const away = normalizeTeam(m.away);
+  const teams = applyMatchTeamLogos(m, home, away);
+  const oneXTwo = m.one_x_two_odds as FootballMatch['one_x_two_odds'];
+  const correctScore = m.correct_score_odds as FootballMatch['correct_score_odds'];
+  const soneMa = m.sone_ma_odds as FootballMatch['sone_ma_odds'];
+  return {
+    id: Number(m.id ?? 0),
+    match_id: Number(m.match_id ?? 0),
+    draw_date: String(m.draw_date ?? ''),
+    match_time: String(m.match_time ?? ''),
+    single_odds: String(m.single_odds ?? ''),
+    single_goal_odds: String(m.single_goal_odds ?? ''),
+    mix_odds: String(m.mix_odds ?? ''),
+    mix_goal_odds: String(m.mix_goal_odds ?? ''),
+    single_fh_odds: m.single_fh_odds != null ? String(m.single_fh_odds) : null,
+    mix_fh_odds: m.mix_fh_odds != null ? String(m.mix_fh_odds) : null,
+    single_fh_goal_odds:
+      m.single_fh_goal_odds != null ? String(m.single_fh_goal_odds) : null,
+    mix_fh_goal_odds: m.mix_fh_goal_odds != null ? String(m.mix_fh_goal_odds) : null,
+    one_x_two_odds: oneXTwo ?? null,
+    correct_score_odds: correctScore ?? null,
+    sone_ma_odds: soneMa ?? null,
+    home_result: m.home_result == null ? null : Number(m.home_result),
+    away_result: m.away_result == null ? null : Number(m.away_result),
+    home_ht_result: m.home_ht_result == null ? null : Number(m.home_ht_result),
+    away_ht_result: m.away_ht_result == null ? null : Number(m.away_ht_result),
+    is_show: Boolean(m.is_show),
+    is_major: Boolean(m.is_major),
+    is_settle: Boolean(m.is_settle),
+    is_ht_settle: Boolean(m.is_ht_settle),
+    home: teams.home,
+    away: teams.away,
+    odds_team: normalizeTeam(m.odds_team),
+    fh_odds_team: m.fh_odds_team != null ? normalizeTeam(m.fh_odds_team) : null,
+    league: normalizeLeague(m.league),
+  };
 }
 
 const MOCK_RESULTS: FootballMatchResultsResponse = {
@@ -262,8 +303,20 @@ const MOCK_RESULTS: FootballMatchResultsResponse = {
       away_ht_result: 0,
       is_settle: true,
       is_ht_settle: true,
-      home: { id: 10, name: 'Man U', name_en: 'Man U' },
-      away: { id: 11, name: 'Chelsea', name_en: 'Chelsea' },
+      home: {
+        id: 10,
+        name: 'Man U',
+        name_en: 'Man U',
+        image_url:
+          'https://imagecache.365scores.com/image/upload/f_png,w_32,h_32,c_limit,q_auto:eco,dpr_2,d_Competitors:default1.png/v6/Competitors/102',
+      },
+      away: {
+        id: 11,
+        name: 'Chelsea',
+        name_en: 'Chelsea',
+        image_url:
+          'https://imagecache.365scores.com/image/upload/f_png,w_32,h_32,c_limit,q_auto:eco,dpr_2,d_Competitors:default1.png/v6/Competitors/38',
+      },
       league: { id: 1, name: 'PREMIER LEAGUE' },
     },
     {
@@ -303,6 +356,9 @@ const MOCK_RESULTS: FootballMatchResultsResponse = {
 
 function normalizeMatchResult(raw: unknown): FootballMatchResult {
   const m = (raw ?? {}) as Record<string, unknown>;
+  const home = normalizeTeam(m.home);
+  const away = normalizeTeam(m.away);
+  const teams = applyMatchTeamLogos(m, home, away);
   return {
     id: Number(m.id ?? 0),
     match_id: Number(m.match_id ?? 0),
@@ -315,8 +371,8 @@ function normalizeMatchResult(raw: unknown): FootballMatchResult {
     away_ht_result: m.away_ht_result == null ? null : Number(m.away_ht_result),
     is_settle: Boolean(m.is_settle),
     is_ht_settle: Boolean(m.is_ht_settle),
-    home: normalizeTeam(m.home),
-    away: normalizeTeam(m.away),
+    home: teams.home,
+    away: teams.away,
     league: normalizeLeague(m.league),
   };
 }

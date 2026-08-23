@@ -3,10 +3,10 @@ import {
   Modal,
   Pressable,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/app-text';
 import { Ionicons } from '@expo/vector-icons';
 import {
   BorderRadius,

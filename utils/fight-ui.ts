@@ -28,6 +28,8 @@ export function mapFightMatchToUi(match: FightMatch, lang: Lang): UiMatchData {
     awayId: match.away.id,
     home: teamDisplayName(match.home, lang),
     away: teamDisplayName(match.away, lang),
+    homeLogo: match.home.logo,
+    awayLogo: match.away.logo,
     date: formatMatchDate(match.match_time, match.draw_date),
     matchTimeMs,
     hdpGiving: 'home',

@@ -4,10 +4,11 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Text } from '@/components/app-text';
+import { TeamBadge } from '@/components/team-badge';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LoginPromptCard } from '@/components/login-prompt-card';
@@ -24,34 +25,13 @@ type MatchRow = {
   time: string;
   home: string;
   away: string;
+  homeLogo?: string;
+  awayLogo?: string;
   homeScore: number;
   awayScore: number;
 };
 
 type League = { name: string; matches: MatchRow[] };
-
-const AVATAR_COLORS = [
-  '#2563EB',
-  '#DC2626',
-  '#D97706',
-  '#7C3AED',
-  '#059669',
-  '#DB2777',
-  '#0891B2',
-  '#EA580C',
-];
-
-function avatarColor(name: string) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
-  return AVATAR_COLORS[h % AVATAR_COLORS.length];
-}
-
-function initials(name: string) {
-  const parts = name.trim().split(' ');
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 function addDays(d: Date, n: number) {
   const r = new Date(d);
@@ -95,6 +75,8 @@ function mapResultToRow(
     time: formatMatchTime(m.match_time),
     home: teamDisplayName(m.home, lang),
     away: teamDisplayName(m.away, lang),
+    homeLogo: m.home.logo,
+    awayLogo: m.away.logo,
     homeScore: m.home_result,
     awayScore: m.away_result,
   };
@@ -135,9 +117,7 @@ function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
 
       <View style={s.matchBody}>
         <View style={s.teamLine}>
-          <View style={[s.teamBadge, { backgroundColor: avatarColor(m.home) }]}>
-            <Text style={s.teamBadgeText}>{initials(m.home)}</Text>
-          </View>
+          <TeamBadge name={m.home} logo={m.homeLogo} />
           <Text
             style={[s.teamLineName, (homeWin || isDraw) && s.teamLineNameWin]}
             numberOfLines={1}
@@ -167,9 +147,7 @@ function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
           >
             {m.away}
           </Text>
-          <View style={[s.teamBadge, { backgroundColor: avatarColor(m.away) }]}>
-            <Text style={s.teamBadgeText}>{initials(m.away)}</Text>
-          </View>
+          <TeamBadge name={m.away} logo={m.awayLogo} />
         </View>
       </View>
     </View>
