@@ -1,6 +1,10 @@
 import type { Lang } from '@/constants/i18n';
 import type { Translations } from '@/constants/i18n';
 import type { Bet, BetStatus, HdpOuBet, ParlayBet } from '@/constants/bets';
+import {
+  calcHdpFullReturn,
+  calcHdpQuotedReturn,
+} from '@/utils/hdp-settlement';
 import type {
   BetSlip,
   BetSlipLeg,
@@ -522,6 +526,156 @@ export function pickLabel(
     return team;
   }
   return `${tr.footballCorrectScore} ${pick}`;
+}
+
+export type SlipDetailItem = {
+  key: string;
+  matchTitle: string;
+  matchTime: string;
+  marketLabel: string;
+  pickLabel: string;
+};
+
+function slipMarketLabel(
+  match: UiMatchData,
+  market: FootballMarket,
+  tr: Translations,
+): string {
+  const fh = market === 'asian_handicap_fh' || market === 'goals_ou_fh' ? '1H ' : '';
+  if (isAsianHandicapMarket(market)) {
+    return `${fh}${tr.menuHDP} (${match.hdpLine})`;
+  }
+  if (isGoalsOuMarket(market)) {
+    return `${fh}Goal (${match.ouLine})`;
+  }
+  if (market === 'sone_ma') {
+    return `${tr.maungOE}${match.soneOdds != null ? ` ${match.soneOdds}` : ''}`;
+  }
+  if (market === 'match_winner_1x2') return tr.football1x2;
+  if (market === 'to_win') return tr.esportsToWin;
+  return tr.footballCorrectScore;
+}
+
+function slipPickLabel(
+  match: UiMatchData,
+  market: FootballMarket,
+  pick: string,
+  tr: Translations,
+): string {
+  if (isAsianHandicapMarket(market)) {
+    const giving = match.hdpGiving === 'home' ? match.home : match.away;
+    const receiving = match.hdpGiving === 'home' ? match.away : match.home;
+    return pick === 'giving' ? giving : receiving;
+  }
+  if (isGoalsOuMarket(market)) {
+    return pick === 'up' ? tr.maungOver : tr.maungUnder;
+  }
+  if (market === 'sone_ma') {
+    return pick === 'sone' ? tr.maungOdd : tr.maungEven;
+  }
+  if (market === 'match_winner_1x2') {
+    if (pick === 'home') return match.home;
+    if (pick === 'away') return match.away;
+    return tr.footballDraw;
+  }
+  if (market === 'to_win') {
+    return pick === 'home' ? match.home : match.away;
+  }
+  return pick;
+}
+
+export function buildSlipDetailItems(
+  selections: Record<string, true>,
+  matchMap: Map<string, UiMatchData>,
+  tr: Translations,
+): SlipDetailItem[] {
+  return Object.keys(selections).map((key) => {
+    const { matchId, market, pick } = parseSelectKey(key);
+    const match = matchMap.get(matchId);
+    if (!match) {
+      return {
+        key,
+        matchTitle: key,
+        matchTime: '',
+        marketLabel: '',
+        pickLabel: key,
+      };
+    }
+    return {
+      key,
+      matchTitle: `${match.home} VS ${match.away}`,
+      matchTime: match.date,
+      marketLabel: slipMarketLabel(match, market, tr),
+      pickLabel: slipPickLabel(match, market, pick, tr),
+    };
+  });
+}
+
+function legReturnMultiplier(
+  match: UiMatchData,
+  market: FootballMarket,
+  pick: string,
+  stake: number,
+): number {
+  if (market === 'match_winner_1x2' && match.oneXTwo) {
+    const dec =
+      pick === 'home'
+        ? match.oneXTwo.home
+        : pick === 'away'
+          ? match.oneXTwo.away
+          : match.oneXTwo.draw;
+    return Number.isFinite(dec) ? dec : 1;
+  }
+  if (market === 'to_win' && match.toWin) {
+    const dec = pick === 'home' ? match.toWin.home : match.toWin.away;
+    return dec != null && Number.isFinite(dec) ? dec : 1;
+  }
+  if (market === 'correct_score') {
+    const row = match.correctScores.find((c) => c.key === pick);
+    return row && Number.isFinite(row.odds) ? row.odds : 1;
+  }
+
+  const odds =
+    isAsianHandicapMarket(market)
+      ? match.hdpOdds
+      : isGoalsOuMarket(market)
+        ? match.ouOdds
+        : market === 'sone_ma'
+          ? pick === 'sone'
+            ? (match.soneOdds ?? 0)
+            : (match.maOdds ?? 0)
+          : 0;
+  if (!odds) return 1;
+  const legReturn = Math.max(calcHdpQuotedReturn(stake, odds), calcHdpFullReturn(stake));
+  return legReturn / stake;
+}
+
+export function estimateBenefitMax(
+  mode: 'single' | 'mix',
+  selections: Record<string, true>,
+  matchMap: Map<string, UiMatchData>,
+  stake: number,
+): number {
+  const keys = Object.keys(selections);
+  if (!keys.length || stake <= 0) return 0;
+
+  let multiplier = 1;
+  for (const key of keys) {
+    const { matchId, market, pick } = parseSelectKey(key);
+    const match = matchMap.get(matchId);
+    if (!match) continue;
+    multiplier *= legReturnMultiplier(match, market, pick, stake);
+  }
+
+  if (mode === 'single') {
+    const first = keys[0];
+    const { matchId, market, pick } = parseSelectKey(first);
+    const match = matchMap.get(matchId);
+    if (!match) return stake;
+    return Math.round(stake * legReturnMultiplier(match, market, pick, stake));
+  }
+
+  return Math.round(stake * multiplier);
 }
 
 export function buildBetLeg(

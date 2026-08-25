@@ -352,7 +352,12 @@ const translations = {
     maungClearSlip: "Clear all",
     maungBetSlip: "Bet slip",
     maungReviewBet: "Review & bet",
-    maungTapToExpand: "Tap to review slip",
+    maungTapToExpand: "Tap to set amount",
+    betSlipDetailTitle: "Detail",
+    betSlipType: "Type",
+    betSlipBenefitMax: "BenefitMax",
+    betSlipAmount: "Amount",
+    betSlipCancel: "Cancel",
 
     // Football betting
     footballLoadingMatches: "Loading matches…",
@@ -750,7 +755,12 @@ const translations = {
     maungClearSlip: "အားလုံးဖျက်",
     maungBetSlip: "လောင်းစာရင်း",
     maungReviewBet: "စစ်ဆေးပြီး လောင်းမည်",
-    maungTapToExpand: "စာရင်းကြည့်ရန် နှိပ်ပါ",
+    maungTapToExpand: "လောင်းငွေ ထည့်ရန် နှိပ်ပါ",
+    betSlipDetailTitle: "အသေးစိတ်",
+    betSlipType: "အမျိုးအစား",
+    betSlipBenefitMax: "အများဆုံးအမြတ်",
+    betSlipAmount: "လောင်းငွေ",
+    betSlipCancel: "မလုပ်တော့",
 
     // Football betting
     footballLoadingMatches: "ပွဲစဉ်များ ရယူနေသည်…",

@@ -1,4 +1,5 @@
 import { BetSlipDrawer } from "@/components/maung-bet-drawer";
+import { BetSlipConfirmModal } from "@/components/bet-slip-confirm-modal";
 import { LeagueFilterModal } from "@/components/league-filter-modal";
 import { TeamBadge } from "@/components/team-badge";
 import {
@@ -23,11 +24,12 @@ import {
   ALL_MARKETS,
   buildMatchMap,
   buildSubmitPayload,
+  buildSlipDetailItems,
+  estimateBenefitMax,
   findOddsChangedMatchIds,
   formatDecimalOdds,
   makeSelectKey,
   parseSelectKey,
-  pickLabel,
   sortBettingLeagues,
   hdpMarketFromList,
   oddsPeriodFromMarkets,
@@ -894,6 +896,7 @@ export function FootballBetScreen({
   const [selections, setSelections] = useState<Record<string, true>>({});
   const [stake, setStake] = useState(stakePlaceholder);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   /** `null` = all leagues. `[]` = none. Otherwise explicit names. */
   const [selectedLeagues, setSelectedLeagues] = useState<string[] | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -1142,29 +1145,52 @@ export function FootballBetScreen({
     return map;
   }, [selections]);
 
-  const slipItems = useMemo(() => {
-    return Object.keys(selections).map((key) => {
-      const { matchId, market, pick } = parseSelectKey(key);
-      const match = matchMap.get(matchId);
-      if (!match) return { key, label: key };
-      return { key, label: pickLabel(match, market, pick, tr) };
-    });
-  }, [selections, tr, matchMap]);
+  const slipDetailItems = useMemo(
+    () => buildSlipDetailItems(selections, matchMap, tr),
+    [selections, tr, matchMap],
+  );
+
+  const stakeAmount = useMemo(
+    () => parseInt(stake.replace(/,/g, ""), 10) || 0,
+    [stake],
+  );
+
+  const benefitMax = useMemo(
+    () => estimateBenefitMax(mode, selections, matchMap, stakeAmount),
+    [mode, selections, matchMap, stakeAmount],
+  );
+
+  const betTypeLabel = mode === "mix" ? tr.maungTitle : tr.hdpTitle;
 
   const slipCopy = useMemo(
     () => ({
       slipTitle: tr.maungBetSlip,
       minPicksHint: hint,
       picksUnit: tr.maungPicks,
-      selectedLabel: tr.maungSelected,
+      selectedLabel: tr.hdpSelected,
+      unitsLabel: tr.hdpUnits,
       placeBet: tr.maungPlaceBet,
       reviewBet: tr.maungReviewBet,
-      betAmount: tr.maungBetAmount,
-      clearSlip: tr.maungClearSlip,
+      okLabel: tr.maungOK,
+      resetLabel: tr.maungReset,
       tapToExpand: tr.maungTapToExpand,
       currencyUnit: tr.currencyUnit,
     }),
     [tr, hint],
+  );
+
+  const confirmCopy = useMemo(
+    () => ({
+      title: tr.betSlipDetailTitle,
+      typeLabel: tr.betSlipType,
+      typeValue: betTypeLabel,
+      benefitMaxLabel: tr.betSlipBenefitMax,
+      amountLabel: tr.betSlipAmount,
+      okLabel: tr.ok,
+      cancelLabel: tr.betSlipCancel,
+      currencyUnit: tr.currencyUnit,
+    }),
+    [tr, betTypeLabel],
   );
 
   const handleRefresh = useCallback(async () => {
@@ -1202,36 +1228,38 @@ export function FootballBetScreen({
     [mode, allowBetting],
   );
 
-  const handleRemove = useCallback((key: string) => {
-    setSelections((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-  }, []);
-
   const handleReset = useCallback(() => {
     setSelections({});
     setStake(stakePlaceholder);
+    setConfirmOpen(false);
   }, [stakePlaceholder]);
 
-  async function handleOK() {
+  function handleReview() {
     if (!allowBetting) return;
     if (!canBet || !token) {
       if (!canBet) showAlert("", minErr);
       return;
     }
-    const total = parseInt(stake.replace(/,/g, ""), 10);
-    if (!total || total < 1) {
+    if (!stakeAmount || stakeAmount < 1) {
+      showAlert("", tr.footballAmountRequired);
+      return;
+    }
+    setConfirmOpen(true);
+  }
+
+  async function handleConfirmSubmit() {
+    if (!allowBetting || !token || !canBet) return;
+    if (!stakeAmount || stakeAmount < 1) {
       showAlert("", tr.footballAmountRequired);
       return;
     }
     setSubmitting(true);
     try {
-      const payload = buildSubmitPayload(mode, selections, matchMap, total);
+      const payload = buildSubmitPayload(mode, selections, matchMap, stakeAmount);
       await submitBetSlip(token, payload);
       await refreshUser();
       setSelections({});
+      setConfirmOpen(false);
       showAlert(tr.footballBetSuccessTitle, tr.footballBetSuccessMsg, [
         {
           text: tr.footballViewBets,
@@ -1248,7 +1276,7 @@ export function FootballBetScreen({
 
   const safeBottom = Math.max(insets.bottom, 8);
   // Stable pad so opening the slip does not relayout the match list.
-  const scrollBottomPad = allowBetting ? safeBottom + 320 : safeBottom + 24;
+  const scrollBottomPad = allowBetting ? safeBottom + 200 : safeBottom + 24;
 
   return (
     <KeyboardAvoidingView
@@ -1404,21 +1432,31 @@ export function FootballBetScreen({
         </ScrollView>
 
                {allowBetting ? (
-          <BetSlipDrawer
-            count={count}
-            canBet={canBet && !submitting}
-            stake={stake}
-            onStakeChange={setStake}
-            slipItems={slipItems}
-            onRemove={handleRemove}
-            onReset={handleReset}
-            onPlaceBet={handleOK}
-            safeBottom={safeBottom}
-            tabBarOffset={0}
-            copy={slipCopy}
-            minPicks={minPicks}
-            stakePlaceholder={stakePlaceholder}
-          />
+          <>
+            <BetSlipDrawer
+              count={count}
+              canBet={canBet && !submitting}
+              stake={stake}
+              onStakeChange={setStake}
+              onReset={handleReset}
+              onPlaceBet={handleReview}
+              safeBottom={safeBottom}
+              tabBarOffset={0}
+              copy={slipCopy}
+              minPicks={minPicks}
+              stakePlaceholder={stakePlaceholder}
+            />
+            <BetSlipConfirmModal
+              visible={confirmOpen}
+              items={slipDetailItems}
+              benefitMax={benefitMax}
+              amount={stakeAmount}
+              submitting={submitting}
+              copy={confirmCopy}
+              onConfirm={handleConfirmSubmit}
+              onCancel={() => setConfirmOpen(false)}
+            />
+          </>
         ) : null}
       </SafeAreaView>
     </KeyboardAvoidingView>
