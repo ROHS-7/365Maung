@@ -1,10 +1,6 @@
-import { View, TouchableOpacity, StyleSheet, Text as RNText } from 'react-native';
-import { Text, TextInput } from '@/components/app-text';
-import { Ionicons } from '@expo/vector-icons';
-import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
-
-const HEADER_H = 72;
-const ACTIONS_H = 118;
+import { View, TouchableOpacity, StyleSheet, Text as RNText, Platform } from 'react-native';
+import { TextInput } from '@/components/app-text';
+import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '@/constants/theme';
 
 export type BetSlipCopy = {
   slipTitle: string;
@@ -47,67 +43,42 @@ export function BetSlipDrawer({
   copy,
   stakePlaceholder = '500',
 }: BetSlipDrawerProps) {
-  const stakeDisplay = Number(stake.replace(/,/g, '') || 0).toLocaleString();
-  const drawerHeight =
-    HEADER_H + (count > 0 ? ACTIONS_H : 0) + safeBottom;
-
   return (
-    <View style={[s.drawer, { height: drawerHeight, bottom: tabBarOffset }]}>
-      <View style={s.headerRow}>
-        <View style={s.summaryLeft}>
-          <View style={s.slipIcon}>
-            <Ionicons name="receipt" size={18} color={Colors.brand.greenDark} />
-            {count > 0 && (
-              <View style={s.slipBadge}>
-                <Text style={s.slipBadgeText}>{count}</Text>
-              </View>
-            )}
-          </View>
-          <View style={s.summaryText}>
-            <Text style={s.summaryTitle}>{copy.slipTitle}</Text>
-            <Text style={s.summarySub} numberOfLines={1}>
-              {count === 0
-                ? copy.minPicksHint
-                : `${count} ${copy.picksUnit} · ${stakeDisplay} ${copy.currencyUnit}`}
-            </Text>
-          </View>
+    <View style={[s.drawer, { paddingBottom: safeBottom, bottom: tabBarOffset }]}>
+      <View style={s.inputRow}>
+        <TextInput
+          style={s.stakeInput}
+          value={stake}
+          onChangeText={onStakeChange}
+          keyboardType="number-pad"
+          placeholder={stakePlaceholder}
+          placeholderTextColor={Colors.light.placeholder}
+          selectTextOnFocus
+        />
+        <View style={s.countPill}>
+          <RNText style={s.countText} numberOfLines={1}>
+            <RNText style={[s.countNum, count <= 0 && s.countNumEmpty]}>
+              {count}
+            </RNText>
+            {' '}
+            {copy.picksUnit}
+          </RNText>
         </View>
-        {count > 0 ? (
-          <Text style={s.selectedUnits}>
-            {copy.selectedLabel}{' '}
-            <RNText style={s.selectedUnitsCount}>{count}</RNText>{' '}
-            {copy.unitsLabel}
-          </Text>
-        ) : null}
       </View>
 
-      {count > 0 ? (
-        <View style={[s.actionsBody, { paddingBottom: safeBottom }]}>
-          <TextInput
-            style={s.stakeInput}
-            value={stake}
-            onChangeText={onStakeChange}
-            keyboardType="number-pad"
-            placeholder={stakePlaceholder}
-            placeholderTextColor={Colors.light.placeholder}
-            selectTextOnFocus
-          />
-
-          <View style={s.actions}>
-            <TouchableOpacity
-              style={[s.btnBet, !canBet && s.btnDisabled]}
-              onPress={onPlaceBet}
-              activeOpacity={canBet ? 0.85 : 1}
-              disabled={!canBet}
-            >
-              <RNText style={s.btnBetText}>{copy.placeBet}</RNText>
-            </TouchableOpacity>
-            <TouchableOpacity style={s.btnReset} onPress={onReset} activeOpacity={0.85}>
-              <RNText style={s.btnResetText}>{copy.resetLabel}</RNText>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : null}
+      <View style={s.actions}>
+        <TouchableOpacity
+          style={[s.btnBet, !canBet && s.btnDisabled]}
+          onPress={onPlaceBet}
+          activeOpacity={canBet ? 0.85 : 1}
+          disabled={!canBet}
+        >
+          <RNText style={s.btnBetText}>{copy.placeBet}</RNText>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.btnReset} onPress={onReset} activeOpacity={0.85}>
+          <RNText style={s.btnResetText}>{copy.resetLabel}</RNText>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -123,84 +94,62 @@ const s = StyleSheet.create({
     bottom: 0,
     zIndex: 20,
     backgroundColor: '#fff',
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    ...Shadow.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
+    borderTopLeftRadius: BorderRadius.lg,
+    borderTopRightRadius: BorderRadius.lg,
     paddingTop: 10,
     paddingHorizontal: Spacing.md,
-    paddingBottom: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.light.border,
+    gap: 8,
+    ...(Platform.OS === 'ios'
+      ? {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -10 },
+          shadowOpacity: 0.24,
+          shadowRadius: 28,
+        }
+      : { elevation: 16 }),
   },
-  summaryLeft: {
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    flex: 1,
-    minWidth: 0,
-  },
-  slipIcon: { position: 'relative' },
-  slipBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -8,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: Colors.brand.gold,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  slipBadgeText: {
-    fontSize: 10,
-    fontWeight: FontWeight.bold,
-    color: Colors.brand.greenDark,
-  },
-  summaryText: { flex: 1, minWidth: 0 },
-  summaryTitle: {
-    fontSize: FontSize.md,
-    fontWeight: FontWeight.bold,
-    color: Colors.light.text,
-  },
-  summarySub: {
-    fontSize: FontSize.sm,
-    color: Colors.light.textSecondary,
-    marginTop: 2,
-  },
-  selectedUnits: {
-    fontSize: 11,
-    fontWeight: FontWeight.semibold,
-    color: Colors.light.textSecondary,
-    flexShrink: 0,
-  },
-  selectedUnitsCount: {
-    fontSize: 11,
-    fontWeight: FontWeight.bold,
-    color: Colors.brand.gold,
-  },
-  actionsBody: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: 8,
     gap: 8,
   },
   stakeInput: {
-    height: 42,
+    flex: 1,
+    maxWidth: '50%',
+    height: 38,
     backgroundColor: '#fff',
     borderRadius: BorderRadius.md,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: Colors.light.border,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: 12,
     color: Colors.light.text,
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md,
     fontWeight: FontWeight.bold,
+  },
+  countPill: {
+    flex: 1,
+    maxWidth: '50%',
+    height: 38,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    backgroundColor: Colors.brand.offWhite,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  countText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.medium,
+    color: Colors.light.textSecondary,
+  },
+  countNum: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.bold,
+    color: Colors.brand.greenDark,
+  },
+  countNumEmpty: {
+    color: Colors.light.placeholder,
   },
   actions: { flexDirection: 'row', gap: Spacing.sm },
   btnBet: {
@@ -208,10 +157,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.brand.greenButton,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: 9,
-    minHeight: 40,
-    ...Shadow.sm,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 8,
+    minHeight: 36,
   },
   btnBetText: {
     color: '#fff',
@@ -224,9 +172,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#EF8121',
-    borderRadius: BorderRadius.lg,
-    paddingVertical: 9,
-    minHeight: 40,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 8,
+    minHeight: 36,
   },
   btnResetText: {
     color: '#fff',

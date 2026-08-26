@@ -1276,7 +1276,7 @@ export function FootballBetScreen({
 
   const safeBottom = Math.max(insets.bottom, 8);
   // Stable pad so opening the slip does not relayout the match list.
-  const scrollBottomPad = allowBetting ? safeBottom + 200 : safeBottom + 24;
+  const scrollBottomPad = allowBetting ? safeBottom + 108 : safeBottom + 24;
 
   return (
     <KeyboardAvoidingView
