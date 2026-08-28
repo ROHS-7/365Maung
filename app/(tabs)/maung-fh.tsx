@@ -7,7 +7,7 @@ export default function MaungFhScreen() {
     <FootballBetScreen
       title={tr.maungFhTitle}
       mode="mix"
-      markets={['asian_handicap_fh', 'goals_ou_fh']}
+      markets={['asian_handicap_fh', 'goals_ou_fh', 'sone_ma']}
       period="fh"
       minPicks={2}
       stakePlaceholder="500"

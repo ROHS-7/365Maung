@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { View, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { Text } from '@/components/app-text';
+import { ScreenHeader } from '@/components/screen-header';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -45,16 +46,13 @@ export default function RuleScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>{tr.ruleTitle}</Text>
-          <Text style={s.headerSub}>{tr.ruleSub}</Text>
-        </View>
-        <Ionicons name="book-outline" size={22} color="rgba(255,255,255,0.4)" />
-      </View>
+      <ScreenHeader
+        title={tr.ruleTitle}
+        subtitle={tr.ruleSub}
+        onBack={() => router.back()}
+        backIcon="arrow-back"
+        right={<Ionicons name="book-outline" size={22} color="rgba(255,255,255,0.4)" />}
+      />
 
       <ScrollView
         style={s.scroll}
@@ -77,13 +75,6 @@ export default function RuleScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F2F5F3' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    backgroundColor: Colors.brand.greenButton, paddingHorizontal: Spacing.md, paddingVertical: 12,
-  },
-  backBtn: { padding: 4, marginRight: 4 },
-  headerTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff' },
-  headerSub: { fontSize: FontSize.xs, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
   scroll: { flex: 1 },
   scrollContent: { padding: Spacing.lg, paddingBottom: 48 },
   ruleText: { fontSize: FontSize.md, color: Colors.light.text, lineHeight: 26 },

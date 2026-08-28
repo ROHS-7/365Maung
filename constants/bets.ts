@@ -20,6 +20,8 @@ export type HdpOuBet = {
   /** Profit amount (not total return). */
   payout: number;
   status: BetStatus;
+  /** Estimated max return if all legs win (same rules as bet slip confirm). */
+  benefitMax?: number;
   /** Which side the user picked, when applicable. */
   selectedSide?: SelectedSide | null;
   /** Team giving the handicap (HDP only). */
@@ -29,6 +31,9 @@ export type HdpOuBet = {
   awayScore?: number;
   /** Which margin tier paid out (HDP integer line). */
   hdpTier?: HdpTier;
+  marketLabel?: string;
+  pickLabel?: string;
+  matchTime?: string;
 };
 
 export type ParlayBet = {
@@ -40,12 +45,17 @@ export type ParlayBet = {
     home: string;
     away: string;
     pick: string;
+    marketLabel?: string;
+    pickLabel?: string;
+    matchTime?: string;
     selectedSide?: SelectedSide | null;
   }[];
   totalOdds: number;
   stake: number;
   payout: number;
   status: BetStatus;
+  /** Estimated max return if all legs win (same rules as bet slip confirm). */
+  benefitMax?: number;
   /** First-half mix when legs are FH markets. */
   period?: 'ft' | 'fh';
 };

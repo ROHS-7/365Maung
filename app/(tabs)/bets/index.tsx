@@ -18,6 +18,7 @@ import { useLanguage } from '@/contexts/language';
 import type { Translations } from '@/constants/i18n';
 import { useAuth } from '@/contexts/auth';
 import { LoginPromptCard } from '@/components/login-prompt-card';
+import { ScreenHeader } from '@/components/screen-header';
 import {
   type Bet,
   type BetStatus,
@@ -383,9 +384,7 @@ export default function BetsScreen() {
   if (!isAuthenticated) {
     return (
       <SafeAreaView style={s.root} edges={['top']}>
-        <View style={s.header}>
-          <Text style={s.headerTitle}>{tr.betListTitle}</Text>
-        </View>
+        <ScreenHeader title={tr.betListTitle} />
         <View style={s.guestWrap}>
           <LoginPromptCard title={tr.guestWelcomeTitle} subtitle={tr.guestWelcomeSub} />
         </View>
@@ -395,9 +394,7 @@ export default function BetsScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <Text style={s.headerTitle}>{tr.betListTitle}</Text>
-      </View>
+      <ScreenHeader title={tr.betListTitle} />
 
       <View style={s.tabBar}>
         {([
@@ -523,8 +520,6 @@ export default function BetsScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#EBF5EE' },
-  header: { backgroundColor: GREEN, paddingHorizontal: 16, paddingVertical: 14, alignItems: 'center' },
-  headerTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff' },
   tabBar: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 13, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: GREEN },

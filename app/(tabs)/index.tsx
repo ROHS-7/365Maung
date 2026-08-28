@@ -44,7 +44,6 @@ const MENU_ICONS = {
   fight: require("@/assets/bet365 icons/Fight.png"),
   "esports-score": require("@/assets/bet365 icons/Esportresult.png"),
   "fight-score": require("@/assets/bet365 icons/Fight-result.png"),
-  sonema: require("@/assets/bet365 icons/Evenodd.png"),
   onextwo: require("@/assets/bet365 icons/1x2.png"),
   correctscore: require("@/assets/bet365 icons/Correct-score.png"),
   score: require("@/assets/bet365 icons/result.png"),
@@ -66,7 +65,6 @@ const MENU_ROUTES: Record<string, string> = {
   hdp: "/(tabs)/hdp",
   "mix-fh": "/(tabs)/maung-fh",
   "hdp-fh": "/(tabs)/hdp-fh",
-  sonema: "/(tabs)/sone-ma",
   onextwo: "/(tabs)/one-x-two",
   correctscore: "/(tabs)/correct-score",
   esports: "/(tabs)/esports",
@@ -209,10 +207,14 @@ type MenuEntry = {
   icon: ImageSourcePropType;
 };
 
+const SIGNATURE_QUICK_IDS = new Set(["mix", "hdp", "mix-fh", "hdp-fh"]);
+
 function QuickTile({ item }: { item: MenuEntry }) {
   const { tr } = useLanguage();
   const { navigate } = useAuthGate();
   const route = MENU_ROUTES[item.id];
+  const isSignature = SIGNATURE_QUICK_IDS.has(item.id);
+  const label = (tr as Record<string, string>)[item.labelKey];
 
   return (
     <Pressable
@@ -222,8 +224,11 @@ function QuickTile({ item }: { item: MenuEntry }) {
       <View style={s.quickIcon}>
         <Image source={item.icon} style={s.menuIconImg} />
       </View>
-      <Text style={s.quickLabel} numberOfLines={2}>
-        {(tr as Record<string, string>)[item.labelKey]}
+      <Text
+        style={isSignature ? s.signatureLabel : s.quickLabel}
+        numberOfLines={2}
+      >
+        {label}
       </Text>
     </Pressable>
   );
@@ -254,21 +259,20 @@ const QUICK_PLAY: MenuEntry[] = [
   { id: "hdp", labelKey: "menuHDP", icon: MENU_ICONS.hdp },
   { id: "mix-fh", labelKey: "menuMixParlayFh", icon: MENU_ICONS["mix-fh"] },
   { id: "hdp-fh", labelKey: "menuHdpFh", icon: MENU_ICONS["hdp-fh"] },
-  { id: "esports", labelKey: "menuEsports", icon: MENU_ICONS.esports },
-  { id: "sonema", labelKey: "menuSoneMa", icon: MENU_ICONS.sonema },
   { id: "onextwo", labelKey: "menu1x2", icon: MENU_ICONS.onextwo },
   {
     id: "correctscore",
     labelKey: "menuCorrectScore",
     icon: MENU_ICONS.correctscore,
   },
+  { id: "esports", labelKey: "menuEsports", icon: MENU_ICONS.esports },
   { id: "fight", labelKey: "menuFight", icon: MENU_ICONS.fight },
+  { id: "score", labelKey: "menuScore", icon: MENU_ICONS.score },
   {
     id: "esports-score",
     labelKey: "menuEsportsScore",
     icon: MENU_ICONS["esports-score"],
   },
-  { id: "score", labelKey: "menuScore", icon: MENU_ICONS.score },
   {
     id: "fight-score",
     labelKey: "menuFightScore",
@@ -627,6 +631,12 @@ const s = StyleSheet.create({
     fontSize: 11,
     fontWeight: FontWeight.semibold,
     color: Colors.light.text,
+    textAlign: "center",
+  },
+  signatureLabel: {
+    fontSize: 11,
+    fontWeight: FontWeight.bold,
+    color: Colors.brand.greenButton,
     textAlign: "center",
   },
   serviceGrid: {

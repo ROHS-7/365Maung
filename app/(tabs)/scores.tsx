@@ -12,6 +12,7 @@ import {
 import { Text } from '@/components/app-text';
 import { TeamBadge } from '@/components/team-badge';
 import { LeagueFilterModal } from '@/components/league-filter-modal';
+import { ScreenHeader } from '@/components/screen-header';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LoginPromptCard } from '@/components/login-prompt-card';
@@ -327,20 +328,59 @@ export default function ScoresScreen() {
   const prev = addDays(date, -1);
   const next = addDays(date, 1);
 
+  const headerFilterRight = (
+    <>
+      <TouchableOpacity
+        onPress={() => setFilterOpen(true)}
+        disabled={!canFilter}
+        style={[
+          s.headerFilterPill,
+          filterActive && s.headerFilterPillActive,
+          !canFilter && s.headerFilterPillDisabled,
+        ]}
+        hitSlop={4}
+        activeOpacity={0.75}
+      >
+        <Ionicons
+          name="options-outline"
+          size={12}
+          color={
+            !canFilter
+              ? 'rgba(255,255,255,0.35)'
+              : filterActive
+                ? Colors.brand.gold
+                : '#fff'
+          }
+        />
+        <Text
+          style={[
+            s.headerFilterLabel,
+            filterActive && s.headerFilterLabelActive,
+            !canFilter && s.headerFilterLabelDisabled,
+          ]}
+          numberOfLines={1}
+        >
+          {tr.footballLeagueFilter}
+        </Text>
+        {filterActive ? (
+          <View style={s.headerFilterActiveBadge}>
+            <BadgeCount
+              value={filterSummary}
+              style={s.headerFilterActiveBadgeText}
+            />
+          </View>
+        ) : null}
+      </TouchableOpacity>
+      <View style={s.pickBadge}>
+        <BadgeCount value={visibleMatchCount} style={s.pickBadgeText} />
+      </View>
+    </>
+  );
+
   if (!isAuthenticated) {
     return (
       <SafeAreaView style={s.root} edges={['top']}>
-        <View style={s.header}>
-          <TouchableOpacity
-            onPress={() => safeBack()}
-            style={s.headerBtn}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>{tr.scoresTitle}</Text>
-          <View style={s.headerBtn} />
-        </View>
+        <ScreenHeader title={tr.scoresTitle} onBack={() => safeBack()} />
         <View style={s.guestWrap}>
           <LoginPromptCard
             title={tr.guestWelcomeTitle}
@@ -353,62 +393,11 @@ export default function ScoresScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity
-          onPress={() => safeBack()}
-          style={s.headerBtn}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>{tr.scoresTitle}</Text>
-        <View style={s.headerRight}>
-          <TouchableOpacity
-            onPress={() => setFilterOpen(true)}
-            disabled={!canFilter}
-            style={[
-              s.headerFilterPill,
-              filterActive && s.headerFilterPillActive,
-              !canFilter && s.headerFilterPillDisabled,
-            ]}
-            hitSlop={4}
-            activeOpacity={0.75}
-          >
-            <Ionicons
-              name="options-outline"
-              size={15}
-              color={
-                !canFilter
-                  ? 'rgba(255,255,255,0.35)'
-                  : filterActive
-                    ? Colors.brand.gold
-                    : '#fff'
-              }
-            />
-            <Text
-              style={[
-                s.headerFilterLabel,
-                filterActive && s.headerFilterLabelActive,
-                !canFilter && s.headerFilterLabelDisabled,
-              ]}
-              numberOfLines={1}
-            >
-              {tr.footballLeagueFilter}
-            </Text>
-            {filterActive ? (
-              <View style={s.headerFilterActiveBadge}>
-                <BadgeCount
-                  value={filterSummary}
-                  style={s.headerFilterActiveBadgeText}
-                />
-              </View>
-            ) : null}
-          </TouchableOpacity>
-          <View style={s.pickBadge}>
-            <BadgeCount value={visibleMatchCount} style={s.pickBadgeText} />
-          </View>
-        </View>
-      </View>
+      <ScreenHeader
+        title={tr.scoresTitle}
+        onBack={() => safeBack()}
+        right={headerFilterRight}
+      />
 
       <LeagueFilterModal
         visible={filterOpen}
@@ -499,38 +488,14 @@ export default function ScoresScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#EDEEF2' },
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.brand.greenButton,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 12,
-    gap: Spacing.sm,
-  },
-  headerBtn: { padding: 4, width: 36 },
-  headerTitle: {
-    flex: 1,
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: '#fff',
-    textAlign: 'center',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 8,
-    flexShrink: 1,
-    maxWidth: '46%',
-  },
   headerFilterPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    maxWidth: 132,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    gap: 3,
+    maxWidth: 100,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.24)',
@@ -544,7 +509,8 @@ const s = StyleSheet.create({
   },
   headerFilterLabel: {
     flexShrink: 1,
-    fontSize: 11,
+    fontSize: 9,
+    lineHeight: 11,
     fontWeight: FontWeight.semibold,
     color: '#fff',
   },
@@ -555,17 +521,17 @@ const s = StyleSheet.create({
     color: 'rgba(255,255,255,0.35)',
   },
   headerFilterActiveBadge: {
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: Colors.brand.gold,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 2,
   },
   headerFilterActiveBadgeText: {
-    fontSize: 9,
-    lineHeight: 9,
+    fontSize: 8,
+    lineHeight: 8,
     fontWeight: FontWeight.bold,
     color: Colors.brand.greenDark,
   },
@@ -579,17 +545,17 @@ const s = StyleSheet.create({
       : {}),
   },
   pickBadge: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: 14,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: Colors.brand.gold,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
   },
   pickBadgeText: {
-    fontSize: FontSize.sm,
-    lineHeight: FontSize.sm,
+    fontSize: 10,
+    lineHeight: 10,
     fontWeight: FontWeight.bold,
     color: Colors.brand.greenDark,
   },

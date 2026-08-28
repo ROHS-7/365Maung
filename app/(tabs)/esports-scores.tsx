@@ -12,6 +12,7 @@ import { TeamBadge } from '@/components/team-badge';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LoginPromptCard } from '@/components/login-prompt-card';
+import { ScreenHeader } from '@/components/screen-header';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useLanguage } from '@/contexts/language';
@@ -221,17 +222,7 @@ export default function EsportsScoresScreen() {
   if (!isAuthenticated) {
     return (
       <SafeAreaView style={s.root} edges={['top']}>
-        <View style={s.header}>
-          <TouchableOpacity
-            onPress={() => safeBack()}
-            style={s.headerBtn}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>{tr.esportsScoresTitle}</Text>
-          <View style={s.headerBtn} />
-        </View>
+        <ScreenHeader title={tr.esportsScoresTitle} onBack={() => safeBack()} />
         <View style={s.guestWrap}>
           <LoginPromptCard
             title={tr.guestWelcomeTitle}
@@ -244,17 +235,7 @@ export default function EsportsScoresScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity
-          onPress={() => safeBack()}
-          style={s.headerBtn}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>{tr.esportsScoresTitle}</Text>
-        <View style={s.headerBtn} />
-      </View>
+      <ScreenHeader title={tr.esportsScoresTitle} onBack={() => safeBack()} />
 
       <View style={s.dateNav}>
         <TouchableOpacity
@@ -330,21 +311,6 @@ export default function EsportsScoresScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#EDEEF2' },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.brand.greenButton,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
-  },
-  headerBtn: { padding: 4, minWidth: 36 },
-  headerTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: '#fff',
-  },
 
   dateNav: {
     flexDirection: 'row',

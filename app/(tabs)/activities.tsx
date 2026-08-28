@@ -1,4 +1,5 @@
 import { ActivityRow } from "@/components/activity-row";
+import { ScreenHeader } from "@/components/screen-header";
 import {
   ActivityDateFilterModal,
   formatFilterDate,
@@ -130,31 +131,26 @@ export default function ActivitiesScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={["top"]}>
-      <View style={s.header}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={s.backBtn}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>{tr.activitiesTitle}</Text>
-          <Text style={s.headerSub}>{tr.activitiesSub}</Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => setFilterOpen(true)}
-          hitSlop={10}
-          style={s.filterIconBtn}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name="time-outline"
-            size={22}
-            color={hasDateFilter ? Colors.brand.gold : "#fff"}
-          />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title={tr.activitiesTitle}
+        subtitle={tr.activitiesSub}
+        onBack={() => router.back()}
+        backIcon="arrow-back"
+        right={
+          <TouchableOpacity
+            onPress={() => setFilterOpen(true)}
+            hitSlop={10}
+            style={s.filterIconBtn}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="time-outline"
+              size={22}
+              color={hasDateFilter ? Colors.brand.gold : "#fff"}
+            />
+          </TouchableOpacity>
+        }
+      />
 
       {hasDateFilter ? (
         <View style={s.filterBar}>
@@ -242,25 +238,6 @@ export default function ActivitiesScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#F2F5F3" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    backgroundColor: Colors.brand.greenButton,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
-  },
-  backBtn: { padding: 4, marginRight: 4 },
-  headerTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: "#fff",
-  },
-  headerSub: {
-    fontSize: FontSize.xs,
-    color: "rgba(255,255,255,0.6)",
-    marginTop: 1,
-  },
   filterIconBtn: { padding: 4 },
   filterBar: {
     flexDirection: "row",

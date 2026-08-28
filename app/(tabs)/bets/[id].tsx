@@ -7,6 +7,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Text } from '@/components/app-text';
+import { ScreenHeader } from '@/components/screen-header';
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,19 +42,47 @@ function MatchTeamsTitle({
   away,
   selectedSide,
   compact,
+  matchTime,
 }: {
   home: string;
   away: string;
   selectedSide?: SelectedSide | null;
   compact?: boolean;
+  matchTime?: string;
 }) {
   return (
     <Text style={compact ? d.legMatch : d.matchTitle}>
       <Text style={selectedSide === 'home' ? d.teamSelected : undefined}>{home}</Text>
-      <Text style={d.vsText}> vs </Text>
+      <Text style={d.vsText}> VS </Text>
       <Text style={selectedSide === 'away' ? d.teamSelected : undefined}>{away}</Text>
       {selectedSide === 'draw' ? <Text style={d.teamSelected}> · X</Text> : null}
+      {matchTime ? <Text style={d.matchTimeText}> ({matchTime})</Text> : null}
     </Text>
+  );
+}
+
+function SlipPickRow({
+  marketLabel,
+  pickLabel,
+}: {
+  marketLabel?: string;
+  pickLabel?: string;
+}) {
+  if (!marketLabel && !pickLabel) return null;
+  return (
+    <View style={d.pickRow}>
+      <Ionicons name="information-circle" size={12} color="#D64545" style={d.pickInfoIcon} />
+      {marketLabel ? (
+        <Text style={d.pickMarket} numberOfLines={1}>
+          {marketLabel}
+        </Text>
+      ) : null}
+      {pickLabel ? (
+        <Text style={d.pickChoice} numberOfLines={1}>
+          {pickLabel}
+        </Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -106,7 +135,13 @@ function HdpOuDetail({ bet }: { bet: HdpOuBet }) {
         </View>
 
         <Text style={d.sectionTitle}>{tr.betDetailMatch}</Text>
-        <MatchTeamsTitle home={bet.home} away={bet.away} selectedSide={bet.selectedSide} />
+        <MatchTeamsTitle
+          home={bet.home}
+          away={bet.away}
+          selectedSide={bet.selectedSide}
+          matchTime={bet.matchTime}
+        />
+        <SlipPickRow marketLabel={bet.marketLabel} pickLabel={bet.pickLabel} />
         {hasScore && (
           <Text style={d.finalScore}>
             {tr.betDetailScore}: {bet.homeScore} – {bet.awayScore}
@@ -122,6 +157,13 @@ function HdpOuDetail({ bet }: { bet: HdpOuBet }) {
         <DetailRow label={tr.betListLineOdds} value={oddsStr} />
         {tierLabel && <DetailRow label={tr.betListPayout} value={tierLabel} />}
         <DetailRow label={tr.betListStake} value={`${bet.stake.toLocaleString()} ${tr.currencyUnit}`} highlight />
+        {(bet.benefitMax ?? 0) > 0 && (
+          <DetailRow
+            label={tr.betSlipBenefitMax}
+            value={`${bet.benefitMax!.toLocaleString()} ${tr.currencyUnit}`}
+            highlight
+          />
+        )}
         {!isPending && (
           <DetailRow
             label={tr.betListPayout}
@@ -173,8 +215,14 @@ function ParlayDetail({ bet }: { bet: ParlayBet }) {
               <Text style={d.legIndexText}>{i + 1}</Text>
             </View>
             <View style={d.legBody}>
-              <MatchTeamsTitle home={p.home} away={p.away} selectedSide={p.selectedSide} compact />
-              <Text style={d.legPick}>{p.pick}</Text>
+              <MatchTeamsTitle
+                home={p.home}
+                away={p.away}
+                selectedSide={p.selectedSide}
+                compact
+                matchTime={p.matchTime}
+              />
+              <SlipPickRow marketLabel={p.marketLabel} pickLabel={p.pickLabel ?? p.pick} />
             </View>
           </View>
         ))}
@@ -185,6 +233,13 @@ function ParlayDetail({ bet }: { bet: ParlayBet }) {
         <DetailRow label={tr.betDetailBetId} value={bet.id.toUpperCase()} />
         <DetailRow label={tr.betDetailPlacedAt} value={placedAtText(bet)} />
         <DetailRow label={tr.betListStake} value={`${bet.stake.toLocaleString()} ${tr.currencyUnit}`} highlight />
+        {(bet.benefitMax ?? 0) > 0 && (
+          <DetailRow
+            label={tr.betSlipBenefitMax}
+            value={`${bet.benefitMax!.toLocaleString()} ${tr.currencyUnit}`}
+            highlight
+          />
+        )}
         {!isPending && (
           <DetailRow
             label={tr.betListPayout}
@@ -284,13 +339,7 @@ export default function BetDetailScreen() {
 
   return (
     <SafeAreaView style={d.root} edges={['top']}>
-      <View style={d.header}>
-        <TouchableOpacity onPress={() => router.back()} style={d.backBtn} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <Text style={d.headerTitle}>{tr.betDetailTitle}</Text>
-        <View style={d.backBtn} />
-      </View>
+      <ScreenHeader title={tr.betDetailTitle} onBack={() => router.back()} />
 
       <ScrollView
         style={d.scroll}
@@ -319,16 +368,7 @@ const d = StyleSheet.create({
   missing: { flex: 1, backgroundColor: '#EBF5EE', alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.lg },
   missingText: { fontSize: FontSize.md, color: '#6B7280', marginTop: Spacing.md },
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: GREEN,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 10,
-    gap: Spacing.sm,
-  },
-  backBtn: { padding: 6, width: 36 },
-  headerTitle: { flex: 1, fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#fff', textAlign: 'center' },
+  backBtn: { padding: 6, width: 36, alignSelf: 'flex-start' },
 
   scroll: { flex: 1 },
   scrollContent: { padding: Spacing.md, gap: Spacing.md },
@@ -363,9 +403,29 @@ const d = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
-  matchTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#111827', marginBottom: Spacing.sm },
+  matchTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: '#111827', marginBottom: Spacing.xs },
+  matchTimeText: { fontSize: FontSize.sm, fontWeight: FontWeight.regular, color: '#6B7280' },
   teamSelected: { color: GREEN, fontWeight: FontWeight.extrabold },
   vsText: { color: '#9CA3AF', fontWeight: FontWeight.medium },
+  pickRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 4,
+    marginBottom: Spacing.sm,
+  },
+  pickInfoIcon: { marginTop: 0 },
+  pickMarket: {
+    flexShrink: 1,
+    fontSize: FontSize.sm,
+    color: '#6B7280',
+  },
+  pickChoice: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+    color: '#2E6BFF',
+  },
   finalScore: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: '#374151', marginBottom: Spacing.sm },
   divider: { height: 1, backgroundColor: '#F0F4F2', marginVertical: Spacing.md },
 
@@ -399,8 +459,7 @@ const d = StyleSheet.create({
   },
   legIndexText: { fontSize: 12, fontWeight: FontWeight.bold, color: GREEN },
   legBody: { flex: 1 },
-  legMatch: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: '#111827' },
-  legPick: { fontSize: FontSize.sm, color: GREEN, marginTop: 2, fontWeight: FontWeight.semibold },
+  legMatch: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: '#111827', lineHeight: 18 },
 
   pendingNote: {
     flexDirection: 'row',

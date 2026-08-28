@@ -1,4 +1,5 @@
 import { CoinRequestRow } from '@/components/coin-request-row';
+import { ScreenHeader } from '@/components/screen-header';
 import { BorderRadius, Colors, FontSize, FontWeight, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth';
 import { useLanguage } from '@/contexts/language';
@@ -78,16 +79,13 @@ export default function CoinRequestsScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>{tr.coinRequestTitle}</Text>
-          <Text style={s.headerSub}>{tr.coinRequestSub}</Text>
-        </View>
-        <Ionicons name="swap-horizontal" size={22} color="rgba(255,255,255,0.4)" />
-      </View>
+      <ScreenHeader
+        title={tr.coinRequestTitle}
+        subtitle={tr.coinRequestSub}
+        onBack={() => router.back()}
+        backIcon="arrow-back"
+        right={<Ionicons name="swap-horizontal" size={22} color="rgba(255,255,255,0.4)" />}
+      />
 
       <View style={s.filters}>
         {filters.map((f) => (

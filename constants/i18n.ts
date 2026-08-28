@@ -164,7 +164,7 @@ const translations = {
     withdrawConfirmMsg:
       "Coins will be deducted immediately and held until your agent approves or rejects.",
     withdrawSuccessTitle: "Request submitted",
-    withdrawSuccessMsg: "Your withdrawal is pending agent approval.",
+    withdrawSuccessMsg: "Your withdrawal is pending agent approval.", 
     withdrawFailed: "Withdrawal request failed",
     withdrawHoldNote:
       "Coins are deducted immediately and held until your agent approves or rejects.",
@@ -437,10 +437,10 @@ const translations = {
     menu1x2: "1X2",
     menuCorrectScore: "ဂိုးမှန်",
     menuScore: "ဘောလုံးပွဲရလဒ်",
-    menuBetList: "လောင်းထားသောပွဲစဉ်",
-    menuDeposit: "အော်တိုငွေသွင်းစနစ်",
+    menuBetList: "ဘောက်ချာများ",
+    menuDeposit: "ငွေသွင်းရန်",
     menuWithdraw: "ငွေထုတ်ရန်",
-    menuRule: "စည်းမျဉ်းစည်းကမ်း",
+    menuRule: "စည်းကမ်းချက်",
     menuChangePw: "စကားဝှက် ပြောင်းမည်",
 
     // Account tab
@@ -681,8 +681,8 @@ const translations = {
     scoresEmpty: "ရလဒ်များ မရှိသေးပါ",
 
     // Auto Deposit
-    autoDepositTitle: "အော်တိုငွေသွင်းစနစ်",
-    autoDepositSub: "အော်တိုငွေသွင်းစနစ်",
+    autoDepositTitle: "ငွေသွင်းရန်",
+    autoDepositSub: "ငွေသွင်းရန်",
     bankCard: "ဘဏ်ကတ်",
     viewAccount: "အကောင့်ကြည့်ရန်",
     accountNumber: "အကောင့်နံပါတ်",

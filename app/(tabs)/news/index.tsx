@@ -11,6 +11,7 @@ import {
   type ListRenderItem,
 } from 'react-native';
 import { Text } from '@/components/app-text';
+import { ScreenHeader } from '@/components/screen-header';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -281,31 +282,28 @@ export default function NewsScreen() {
   return (
     <View style={s.root}>
       <SafeAreaView edges={['top']} style={s.headerSafe}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} style={s.headerIcon} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={24} color={NewsTheme.onHeader} />
-          </TouchableOpacity>
-          <View style={s.headerTitleWrap}>
-            <Text style={s.headerTitle}>{tr.newsTitle}</Text>
-            {filterActive ? (
-              <Text style={s.headerSubtitle} numberOfLines={1}>
-                {activeFilterLabel}
-              </Text>
-            ) : null}
-          </View>
-          <TouchableOpacity
-            onPress={() => setFilterOpen(true)}
-            style={s.headerIcon}
-            hitSlop={8}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="options-outline"
-              size={22}
-              color={filterActive ? Colors.brand.gold : NewsTheme.onHeader}
-            />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader
+          title={tr.newsTitle}
+          subtitle={filterActive ? activeFilterLabel : undefined}
+          onBack={() => router.back()}
+          backIcon="arrow-back"
+          backgroundColor={NewsTheme.headerBg}
+          titleColor={NewsTheme.onHeader}
+          right={
+            <TouchableOpacity
+              onPress={() => setFilterOpen(true)}
+              style={s.headerIcon}
+              hitSlop={8}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="options-outline"
+                size={22}
+                color={filterActive ? Colors.brand.gold : NewsTheme.onHeader}
+              />
+            </TouchableOpacity>
+          }
+        />
       </SafeAreaView>
 
       <NewsCategoryDropdown
@@ -372,37 +370,11 @@ export default function NewsScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: NewsTheme.bg },
   headerSafe: { backgroundColor: NewsTheme.headerBg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.xs,
-    paddingBottom: Spacing.sm,
-  },
   headerIcon: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerTitleWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 0,
-    paddingHorizontal: 4,
-  },
-  headerTitle: {
-    fontSize: FontSize.xl,
-    fontWeight: FontWeight.bold,
-    color: NewsTheme.onHeader,
-    textAlign: 'center',
-  },
-  headerSubtitle: {
-    fontSize: 11,
-    fontWeight: FontWeight.semibold,
-    color: Colors.brand.gold,
-    textAlign: 'center',
-    marginTop: 2,
   },
   dropdownOverlay: {
     flex: 1,

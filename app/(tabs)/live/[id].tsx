@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { Text } from '@/components/app-text';
+import { ScreenHeader } from '@/components/screen-header';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -103,13 +104,11 @@ export default function LivePlayerScreen() {
   if (!match || !activeServer) {
     return (
       <SafeAreaView style={p.root} edges={['top']}>
-        <View style={p.header}>
-          <Pressable onPress={() => router.back()} style={p.backBtn} hitSlop={10}>
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </Pressable>
-          <Text style={p.headerTitle}>{tr.liveTitle}</Text>
-          <View style={p.backBtn} />
-        </View>
+        <ScreenHeader
+          title={tr.liveTitle}
+          onBack={() => router.back()}
+          backgroundColor={Colors.brand.greenDark}
+        />
         <View style={p.missing}>
           <Text style={p.missingText}>{tr.liveMatchNotFound}</Text>
           <Pressable onPress={() => router.back()} style={p.retryBtn}>
@@ -122,15 +121,11 @@ export default function LivePlayerScreen() {
 
   return (
     <SafeAreaView style={p.root} edges={['top']}>
-      <View style={p.header}>
-        <Pressable onPress={() => router.back()} style={p.backBtn} hitSlop={10}>
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </Pressable>
-        <Text style={p.headerTitle} numberOfLines={1}>
-          {match.home_team_name} vs {match.away_team_name}
-        </Text>
-        <View style={p.backBtn} />
-      </View>
+      <ScreenHeader
+        title={`${match.home_team_name} vs ${match.away_team_name}`}
+        onBack={() => router.back()}
+        backgroundColor={Colors.brand.greenDark}
+      />
 
       <View style={p.videoWrap}>
         <VideoView
@@ -239,22 +234,6 @@ export default function LivePlayerScreen() {
 
 const p = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0B1410' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.brand.greenDark,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 10,
-    gap: Spacing.sm,
-  },
-  backBtn: { padding: 6, width: 36 },
-  headerTitle: {
-    flex: 1,
-    fontSize: FontSize.md,
-    fontWeight: FontWeight.bold,
-    color: '#fff',
-    textAlign: 'center',
-  },
   videoWrap: {
     width: '100%',
     aspectRatio: 16 / 9,

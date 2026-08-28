@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Text, TextInput } from '@/components/app-text';
+import { ScreenHeader } from '@/components/screen-header';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -67,16 +68,13 @@ export default function ChangePasswordScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>{tr.changePwTitle}</Text>
-          <Text style={s.headerSub}>{tr.changePwSub}</Text>
-        </View>
-        <Ionicons name="lock-closed-outline" size={22} color="rgba(255,255,255,0.4)" />
-      </View>
+      <ScreenHeader
+        title={tr.changePwTitle}
+        subtitle={tr.changePwSub}
+        onBack={() => router.back()}
+        backIcon="arrow-back"
+        right={<Ionicons name="lock-closed-outline" size={22} color="rgba(255,255,255,0.4)" />}
+      />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={s.body}>

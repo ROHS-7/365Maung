@@ -7,7 +7,7 @@ export default function HdpScreen() {
     <FootballBetScreen
       title={tr.hdpTitle}
       mode="single"
-      markets={['asian_handicap', 'goals_ou']}
+      markets={['asian_handicap', 'goals_ou', 'sone_ma']}
       minPicks={1}
       stakePlaceholder="5000"
       hint={tr.hdpMinPicksHint}

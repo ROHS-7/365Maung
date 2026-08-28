@@ -49,9 +49,14 @@ export type FootballMatch = {
   mix_fh_odds?: string | null;
   single_fh_goal_odds?: string | null;
   mix_fh_goal_odds?: string | null;
+  /** Body (single) odd/even — same `/football/matches` payload as body lines. */
+  single_sone_ma_odds?: SoneMaOdds | null;
+  /** Maung (mix) odd/even — same `/football/matches` payload as mix lines. */
+  mix_sone_ma_odds?: SoneMaOdds | null;
+  /** Legacy combined odd/even when API sends one object for both modes. */
+  sone_ma_odds?: SoneMaOdds | null;
   one_x_two_odds?: OneXTwoOdds | null;
   correct_score_odds?: CorrectScoreOdds | null;
-  sone_ma_odds?: SoneMaOdds | null;
   home_result: number | null;
   away_result: number | null;
   home_ht_result?: number | null;
@@ -126,10 +131,12 @@ export type BetSlipLeg = {
   selected_team: FootballTeam;
   league: FootballLeague;
   sport?: string;
+  match_time?: string | null;
   match?: {
     home?: FootballTeam;
     away?: FootballTeam;
     sport?: string;
+    match_time?: string;
   };
 };
 

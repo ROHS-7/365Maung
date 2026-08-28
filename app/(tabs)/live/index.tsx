@@ -21,6 +21,7 @@ import {
   Spacing,
 } from '@/constants/theme';
 import { LoginPromptCard } from '@/components/login-prompt-card';
+import { ScreenHeader } from '@/components/screen-header';
 import { useAuth } from '@/contexts/auth';
 import { useLanguage } from '@/contexts/language';
 import {
@@ -217,13 +218,16 @@ export default function LiveScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <Ionicons name="radio" size={18} color="#fff" />
-        <Text style={s.headerTitle}>{tr.liveTitle}</Text>
-        <Pressable onPress={() => load(true)} hitSlop={10} style={s.refreshBtn}>
-          <Ionicons name="refresh" size={18} color="#fff" />
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title={tr.liveTitle}
+        backgroundColor={Colors.brand.greenDark}
+        left={<Ionicons name="radio" size={18} color="#fff" style={{ marginLeft: 4 }} />}
+        right={
+          <Pressable onPress={() => load(true)} hitSlop={10} style={s.refreshBtn}>
+            <Ionicons name="refresh" size={18} color="#fff" />
+          </Pressable>
+        }
+      />
 
       {!isAuthenticated ? (
         <View style={s.guestWrap}>
@@ -279,20 +283,6 @@ export default function LiveScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#E9F0EC' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.brand.greenDark,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: '#fff',
-  },
   refreshBtn: { padding: 4 },
   guestWrap: {
     flex: 1,

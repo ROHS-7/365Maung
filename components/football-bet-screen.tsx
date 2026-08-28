@@ -1,6 +1,7 @@
 import { BetSlipDrawer } from "@/components/maung-bet-drawer";
 import { BetSlipConfirmModal } from "@/components/bet-slip-confirm-modal";
 import { LeagueFilterModal } from "@/components/league-filter-modal";
+import { ScreenHeader } from "@/components/screen-header";
 import { TeamBadge } from "@/components/team-badge";
 import {
   BorderRadius,
@@ -1285,67 +1286,61 @@ export function FootballBetScreen({
       keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
     >
       <SafeAreaView style={styles.root} edges={["top"]}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => safeBack()}
-            style={styles.backBtn}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            {title}
-          </Text>
-          <View style={styles.headerRight}>
-            <TouchableOpacity
-              onPress={() => setFilterOpen(true)}
-              disabled={!canFilter}
-              style={[
-                styles.headerFilterPill,
-                filterActive && styles.headerFilterPillActive,
-                !canFilter && styles.headerFilterPillDisabled,
-              ]}
-              hitSlop={4}
-              activeOpacity={0.75}
-            >
-              <Ionicons
-                name="options-outline"
-                size={15}
-                color={
-                  !canFilter
-                    ? "rgba(255,255,255,0.35)"
-                    : filterActive
-                      ? Colors.brand.gold
-                      : "#fff"
-                }
-              />
-              <Text
+        <ScreenHeader
+          title={title}
+          onBack={() => safeBack()}
+          right={
+            <>
+              <TouchableOpacity
+                onPress={() => setFilterOpen(true)}
+                disabled={!canFilter}
                 style={[
-                  styles.headerFilterLabel,
-                  filterActive && styles.headerFilterLabelActive,
-                  !canFilter && styles.headerFilterLabelDisabled,
+                  styles.headerFilterPill,
+                  filterActive && styles.headerFilterPillActive,
+                  !canFilter && styles.headerFilterPillDisabled,
                 ]}
-                numberOfLines={1}
+                hitSlop={4}
+                activeOpacity={0.75}
               >
-                {filterLabel}
-              </Text>
-              {filterActive ? (
-                <View style={styles.headerFilterActiveBadge}>
-                  <BadgeCount
-                    value={filterSummary}
-                    style={styles.headerFilterActiveBadgeText}
-                  />
-                </View>
-              ) : null}
-            </TouchableOpacity>
-            <View style={styles.pickBadge}>
-              <BadgeCount
-                value={visibleMatchCount}
-                style={styles.pickBadgeText}
-              />
-            </View>
-          </View>
-        </View>
+                <Ionicons
+                  name="options-outline"
+                  size={12}
+                  color={
+                    !canFilter
+                      ? "rgba(255,255,255,0.35)"
+                      : filterActive
+                        ? Colors.brand.gold
+                        : "#fff"
+                  }
+                />
+                <Text
+                  style={[
+                    styles.headerFilterLabel,
+                    filterActive && styles.headerFilterLabelActive,
+                    !canFilter && styles.headerFilterLabelDisabled,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {filterLabel}
+                </Text>
+                {filterActive ? (
+                  <View style={styles.headerFilterActiveBadge}>
+                    <BadgeCount
+                      value={filterSummary}
+                      style={styles.headerFilterActiveBadgeText}
+                    />
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+              <View style={styles.pickBadge}>
+                <BadgeCount
+                  value={visibleMatchCount}
+                  style={styles.pickBadgeText}
+                />
+              </View>
+            </>
+          }
+        />
 
         {count === 0 && (
           <View style={styles.hintBar}>
@@ -1468,38 +1463,14 @@ export { ALL_MARKETS };
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   root: { flex: 1, backgroundColor: "#E9F0EC" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.brand.greenButton,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 10,
-    gap: Spacing.sm,
-  },
-  backBtn: { padding: 6, width: 36 },
-  headerTitle: {
-    flex: 1,
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: "#fff",
-    textAlign: "center",
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 8,
-    flexShrink: 1,
-    maxWidth: "46%",
-  },
   headerFilterPill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    maxWidth: 132,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    gap: 3,
+    maxWidth: 100,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 14,
     backgroundColor: "rgba(255,255,255,0.14)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.24)",
@@ -1513,7 +1484,8 @@ const styles = StyleSheet.create({
   },
   headerFilterLabel: {
     flexShrink: 1,
-    fontSize: 11,
+    fontSize: 9,
+    lineHeight: 11,
     fontWeight: FontWeight.semibold,
     color: "#fff",
   },
@@ -1524,17 +1496,17 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.35)",
   },
   headerFilterActiveBadge: {
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: Colors.brand.gold,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 3,
+    paddingHorizontal: 2,
   },
   headerFilterActiveBadgeText: {
-    fontSize: 9,
-    lineHeight: 9,
+    fontSize: 8,
+    lineHeight: 8,
     fontWeight: FontWeight.bold,
     color: Colors.brand.greenDark,
   },
@@ -1548,18 +1520,18 @@ const styles = StyleSheet.create({
       : {}),
   },
   pickBadge: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: 14,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: Colors.brand.gold,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
   },
-  pickBadgeSpacer: { width: 28 },
+  pickBadgeSpacer: { width: 22 },
   pickBadgeText: {
-    fontSize: FontSize.sm,
-    lineHeight: FontSize.sm,
+    fontSize: 10,
+    lineHeight: 10,
     fontWeight: FontWeight.bold,
     color: Colors.brand.greenDark,
   },

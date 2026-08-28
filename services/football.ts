@@ -36,7 +36,8 @@ const MOCK_MATCHES: FootballMatchesResponse = {
       mix_fh_goal_odds: '1.5=',
       one_x_two_odds: { home: 1.85, draw: 3.4, away: 4.2 },
       correct_score_odds: { '1-0': 7.5, '2-1': 8.5, '2-0': 9.0, AOS: 20.0 },
-      sone_ma_odds: { sone: 0.91, ma: 0.99 },
+      single_sone_ma_odds: { sone: 0.91, ma: 0.99 },
+      mix_sone_ma_odds: { sone: 0.88, ma: 1.02 },
       home_result: null,
       away_result: null,
       home_ht_result: null,
@@ -66,7 +67,8 @@ const MOCK_MATCHES: FootballMatchesResponse = {
       mix_fh_goal_odds: '1=',
       one_x_two_odds: { home: 2.1, draw: 3.2, away: 3.5 },
       correct_score_odds: { '1-0': 6.5, '1-1': 5.5, AOS: 18.0 },
-      sone_ma_odds: { sone: 0.95, ma: 0.95 },
+      single_sone_ma_odds: { sone: 0.95, ma: 0.95 },
+      mix_sone_ma_odds: { sone: 0.93, ma: 0.97 },
       home_result: null,
       away_result: null,
       home_ht_result: null,
@@ -96,7 +98,8 @@ const MOCK_MATCHES: FootballMatchesResponse = {
       mix_fh_goal_odds: '1=',
       one_x_two_odds: { home: 1.7, draw: 3.6, away: 4.8 },
       correct_score_odds: { '2-0': 8.0, '2-1': 7.0, AOS: 22.0 },
-      sone_ma_odds: { sone: 0.9, ma: 1.0 },
+      single_sone_ma_odds: { sone: 0.9, ma: 1.0 },
+      mix_sone_ma_odds: { sone: 0.92, ma: 0.98 },
       home_result: null,
       away_result: null,
       home_ht_result: null,
@@ -171,6 +174,12 @@ function normalizeLeg(raw: unknown, slipSport?: string): BetSlipLeg {
       : typeof match?.sport === 'string'
         ? match.sport
         : slipSport;
+  const matchTimeRaw =
+    typeof r.match_time === 'string'
+      ? r.match_time
+      : typeof match?.match_time === 'string'
+        ? match.match_time
+        : null;
 
   return {
     id: Number(r.id ?? 0),
@@ -182,6 +191,10 @@ function normalizeLeg(raw: unknown, slipSport?: string): BetSlipLeg {
     goal_up_down:
       goalUpDown === 'up' || goalUpDown === 'down' ? goalUpDown : null,
     sone_ma: soneMa === 'sone' || soneMa === 'ma' ? soneMa : null,
+    decimal_odds:
+      r.decimal_odds != null && Number.isFinite(Number(r.decimal_odds))
+        ? Number(r.decimal_odds)
+        : null,
     is_bingo: Boolean(r.is_bingo),
     is_cancel: Boolean(r.is_cancel),
     home,
@@ -189,6 +202,7 @@ function normalizeLeg(raw: unknown, slipSport?: string): BetSlipLeg {
     selected_team: selected,
     league: normalizeLeague(r.league),
     sport: sportRaw,
+    match_time: matchTimeRaw,
     match: match
       ? (() => {
           const mh = normalizeTeam(match.home);
@@ -198,6 +212,8 @@ function normalizeLeg(raw: unknown, slipSport?: string): BetSlipLeg {
             home: teams.home,
             away: teams.away,
             sport: typeof match.sport === 'string' ? match.sport : sportRaw,
+            match_time:
+              typeof match.match_time === 'string' ? match.match_time : matchTimeRaw ?? undefined,
           };
         })()
       : undefined,
@@ -255,6 +271,8 @@ function normalizeFootballMatch(raw: unknown): FootballMatch {
   const teams = applyMatchTeamLogos(m, home, away);
   const oneXTwo = m.one_x_two_odds as FootballMatch['one_x_two_odds'];
   const correctScore = m.correct_score_odds as FootballMatch['correct_score_odds'];
+  const singleSoneMa = m.single_sone_ma_odds as FootballMatch['single_sone_ma_odds'];
+  const mixSoneMa = m.mix_sone_ma_odds as FootballMatch['mix_sone_ma_odds'];
   const soneMa = m.sone_ma_odds as FootballMatch['sone_ma_odds'];
   return {
     id: Number(m.id ?? 0),
@@ -272,6 +290,8 @@ function normalizeFootballMatch(raw: unknown): FootballMatch {
     mix_fh_goal_odds: m.mix_fh_goal_odds != null ? String(m.mix_fh_goal_odds) : null,
     one_x_two_odds: oneXTwo ?? null,
     correct_score_odds: correctScore ?? null,
+    single_sone_ma_odds: singleSoneMa ?? null,
+    mix_sone_ma_odds: mixSoneMa ?? null,
     sone_ma_odds: soneMa ?? null,
     home_result: m.home_result == null ? null : Number(m.home_result),
     away_result: m.away_result == null ? null : Number(m.away_result),

@@ -109,10 +109,6 @@ export default function TabLayout() {
         options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />
       <Tabs.Screen
-        name="sone-ma"
-        options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
-      />
-      <Tabs.Screen
         name="one-x-two"
         options={{ href: null, tabBarStyle: { display: 'none' }, freezeOnBlur: true }}
       />

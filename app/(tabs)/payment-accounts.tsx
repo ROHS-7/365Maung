@@ -35,6 +35,7 @@ import {
   View,
 } from 'react-native';
 import { Text } from '@/components/app-text';
+import { ScreenHeader } from '@/components/screen-header';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PaymentAccountsScreen() {
@@ -133,16 +134,13 @@ export default function PaymentAccountsScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>{tr.paymentAccountsTitle}</Text>
-          <Text style={s.headerSub}>{tr.paymentAccountsSub}</Text>
-        </View>
-        <Ionicons name="card-outline" size={22} color="rgba(255,255,255,0.4)" />
-      </View>
+      <ScreenHeader
+        title={tr.paymentAccountsTitle}
+        subtitle={tr.paymentAccountsSub}
+        onBack={() => router.back()}
+        backIcon="arrow-back"
+        right={<Ionicons name="card-outline" size={22} color="rgba(255,255,255,0.4)" />}
+      />
 
       {loading ? (
         <View style={s.centered}>

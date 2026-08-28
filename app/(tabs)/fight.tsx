@@ -3,6 +3,7 @@ import { useAppConfig } from '@/contexts/app-config';
 import { useLanguage } from '@/contexts/language';
 import { useHideParentTabBar } from '@/hooks/use-hide-parent-tab-bar';
 import { useRequireAuth } from '@/hooks/use-require-auth';
+import { ScreenHeader } from '@/components/screen-header';
 import { Colors, FontSize, FontWeight, Spacing } from '@/constants/theme';
 import { safeBack } from '@/utils/navigation';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,13 +40,7 @@ function FightClosedScreen({ title, message }: { title: string; message: string 
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => safeBack()} style={s.backBtn} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>{title}</Text>
-        <View style={s.headerPad} />
-      </View>
+      <ScreenHeader title={title} onBack={() => safeBack()} />
       <View style={s.body}>
         <Text style={s.message}>{message}</Text>
       </View>
@@ -55,22 +50,6 @@ function FightClosedScreen({ title, message }: { title: string; message: string 
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#E9F0EC' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.brand.greenButton,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 10,
-    gap: Spacing.sm,
-  },
-  backBtn: { padding: 6, width: 36 },
-  headerTitle: {
-    flex: 1,
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: '#fff',
-  },
-  headerPad: { width: 36 },
   body: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg },
   message: {
     fontSize: FontSize.md,

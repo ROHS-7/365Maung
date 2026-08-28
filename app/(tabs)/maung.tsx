@@ -7,7 +7,7 @@ export default function MaungScreen() {
     <FootballBetScreen
       title={tr.maungTitle}
       mode="mix"
-      markets={['asian_handicap', 'goals_ou']}
+      markets={['asian_handicap', 'goals_ou', 'sone_ma']}
       minPicks={2}
       stakePlaceholder="500"
       hint={tr.maungMinPicksHint}

@@ -30,6 +30,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Text, TextInput } from '@/components/app-text';
+import { ScreenHeader } from '@/components/screen-header';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WithdrawScreen() {
@@ -106,16 +107,13 @@ export default function WithdrawScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>{tr.withdrawTitle}</Text>
-          <Text style={s.headerSub}>{tr.withdrawSub}</Text>
-        </View>
-        <Ionicons name="arrow-up-circle-outline" size={22} color="rgba(255,255,255,0.4)" />
-      </View>
+      <ScreenHeader
+        title={tr.withdrawTitle}
+        subtitle={tr.withdrawSub}
+        onBack={() => router.back()}
+        backIcon="arrow-back"
+        right={<Ionicons name="arrow-up-circle-outline" size={22} color="rgba(255,255,255,0.4)" />}
+      />
 
       {loading ? (
         <View style={s.centered}>
