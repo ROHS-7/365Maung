@@ -3,7 +3,6 @@ import { useLanguage } from "@/contexts/language";
 import { fetchFootballMatches } from "@/services/football";
 import type { FootballMarket } from "@/types/football";
 import {
-  formatDrawDate,
   groupMatchesByLeague,
   reconcileLeagues,
   type UiLeagueData,
@@ -23,7 +22,6 @@ export type ReloadOptions = { immediate?: boolean };
 export function useFootballMatches(
   mode: "single" | "mix",
   options?: {
-    drawDate?: Date;
     markets?: FootballMarket[];
     enabled?: boolean;
   },
@@ -40,18 +38,12 @@ export function useFootballMatches(
   const errorRef = useRef(error);
   errorRef.current = error;
 
-  const drawDate = options?.drawDate;
   const enabled = options?.enabled !== false;
   const marketsKey = options?.markets?.join(",") ?? "";
   const markets = useMemo(
     () => options?.markets,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [marketsKey],
-  );
-
-  const drawDateStr = useMemo(
-    () => formatDrawDate(drawDate ?? new Date()),
-    [drawDate?.toDateString()],
   );
 
   // Stop work immediately on blur, but free match data only after the
@@ -99,7 +91,7 @@ export function useFootballMatches(
         if (requestId !== requestIdRef.current) return;
       }
 
-      const data = await fetchFootballMatches(token, drawDateStr);
+      const data = await fetchFootballMatches(token);
       if (requestId !== requestIdRef.current) return;
       const grouped = groupMatchesByLeague(data.matches, mode, lang, markets);
       const apply = () => {
@@ -121,7 +113,7 @@ export function useFootballMatches(
         setLoading(false);
       }
     }
-  }, [enabled, token, drawDateStr, mode, lang, markets]);
+  }, [enabled, token, mode, lang, markets]);
 
   useEffect(() => {
     if (!enabled) return;

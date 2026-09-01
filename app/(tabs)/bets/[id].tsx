@@ -157,13 +157,6 @@ function HdpOuDetail({ bet }: { bet: HdpOuBet }) {
         <DetailRow label={tr.betListLineOdds} value={oddsStr} />
         {tierLabel && <DetailRow label={tr.betListPayout} value={tierLabel} />}
         <DetailRow label={tr.betListStake} value={`${bet.stake.toLocaleString()} ${tr.currencyUnit}`} highlight />
-        {(bet.benefitMax ?? 0) > 0 && (
-          <DetailRow
-            label={tr.betSlipBenefitMax}
-            value={`${bet.benefitMax!.toLocaleString()} ${tr.currencyUnit}`}
-            highlight
-          />
-        )}
         {!isPending && (
           <DetailRow
             label={tr.betListPayout}
@@ -233,13 +226,6 @@ function ParlayDetail({ bet }: { bet: ParlayBet }) {
         <DetailRow label={tr.betDetailBetId} value={bet.id.toUpperCase()} />
         <DetailRow label={tr.betDetailPlacedAt} value={placedAtText(bet)} />
         <DetailRow label={tr.betListStake} value={`${bet.stake.toLocaleString()} ${tr.currencyUnit}`} highlight />
-        {(bet.benefitMax ?? 0) > 0 && (
-          <DetailRow
-            label={tr.betSlipBenefitMax}
-            value={`${bet.benefitMax!.toLocaleString()} ${tr.currencyUnit}`}
-            highlight
-          />
-        )}
         {!isPending && (
           <DetailRow
             label={tr.betListPayout}

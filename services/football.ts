@@ -252,11 +252,9 @@ function queryString(params: BetSlipsQuery): string {
 
 export async function fetchFootballMatches(
   token: string,
-  drawDate?: string,
 ): Promise<FootballMatchesResponse> {
   if (!API_BASE_URL) return MOCK_MATCHES;
-  const q = drawDate ? `?draw_date=${drawDate}` : '';
-  const data = await apiRequest<FootballMatchesResponse>(`/football/matches${q}`, {
+  const data = await apiRequest<FootballMatchesResponse>(`/football/matches`, {
     token,
   });
   return {

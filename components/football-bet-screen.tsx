@@ -1788,11 +1788,13 @@ const styles = StyleSheet.create({
   },
   chipRow: {
     flexDirection: "row",
-    gap: 6,
+    gap: 4,
+    alignItems: "stretch",
   },
   chipRowThree: {
     flexDirection: "row",
-    gap: 6,
+    gap: 4,
+    alignItems: "stretch",
   },
   hdpRow: {
     flexDirection: "row",
@@ -1934,7 +1936,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.border,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: 6,
-    paddingVertical: 8,
+    paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
@@ -1944,15 +1946,15 @@ const styles = StyleSheet.create({
     width: "100%",
     flex: 0,
     alignSelf: "stretch",
-    minHeight: 48,
-    paddingVertical: 8,
+    minHeight: 40,
+    paddingVertical: 10,
   },
   chipPressed: {
     backgroundColor: "#EEF5F1",
     transform: [{ scale: 0.98 }],
   },
   chipSelected: {
-    backgroundColor: Colors.brand.greenButton,
+    backgroundColor: Colors.brand.greenDark,
     borderColor: Colors.brand.greenDark,
   },
   chipOdds: {
@@ -1965,18 +1967,18 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   chipLabel: {
-    fontSize: 10,
-    fontWeight: FontWeight.medium,
-    color: Colors.light.textSecondary,
+    fontSize: 11,
+    fontWeight: FontWeight.semibold,
+    color: Colors.light.text,
     textAlign: "center",
   },
   chipLabelOnly: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: FontWeight.semibold,
     color: Colors.light.text,
   },
   chipLabelSelected: {
-    color: "rgba(255,255,255,0.92)",
+    color: "#fff",
   },
   chipSelectedDot: {
     position: "absolute",
@@ -1985,7 +1987,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: Colors.brand.greenDark,
+    backgroundColor: "rgba(255,255,255,0.22)",
     alignItems: "center",
     justifyContent: "center",
   },
