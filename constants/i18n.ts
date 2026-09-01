@@ -164,7 +164,7 @@ const translations = {
     withdrawConfirmMsg:
       "Coins will be deducted immediately and held until your agent approves or rejects.",
     withdrawSuccessTitle: "Request submitted",
-    withdrawSuccessMsg: "Your withdrawal is pending agent approval.", 
+    withdrawSuccessMsg: "Your withdrawal is pending agent approval.",
     withdrawFailed: "Withdrawal request failed",
     withdrawHoldNote:
       "Coins are deducted immediately and held until your agent approves or rejects.",
@@ -427,8 +427,8 @@ const translations = {
     // Menu items
     menuMixParlay: "မောင်း",
     menuHDP: "ဘော်ဒီ",
-    menuMixParlayFh: "ပထမပိုင်း မောင်း",
-    menuHdpFh: "ပထမပိုင်း ဘော်ဒီ",
+    menuMixParlayFh: "ပပိုင်း မောင်း",
+    menuHdpFh: "ပပိုင်း ဘော်ဒီ",
     menuEsports: "E-Sports",
     menuEsportsScore: "E-Sports ရလဒ်",
     menuFight: "လက်ဝှေ့",
