@@ -2,6 +2,10 @@ import type { FootballTeam } from '@/types/football';
 import type { ImageSourcePropType } from 'react-native';
 
 export const DEFAULT_TEAM_LOGO: ImageSourcePropType = require('@/assets/icons/team-default.png');
+export const DEFAULT_FIGHT_LOGO: ImageSourcePropType = require('@/assets/icons/fight-default.png');
+export const DEFAULT_ESPORTS_LOGO: ImageSourcePropType = require('@/assets/icons/esports-default.png');
+export const FIGHT_TEAM_LOGO_SIZE = 38;
+export const FIGHT_SCORES_LOGO_SIZE = 34;
 
 const AVATAR_COLORS = [
   '#2563EB',

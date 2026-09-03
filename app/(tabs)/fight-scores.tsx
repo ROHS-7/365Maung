@@ -20,6 +20,7 @@ import { useLanguage } from '@/contexts/language';
 import { fetchFightMatchResults } from '@/services/fight';
 import type { FightMatchResult } from '@/types/fight';
 import { teamDisplayName } from '@/utils/football-ui';
+import { DEFAULT_FIGHT_LOGO, FIGHT_SCORES_LOGO_SIZE } from '@/utils/team-logo';
 import { safeBack } from '@/utils/navigation';
 
 type MatchRow = {
@@ -105,8 +106,8 @@ function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
           <TeamBadge
             name={m.home}
             logo={m.homeLogo}
-            size={20}
-            useDefaultLogo={false}
+            size={FIGHT_SCORES_LOGO_SIZE}
+            defaultLogo={DEFAULT_FIGHT_LOGO}
           />
           <View style={s.teamNameClip}>
             <Text
@@ -151,8 +152,8 @@ function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
           <TeamBadge
             name={m.away}
             logo={m.awayLogo}
-            size={20}
-            useDefaultLogo={false}
+            size={FIGHT_SCORES_LOGO_SIZE}
+            defaultLogo={DEFAULT_FIGHT_LOGO}
           />
         </View>
       </View>

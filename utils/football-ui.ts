@@ -494,6 +494,11 @@ export function formatOddsDisplay(n: number, fallbackLine?: string): string {
   return n > 0 ? `+${n}` : `${n}`;
 }
 
+/** Space out the +/- in an odds line, e.g. "1-58" -> "1 - 58". */
+export function spaceOddsLine(line: string): string {
+  return line.replace(/([\d=])\s*([+-])\s*(\d)/g, '$1 $2 $3');
+}
+
 export function formatDecimalOdds(n: number | null | undefined): string {
   if (n == null || Number.isNaN(n)) return '—';
   return n.toFixed(2).replace(/\.?0+$/, '') === String(Math.round(n))

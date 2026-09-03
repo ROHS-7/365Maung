@@ -29,6 +29,7 @@ import {
   estimateBenefitMax,
   findOddsChangedMatchIds,
   formatDecimalOdds,
+  spaceOddsLine,
   makeSelectKey,
   parseSelectKey,
   sortBettingLeagues,
@@ -42,6 +43,11 @@ import {
   type OddsPeriod,
 } from "@/utils/football-ui";
 import { safeBack } from "@/utils/navigation";
+import {
+  DEFAULT_ESPORTS_LOGO,
+  DEFAULT_FIGHT_LOGO,
+  FIGHT_TEAM_LOGO_SIZE,
+} from "@/utils/team-logo";
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
 import { router, useFocusEffect } from "expo-router";
@@ -253,6 +259,89 @@ const HdpTeamRow = memo(function HdpTeamRow({
     </View>
   );
 });
+const SoneMaRow = memo(function SoneMaRow({
+  leftLabel,
+  rightLabel,
+  leftLine,
+  rightLine,
+  leftSelected,
+  rightSelected,
+  onLeft,
+  onRight,
+}: {
+  leftLabel: string;
+  rightLabel: string;
+  leftLine: string;
+  rightLine: string;
+  leftSelected: boolean;
+  rightSelected: boolean;
+  onLeft: () => void;
+  onRight: () => void;
+}) {
+  return (
+    <View style={styles.triRow}>
+      <Pressable
+        onPress={onLeft}
+        style={({ pressed }) => [
+          styles.triSide,
+          leftSelected && styles.triSideSelected,
+          pressed && !leftSelected && styles.chipPressed,
+        ]}
+      >
+        <Text
+          compact
+          style={[
+            styles.triSideText,
+            leftSelected && styles.triSideTextSelected,
+          ]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+        >
+          {leftLabel}
+          <RNText
+            style={[
+              styles.oddsValueText,
+              leftSelected && styles.oddsValueTextSelected,
+            ]}
+          >
+            {'  '}({leftLine})
+          </RNText>
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={onRight}
+        style={({ pressed }) => [
+          styles.triSide,
+          rightSelected && styles.triSideSelected,
+          pressed && !rightSelected && styles.chipPressed,
+        ]}
+      >
+        <Text
+          compact
+          style={[
+            styles.triSideText,
+            rightSelected && styles.triSideTextSelected,
+          ]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.75}
+        >
+          {rightLabel}
+          <RNText
+            style={[
+              styles.oddsValueText,
+              rightSelected && styles.oddsValueTextSelected,
+            ]}
+          >
+            {'  '}({rightLine})
+          </RNText>
+        </Text>
+      </Pressable>
+    </View>
+  );
+});
+
 const TriLineRow = memo(function TriLineRow({
   leftLabel,
   rightLabel,
@@ -372,10 +461,10 @@ const MatchMarkets = memo(function MatchMarkets({
   const periodLabel =
     period === "fh" ? tr.footballFirstHalf : tr.footballFullTime;
   const showHeaderTeams =
-    source !== "esports" &&
-    (source !== "football" ||
-      !hdpMarket ||
-      !uiMatchHasValidMarket(match, hdpMarket));
+    source === "esports" ||
+    source === "fight" ||
+    !hdpMarket ||
+    !uiMatchHasValidMarket(match, hdpMarket);
   const flashAnim = useRef(new Animated.Value(0)).current;
   const exitOpacity = useRef(new Animated.Value(1)).current;
   const exitTranslate = useRef(new Animated.Value(0)).current;
@@ -486,8 +575,14 @@ const MatchMarkets = memo(function MatchMarkets({
             <TeamBadge
               name={match.home}
               logo={match.homeLogo}
-              size={24}
-              useDefaultLogo={source !== "fight"}
+              size={source === "fight" ? FIGHT_TEAM_LOGO_SIZE : 24}
+              defaultLogo={
+                source === "fight"
+                  ? DEFAULT_FIGHT_LOGO
+                  : source === "esports"
+                    ? DEFAULT_ESPORTS_LOGO
+                    : undefined
+              }
             />
             <Text
               compact
@@ -519,8 +614,14 @@ const MatchMarkets = memo(function MatchMarkets({
             <TeamBadge
               name={match.away}
               logo={match.awayLogo}
-              size={24}
-              useDefaultLogo={source !== "fight"}
+              size={source === "fight" ? FIGHT_TEAM_LOGO_SIZE : 24}
+              defaultLogo={
+                source === "fight"
+                  ? DEFAULT_FIGHT_LOGO
+                  : source === "esports"
+                    ? DEFAULT_ESPORTS_LOGO
+                    : undefined
+              }
             />
           </View>
         </View>
@@ -538,7 +639,7 @@ const MatchMarkets = memo(function MatchMarkets({
               awayLabel={match.away}
               homeLogo={match.homeLogo}
               awayLogo={match.awayLogo}
-              line={match.hdpLine}
+              line={spaceOddsLine(match.hdpLine)}
               homeHasLine={homeIsGiving}
               homeSelected={
                 selectedKey ===
@@ -560,7 +661,7 @@ const MatchMarkets = memo(function MatchMarkets({
             <TriLineRow
               leftLabel={tr.maungOver}
               rightLabel={tr.maungUnder}
-              centerLine={match.ouLine}
+              centerLine={spaceOddsLine(match.ouLine)}
               leftSelected={
                 selectedKey === makeSelectKey(match.id, ouMarket, "up")
               }
@@ -576,24 +677,20 @@ const MatchMarkets = memo(function MatchMarkets({
         {markets.includes("sone_ma") &&
           uiMatchHasValidMarket(match, "sone_ma") && (
           <MarketSection title={tr.maungOE} hideTitle={hideMarketTitle}>
-            <View style={styles.chipRow}>
-              <OddsChip
-                label={tr.maungOdd}
-                odds={formatDecimalOdds(match.soneOdds)}
-                selected={
-                  selectedKey === makeSelectKey(match.id, "sone_ma", "sone")
-                }
-                onPress={() => onPick(match.id, "sone_ma", "sone")}
-              />
-              <OddsChip
-                label={tr.maungEven}
-                odds={formatDecimalOdds(match.maOdds)}
-                selected={
-                  selectedKey === makeSelectKey(match.id, "sone_ma", "ma")
-                }
-                onPress={() => onPick(match.id, "sone_ma", "ma")}
-              />
-            </View>
+            <SoneMaRow
+              leftLabel={tr.maungOdd}
+              rightLabel={tr.maungEven}
+              leftLine={formatDecimalOdds(match.soneOdds)}
+              rightLine={formatDecimalOdds(match.maOdds)}
+              leftSelected={
+                selectedKey === makeSelectKey(match.id, "sone_ma", "sone")
+              }
+              rightSelected={
+                selectedKey === makeSelectKey(match.id, "sone_ma", "ma")
+              }
+              onLeft={() => onPick(match.id, "sone_ma", "sone")}
+              onRight={() => onPick(match.id, "sone_ma", "ma")}
+            />
           </MarketSection>
         )}
 
@@ -1852,10 +1949,10 @@ const styles = StyleSheet.create({
     marginRight: 2,
   },
   hdpBadgeText: {
-    fontSize: 11,
-    fontWeight: FontWeight.extrabold,
+    fontSize: 13,
+    fontWeight: FontWeight.bold,
+    fontStyle: "normal",
     color: "#fff",
-    letterSpacing: -0.3,
     backgroundColor: Colors.brand.greenButton,
     borderRadius: 999,
     overflow: "hidden",
@@ -1897,6 +1994,15 @@ const styles = StyleSheet.create({
   triSideTextSelected: {
     color: "#fff",
   },
+  oddsValueText: {
+    fontSize: 13,
+    fontWeight: FontWeight.bold,
+    fontStyle: "normal",
+    color: Colors.light.text,
+  },
+  oddsValueTextSelected: {
+    color: "#fff",
+  },
   triCenter: {
     flex: 1,
     minWidth: 0,
@@ -1910,9 +2016,9 @@ const styles = StyleSheet.create({
   },
   triCenterText: {
     fontSize: 13,
-    fontWeight: FontWeight.extrabold,
+    fontWeight: FontWeight.bold,
+    fontStyle: "normal",
     color: "#fff",
-    letterSpacing: -0.2,
   },
   csWrap: {
     gap: 6,
@@ -1959,9 +2065,9 @@ const styles = StyleSheet.create({
   },
   chipOdds: {
     fontSize: 13,
-    fontWeight: FontWeight.extrabold,
+    fontWeight: FontWeight.bold,
+    fontStyle: "normal",
     color: Colors.brand.greenDark,
-    letterSpacing: -0.2,
   },
   chipOddsSelected: {
     color: "#fff",

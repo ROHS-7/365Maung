@@ -1,15 +1,27 @@
 import { useState } from 'react';
-import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  type ImageSourcePropType,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { Image } from 'expo-image';
-import { DEFAULT_TEAM_LOGO } from '@/utils/team-logo';
+import {
+  DEFAULT_ESPORTS_LOGO,
+  DEFAULT_FIGHT_LOGO,
+  DEFAULT_TEAM_LOGO,
+} from '@/utils/team-logo';
 
 type Props = {
   name: string;
   logo?: string;
   size?: number;
   style?: StyleProp<ViewStyle>;
-  /** When false, hide badge if no remote logo (used for boxing/fight). */
+  /** When false, hide badge if no remote logo. */
   useDefaultLogo?: boolean;
+  /** Fallback image when no remote logo (defaults to football team logo). */
+  defaultLogo?: ImageSourcePropType;
 };
 
 export function TeamBadge({
@@ -18,56 +30,82 @@ export function TeamBadge({
   size = 26,
   style,
   useDefaultLogo = true,
+  defaultLogo = DEFAULT_TEAM_LOGO,
 }: Props) {
   const [failed, setFailed] = useState(false);
-  const radius = size / 2;
   const remoteLogo = logo?.trim();
   const useRemote = Boolean(remoteLogo) && !failed;
+  const isFightBadge = defaultLogo === DEFAULT_FIGHT_LOGO;
 
-  if (useRemote) {
-    return (
+  const renderImage = (
+    source: ImageSourcePropType | { uri: string },
+    recyclingKey: string,
+    onError?: () => void,
+  ) => {
+    const image = (
       <Image
-        source={{ uri: remoteLogo }}
-        style={[
-          s.badge,
-          { width: size, height: size, borderRadius: radius },
-          style,
-        ]}
+        source={source}
+        style={isFightBadge ? s.fightImage : [s.badge, { width: size, height: size }]}
         contentFit="contain"
         cachePolicy="memory-disk"
-        recyclingKey={remoteLogo}
+        recyclingKey={recyclingKey}
         transition={0}
         accessibilityLabel={name}
-        onError={() => setFailed(true)}
+        onError={onError}
       />
     );
+
+    if (!isFightBadge) {
+      return (
+        <Image
+          source={source}
+          style={[s.badge, { width: size, height: size }, style]}
+          contentFit="contain"
+          cachePolicy="memory-disk"
+          recyclingKey={recyclingKey}
+          transition={0}
+          accessibilityLabel={name}
+          onError={onError}
+        />
+      );
+    }
+
+    return (
+      <View style={[s.fightFrame, { width: size, height: size, borderRadius: size / 2 }, style]}>
+        {image}
+      </View>
+    );
+  };
+
+  if (useRemote) {
+    return renderImage({ uri: remoteLogo! }, remoteLogo!, () => setFailed(true));
   }
 
   if (!useDefaultLogo) {
     return null;
   }
 
-  return (
-    <Image
-      source={DEFAULT_TEAM_LOGO}
-      style={[
-        s.badge,
-        { width: size, height: size, borderRadius: radius },
-        style,
-      ]}
-      contentFit="contain"
-      cachePolicy="memory-disk"
-      recyclingKey="team-default-logo"
-      transition={0}
-      accessibilityLabel={name}
-    />
-  );
+  const recyclingKey =
+    defaultLogo === DEFAULT_FIGHT_LOGO
+      ? 'fight-default-logo-v13'
+      : defaultLogo === DEFAULT_ESPORTS_LOGO
+        ? 'esports-default-logo-v1'
+        : 'team-default-logo';
+
+  return renderImage(defaultLogo, recyclingKey);
 }
 
 const s = StyleSheet.create({
   badge: {
-    overflow: 'hidden',
-    backgroundColor: '#F3F4F6',
     flexShrink: 0,
+  },
+  fightFrame: {
+    flexShrink: 0,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+  },
+  fightImage: {
+    width: '100%',
+    height: '100%',
   },
 });

@@ -19,6 +19,7 @@ import { useLanguage } from '@/contexts/language';
 import { fetchEsportsMatchResults } from '@/services/esports';
 import type { EsportsMatchResult } from '@/types/esports';
 import { formatDrawDate, teamDisplayName } from '@/utils/football-ui';
+import { DEFAULT_ESPORTS_LOGO } from '@/utils/team-logo';
 import { safeBack } from '@/utils/navigation';
 
 type MatchRow = {
@@ -118,7 +119,11 @@ function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
 
       <View style={s.matchBody}>
         <View style={s.teamLine}>
-          <TeamBadge name={m.home} logo={m.homeLogo} />
+          <TeamBadge
+            name={m.home}
+            logo={m.homeLogo}
+            defaultLogo={DEFAULT_ESPORTS_LOGO}
+          />
           <Text
             style={[s.teamLineName, (homeWin || isDraw) && s.teamLineNameWin]}
             numberOfLines={1}
@@ -148,7 +153,11 @@ function MatchCard({ m, last }: { m: MatchRow; last: boolean }) {
           >
             {m.away}
           </Text>
-          <TeamBadge name={m.away} logo={m.awayLogo} />
+          <TeamBadge
+            name={m.away}
+            logo={m.awayLogo}
+            defaultLogo={DEFAULT_ESPORTS_LOGO}
+          />
         </View>
       </View>
     </View>
