@@ -113,12 +113,14 @@ const OddsChip = memo(function OddsChip({
   selected,
   onPress,
   compact,
+  largeOdds,
 }: {
   label?: string;
   odds?: string;
   selected: boolean;
   onPress?: () => void;
   compact?: boolean;
+  largeOdds?: boolean;
 }) {
   return (
     <Pressable
@@ -132,7 +134,13 @@ const OddsChip = memo(function OddsChip({
       ]}
     >
       {odds ? (
-        <RNText style={[styles.chipOdds, selected && styles.chipOddsSelected]}>
+        <RNText
+          style={[
+            styles.chipOdds,
+            largeOdds && styles.chipOddsLarge,
+            selected && styles.chipOddsSelected,
+          ]}
+        >
           {odds}
         </RNText>
       ) : null}
@@ -584,33 +592,35 @@ const MatchMarkets = memo(function MatchMarkets({
                     : undefined
               }
             />
-            <Text
-              compact
-              style={[styles.teamName, match.isMajor && styles.teamNameMajor]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}
-            >
-              {match.home}
-            </Text>
+            <View style={styles.teamNameClip}>
+              <Text
+                compact
+                style={[styles.teamName, match.isMajor && styles.teamNameMajor]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {match.home}
+              </Text>
+            </View>
           </View>
           <Text compact style={[styles.vsText, match.isMajor && styles.vsTextMajor]}>
             {tr.maungVs}
           </Text>
           <View style={[styles.teamCol, styles.teamColAway]}>
-            <Text
-              compact
-              style={[
-                styles.teamName,
-                styles.teamNameAway,
-                match.isMajor && styles.teamNameMajor,
-              ]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.75}
-            >
-              {match.away}
-            </Text>
+            <View style={styles.teamNameClip}>
+              <Text
+                compact
+                style={[
+                  styles.teamName,
+                  styles.teamNameAway,
+                  match.isMajor && styles.teamNameMajor,
+                ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {match.away}
+              </Text>
+            </View>
             <TeamBadge
               name={match.away}
               logo={match.awayLogo}
@@ -734,8 +744,13 @@ const MatchMarkets = memo(function MatchMarkets({
           <MarketSection title={tr.esportsToWin} hideTitle={hideMarketTitle}>
             <View style={styles.chipRow}>
               <OddsChip
-                label={match.home}
+                label={
+                  source === "fight" || source === "esports"
+                    ? undefined
+                    : match.home
+                }
                 odds={formatDecimalOdds(match.toWin.home)}
+                largeOdds={source === "fight" || source === "esports"}
                 selected={
                   selectedKey === makeSelectKey(match.id, toWinMarket, "home")
                 }
@@ -746,8 +761,13 @@ const MatchMarkets = memo(function MatchMarkets({
                 }
               />
               <OddsChip
-                label={match.away}
+                label={
+                  source === "fight" || source === "esports"
+                    ? undefined
+                    : match.away
+                }
                 odds={formatDecimalOdds(match.toWin.away)}
+                largeOdds={source === "fight" || source === "esports"}
                 selected={
                   selectedKey === makeSelectKey(match.id, toWinMarket, "away")
                 }
@@ -1439,17 +1459,6 @@ export function FootballBetScreen({
           }
         />
 
-        {count === 0 && (
-          <View style={styles.hintBar}>
-            <Ionicons
-              name="information-circle-outline"
-              size={16}
-              color={Colors.brand.greenMid}
-            />
-            <Text style={styles.hintText}>{hint}</Text>
-          </View>
-        )}
-
         <LeagueFilterModal
           visible={filterOpen}
           leagues={leagues}
@@ -1632,25 +1641,6 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.bold,
     color: Colors.brand.greenDark,
   },
-  hintBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#fff",
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 10,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    ...Shadow.sm,
-  },
-  hintText: {
-    flex: 1,
-    fontSize: FontSize.sm,
-    color: Colors.light.textSecondary,
-  },
   scroll: { flex: 1 },
   scrollContent: {
     padding: Spacing.sm + 2,
@@ -1828,17 +1818,23 @@ const styles = StyleSheet.create({
   },
   teamCol: {
     flex: 1,
+    flexBasis: 0,
     minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+  },
+  teamNameClip: {
+    flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    overflow: "hidden",
   },
   teamColAway: {
     flexDirection: "row",
     justifyContent: "flex-end",
   },
   teamName: {
-    flex: 1,
     minWidth: 0,
     fontSize: 13,
     fontWeight: FontWeight.bold,
@@ -1851,6 +1847,8 @@ const styles = StyleSheet.create({
     color: Colors.brand.greenDark,
   },
   vsText: {
+    flexShrink: 0,
+    paddingHorizontal: 2,
     fontSize: 11,
     fontWeight: FontWeight.extrabold,
     color: Colors.light.textSecondary,
@@ -2021,11 +2019,11 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   csWrap: {
-    gap: 6,
+    gap: 8,
   },
   csRow: {
     flexDirection: "row",
-    gap: 6,
+    gap: 8,
   },
   csCell: {
     flexGrow: 1,
@@ -2052,8 +2050,10 @@ const styles = StyleSheet.create({
     width: "100%",
     flex: 0,
     alignSelf: "stretch",
-    minHeight: 40,
-    paddingVertical: 10,
+    minHeight: 52,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    gap: 3,
   },
   chipPressed: {
     backgroundColor: "#EEF5F1",
@@ -2068,6 +2068,9 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.bold,
     fontStyle: "normal",
     color: Colors.brand.greenDark,
+  },
+  chipOddsLarge: {
+    fontSize: 15,
   },
   chipOddsSelected: {
     color: "#fff",
